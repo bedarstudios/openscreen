@@ -116,7 +116,7 @@ buildNpmPackage {
 
   meta = {
     description = "Desktop screen recorder with built-in editor";
-    homepage = "https://github.com/siddharthvaddem/openscreen";
+    homepage = "https://github.com/EtienneLescot/openscreen";
     license = lib.licenses.mit;
     mainProgram = "openscreen";
     platforms = lib.platforms.linux;

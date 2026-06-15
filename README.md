@@ -1,29 +1,32 @@
+> [!NOTE]
+> This repository is an independent continuation of OpenScreen.
+>
+> OpenScreen was originally created by [Siddharth Vaddem](https://github.com/siddharthvaddem). The original repository was archived after v1.5.0 and remains available here: [siddharthvaddem/openscreen](https://github.com/siddharthvaddem/openscreen).
+>
+> This fork continues development under the OpenScreen name with the original author's approval, while remaining fully MIT open source.
+
 > [!WARNING]
-> This started as a side project that blew up; not production grade and you'll hit bugs, but hopefully it covers what you need. **This project will soon be archived.**
+> OpenScreen is not production-grade software. You should expect bugs, rough edges, and occasional breaking changes.
 
 
 <p align="center">
   <img src="public/openscreen.png" alt="OpenScreen Logo" width="64" />
-  <br />
-  <br />
-	<a href="https://trendshift.io/repositories/17427" target="_blank"><img src="https://trendshift.io/api/badge/repositories/17427" alt="siddharthvaddem%2Fopenscreen | Trendshift" style="width: 256px; height: 64px;" width="256" height="64"/></a>
-
-
-  </a>
 </p>
 
 # <p align="center">OpenScreen</p>
 
-<p align="center"><strong>OpenScreen is your free, open-source alternative to Screen Studio.</strong></p>
+<p align="center"><strong>OpenScreen is a free, open-source tool for creating polished screen recordings, product demos, and walkthroughs.</strong></p>
 
-If you don't want to pay $29/month for Screen Studio but want a version that does what most people seem to need - quick, polished product demos and walkthroughs you'd post on X, Reddit or Youtube. OpenScreen does not offer every Screen Studio feature, but covers a lot of the core functionality.
+OpenScreen was originally positioned as a free, open-source alternative to Screen Studio: something you can use to create quick, polished product demos and walkthroughs for X, Reddit, YouTube, documentation, landing pages, or internal demos.
 
-Screen Studio is an awesome product and this is definitely not a 1:1 clone. If you just want something fully free and open source, this project should cover most of your needs.
+It is not a 1:1 clone of Screen Studio. Screen Studio is an excellent commercial product. OpenScreen focuses on covering the core open-source workflow: recording, zooms, cursor effects, webcam overlay, captions, editing, annotations, and export.
 
-**100% free** for both **personal** and **commercial** use. Use it, modify it, distribute it. Please respect the License. 
+The goal of this continuation is to keep OpenScreen alive as a fully open-source project and progressively evolve it toward a broader recording and editing workflow.
+
+**100% free** for both **personal** and **commercial** use. Use it, modify it, distribute it. Please respect the license.
 
 > [!NOTE]
->Software should be accessible. OpenScreen has no paid tiers, premium features, upsells, or functionality locked behind a paywall.
+> Software should be accessible. OpenScreen has no paid tiers, premium features, upsells, or functionality locked behind a paywall.
 
 <p align="center">
 	<img src="public/demo.png" alt="" style="height: 0.2467; margin-right: 12px;" />
@@ -49,24 +52,14 @@ Screen Studio is an awesome product and this is definitely not a 1:1 clone. If y
 
 ## Installation
 
-Download the latest installer for your platform from the [GitHub Releases](https://github.com/siddharthvaddem/openscreen/releases) page.
+Download the latest installer for your platform from the [GitHub Releases](https://github.com/EtienneLescot/openscreen/releases) page.
+
+> [!NOTE]
+> This fork is a continuation of the archived upstream project. Some package-manager distributions may still point to the original repository until the release pipeline is fully updated for this continuation.
 
 ### macOS
 
-The easiest way to install on macOS is via [Homebrew](https://brew.sh):
-
-```bash
-brew install --cask siddharthvaddem/openscreen/openscreen
-```
-
-Brew automatically picks the right build for Apple Silicon or Intel, and verifies the download against a notarized signature so Gatekeeper won't block it.
-
-To update later: `brew upgrade --cask openscreen`
-To uninstall: `brew uninstall --cask openscreen` (add `--zap` to also remove app data)
-
-#### Manual install (if you prefer)
-
-If you'd rather grab the `.dmg` directly from the [Releases page](https://github.com/siddharthvaddem/openscreen/releases) and encounter Gatekeeper blocking the app, you can bypass it by running the following command in your terminal after installation:
+Download the `.dmg` installer directly from the [Releases page](https://github.com/EtienneLescot/openscreen/releases). If Gatekeeper blocks the app, you can bypass it by running the following command in your terminal after installation:
 
 ```bash
 xattr -rd com.apple.quarantine /Applications/Openscreen.app
@@ -81,20 +74,11 @@ After running this command, proceed to **System Preferences > Security & Privacy
 
 ### Windows
 
-Install via [winget](https://learn.microsoft.com/en-us/windows/package-manager/winget/):
-
-```bash
-winget install SiddharthVaddem.OpenScreen
-```
-
-To update later: `winget upgrade SiddharthVaddem.OpenScreen`
-To uninstall: `winget uninstall SiddharthVaddem.OpenScreen`
-
-If you'd rather grab the `.exe` installer directly, download it from the [Releases page](https://github.com/siddharthvaddem/openscreen/releases).
+Download the `.exe` installer directly from the [Releases page](https://github.com/EtienneLescot/openscreen/releases).
 
 ### Linux
 
-Three packages are published to the [Releases page](https://github.com/siddharthvaddem/openscreen/releases) for each version. Pick the one that matches your distro:
+Three packages are published to the [Releases page](https://github.com/EtienneLescot/openscreen/releases) for each version. Pick the one that matches your distro:
 
 **Debian / Ubuntu / Pop!_OS (`.deb`)**
 ```bash
@@ -116,18 +100,18 @@ chmod +x Openscreen-Linux-*.AppImage
 
 Try without installing:
 ```bash
-nix run github:siddharthvaddem/openscreen
+nix run github:EtienneLescot/openscreen
 ```
 
 Install into your user profile:
 ```bash
-nix profile install github:siddharthvaddem/openscreen
+nix profile install github:EtienneLescot/openscreen
 ```
 
 For a NixOS system config (flake):
 ```nix
 {
-  inputs.openscreen.url = "github:siddharthvaddem/openscreen";
+  inputs.openscreen.url = "github:EtienneLescot/openscreen";
 
   outputs = { nixpkgs, openscreen, ... }: {
     nixosConfigurations.<host> = nixpkgs.lib.nixosSystem {
