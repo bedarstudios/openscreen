@@ -166,7 +166,7 @@ For safety, download OpenScreen only from the official GitHub Releases linked fr
 OpenScreen is community-driven. If you need help, want to report a bug, or just want to chat with other users and contributors:
 
 - 💬 **Discord** — [Join the OpenScreen Discord](https://discord.gg/VvT6Vtnyh) for real-time help, showcase, and discussion
-- 🐞 **GitHub Issues** — bug reports and feature requests
+- 🐞 **[GitHub Issues](https://github.com/EtienneLescot/openscreen/issues)** — bug reports and feature requests
 
 ---
 
