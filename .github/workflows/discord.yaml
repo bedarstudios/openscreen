@@ -7,6 +7,8 @@ on:
     types: [submitted]
   issue_comment:
     types: [created]
+  push:
+    branches: [main]
   schedule:
     - cron: "0 12 * * 1"
   workflow_dispatch:
@@ -18,7 +20,11 @@ permissions:
 
 jobs:
   notify:
-    if: github.event_name != 'schedule' && github.actor != 'github-actions[bot]'
+    if: |
+      (github.event_name == 'pull_request_target' ||
+       github.event_name == 'pull_request_review' ||
+       github.event_name == 'issue_comment') &&
+      github.actor != 'github-actions[bot]'
     concurrency:
       group: discord-pr-sync-${{ github.repository }}-${{ github.event.pull_request.number || github.event.issue.number || github.run_id }}
       cancel-in-progress: false
@@ -515,134 +521,217 @@ jobs:
               core.setFailed(`Leaderboard post failed ${res.status}: ${txt}`);
             }
 
-  # Posts a notification to the #🗺️・roadmap Discord channel whenever a PR
-  # changes ROADMAP.md (the public roadmap file). This mirrors the way the
-  # `notify` job above syncs PR activity to the 🔎・pr-reviews channel —
-  # the user-facing community gets pinged in Discord when the roadmap moves.
+  # Keeps the #🗺️・roadmap Discord channel in sync with ./ROADMAP.md.
+  # On every push to main (direct or via PR merge) that touches ROADMAP.md,
+  # the bot updates a single pinned message in the channel to mirror the
+  # file's current content. The Discord channel is a read-only mirror of
+  # the file; the file is the source of truth.
   #
-  # Posts via the openscreen_etienne bot (same one as the notify job) rather
-  # than a channel-scoped webhook, so the bot's identity is preserved and we
-  # don't accumulate one webhook per channel.
+  # On the first run (no DISCORD_ROADMAP_MESSAGE_ID set), the bot posts a
+  # new message, pins it, and logs the message id. The maintainer then
+  # sets DISCORD_ROADMAP_MESSAGE_ID as a repo variable so subsequent runs
+  # PATCH the same message instead of creating duplicates.
   #
   # Required:
   #   DISCORD_BOT_TOKEN — bot token of the openscreen_etienne app (secret)
-  #   DISCORD_ROADMAP_CHANNEL_ID — channel id of #🗺️・roadmap
-  #     (GitHub Actions var, not secret — channel ids are public info)
+  #   DISCORD_ROADMAP_CHANNEL_ID — channel id of #🗺️・roadmap (var)
+  #   DISCORD_ROADMAP_MESSAGE_ID — id of the pinned roadmap message (var,
+  #     optional on first run; the workflow will tell you to set it)
   #
-  # Per-channel permission required on the Discord side:
-  #   The bot's role must have "Send Messages" allowed on #🗺️・roadmap
-  #   (set as a channel-level permission override; do not grant globally).
+  # Per-channel permissions required on the Discord side:
+  #   The bot's role must have "Send Messages", "Embed Links", and
+  #   "Manage Messages" allowed on #🗺️・roadmap (channel-level overrides).
   roadmap-notify:
-    if: github.event_name == 'pull_request_target'
+    if: |
+      (github.event_name == 'pull_request_target' &&
+       github.event.action == 'closed' &&
+       github.event.pull_request.merged == true &&
+       github.event.pull_request.base.ref == 'main') ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/main')
     concurrency:
-      group: discord-roadmap-sync-${{ github.repository }}-${{ github.event.pull_request.number }}
+      group: discord-roadmap-sync-${{ github.repository }}-${{ github.event.pull_request.number || github.sha }}
       cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
-      - name: Post roadmap change to #🗺️・roadmap Discord channel
+      - name: Sync ROADMAP.md to pinned Discord message
         continue-on-error: true
         uses: actions/github-script@v7
         env:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           DISCORD_ROADMAP_CHANNEL_ID: ${{ vars.DISCORD_ROADMAP_CHANNEL_ID }}
+          DISCORD_ROADMAP_MESSAGE_ID: ${{ vars.DISCORD_ROADMAP_MESSAGE_ID }}
         with:
           script: |
             const ROADMAP_PATTERN = /(^|\/)ROADMAP\.md$|(^|\/)docs\/roadmap\.md$/i;
-            const VALID_ACTIONS = ["opened", "reopened", "synchronize", "closed"];
-
-            const pr = context.payload.pull_request;
-            if (!pr) {
-              core.info("No PR context; skipping roadmap notify.");
-              return;
-            }
-
-            const action = context.payload.action || "";
-            if (!VALID_ACTIONS.includes(action)) {
-              core.info(`Skipping roadmap notify for action '${action}'.`);
-              return;
-            }
-
-            let files;
-            try {
-              const res = await github.rest.pulls.listFiles({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: pr.number,
-                per_page: 100,
-              });
-              files = res.data;
-            } catch (err) {
-              core.warning(`Failed to list PR files: ${err && err.message ? err.message : err}`);
-              return;
-            }
-
-            const roadmapFiles = files.filter(f => ROADMAP_PATTERN.test(f.filename));
-            if (roadmapFiles.length === 0) {
-              core.info("No roadmap files in PR; skipping roadmap notify.");
-              return;
-            }
+            const EMBED_DESCRIPTION_LIMIT = 4000; // Discord limit is 4096; safety margin
 
             const botToken = (process.env.DISCORD_BOT_TOKEN || "").trim();
             const channelId = (process.env.DISCORD_ROADMAP_CHANNEL_ID || "").trim();
+            let existingMessageId = (process.env.DISCORD_ROADMAP_MESSAGE_ID || "").trim();
+
             if (!botToken || !channelId) {
               core.info(
-                "DISCORD_BOT_TOKEN or DISCORD_ROADMAP_CHANNEL_ID not set; skipping roadmap notify. " +
-                "Configure DISCORD_BOT_TOKEN as a repo secret and DISCORD_ROADMAP_CHANNEL_ID as a repo variable to enable #🗺️・roadmap auto-posts."
+                "DISCORD_BOT_TOKEN or DISCORD_ROADMAP_CHANNEL_ID not set; skipping. " +
+                "Configure both as repo secret / variable to enable #🗺️・roadmap auto-sync."
               );
               return;
             }
 
-            const fileList = roadmapFiles.map(f => {
-              const icon = f.status === "added" ? "🆕" : f.status === "removed" ? "🗑️" : "✏️";
-              return `${icon} \`${f.filename}\` (+${f.additions}/-${f.deletions})`;
-            }).join("\n");
+            // 1. Detect which files changed in this event.
+            let changedFiles = [];
+            try {
+              if (context.eventName === "pull_request_target") {
+                const pr = context.payload.pull_request;
+                if (!pr) {
+                  core.info("No PR context; skipping.");
+                  return;
+                }
+                const res = await github.rest.pulls.listFiles({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  pull_number: pr.number,
+                  per_page: 100,
+                });
+                changedFiles = res.data;
+              } else if (context.eventName === "push") {
+                const sha = github.event.head_commit?.id || github.sha;
+                const res = await github.rest.repos.getCommit({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: sha,
+                });
+                changedFiles = res.data.files || [];
+              }
+            } catch (err) {
+              core.warning(`Failed to list changed files: ${err && err.message ? err.message : err}`);
+              return;
+            }
 
-            const isMerged = action === "closed" && !!pr.merged;
-            const titlePrefix = isMerged ? "✅ Roadmap merged" : "🗺️ Roadmap updated";
-            const color = isMerged ? 5763719 : 1998671;
-            const status = pr.draft ? "Draft" : (isMerged ? "Merged" : (action === "closed" ? "Closed (not merged)" : "Open"));
+            const roadmapFiles = changedFiles.filter(f => ROADMAP_PATTERN.test(f.filename));
+            if (roadmapFiles.length === 0) {
+              core.info("No roadmap files in event; skipping.");
+              return;
+            }
 
-            const description = (pr.body || "No description provided.").trim() || "No description provided.";
+            // 2. Fetch the current ROADMAP.md content from main.
+            let content;
+            try {
+              const res = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path: "ROADMAP.md",
+                ref: "main",
+              });
+              if (Array.isArray(res.data) || res.data.type !== "file" || !res.data.content) {
+                core.warning("ROADMAP.md is not a readable file; skipping.");
+                return;
+              }
+              content = Buffer.from(res.data.content, "base64").toString("utf-8");
+            } catch (err) {
+              core.warning(`Failed to fetch ROADMAP.md: ${err && err.message ? err.message : err}`);
+              return;
+            }
 
-            // Posted via bot token: username / avatar overrides are not
-            // supported on POST /channels/{id}/messages, so the bot's
-            // configured identity (set in the Discord Developer Portal)
-            // is what shows up in #🗺️・roadmap.
+            // 3. Truncate if it exceeds Discord's embed description limit.
+            const rawUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/blob/main/ROADMAP.md`;
+            let description = content;
+            let truncated = false;
+            if (content.length > EMBED_DESCRIPTION_LIMIT) {
+              description = content.slice(0, EMBED_DESCRIPTION_LIMIT) + `\n\n… *(truncated, see [full file on GitHub](${rawUrl}))*`;
+              truncated = true;
+            }
+
+            // 4. Build the embed payload.
+            const syncedAt = new Date().toISOString().split("T")[0];
             const payload = {
-              content: `${titlePrefix} via PR #${pr.number}`,
               embeds: [
                 {
-                  title: `${pr.title} • #${pr.number}`,
-                  url: pr.html_url,
-                  description: description.length > 1800 ? description.slice(0, 1799) + "…" : description,
-                  color,
-                  fields: [
-                    { name: "Roadmap files", value: fileList, inline: false },
-                    { name: "Author", value: `[${pr.user?.login || "unknown"}](${pr.user?.html_url || pr.html_url})`, inline: true },
-                    { name: "Status", value: status, inline: true },
-                  ],
-                  footer: { text: `${context.repo.owner}/${context.repo.repo}` },
+                  title: "🗺️ OpenScreen Roadmap",
+                  url: rawUrl,
+                  description,
+                  color: 1998671,
+                  footer: {
+                    text: `${context.repo.owner}/${context.repo.repo} • Last synced ${syncedAt}`,
+                  },
                   timestamp: new Date().toISOString(),
                 },
               ],
               allowed_mentions: { parse: [] },
             };
+            if (truncated) {
+              payload.content = `⚠️ Roadmap exceeds Discord embed limit; truncated. See the [full file on GitHub](${rawUrl}) for the complete version.`;
+            }
 
+            // 5. PATCH the existing message, or POST a new one.
+            let messageId = existingMessageId;
+            let didPost = false;
             try {
-              const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-                method: "POST",
-                headers: {
-                  "Authorization": `Bot ${botToken}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-              });
-              if (!res.ok) {
-                const txt = await res.text();
-                core.warning(`Roadmap Discord notify failed ${res.status}: ${txt}`);
-                return;
+              if (messageId) {
+                const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages/${messageId}`, {
+                  method: "PATCH",
+                  headers: {
+                    "Authorization": `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload),
+                });
+                if (res.status === 404) {
+                  core.warning(`Existing message ${messageId} not found in Discord (was it deleted?). Falling back to POST.`);
+                  messageId = "";
+                } else if (!res.ok) {
+                  const txt = await res.text();
+                  core.warning(`Roadmap Discord PATCH failed ${res.status}: ${txt}`);
+                  return;
+                } else {
+                  core.info(`Roadmap Discord message ${messageId} updated.`);
+                }
               }
-              core.info(`Roadmap Discord notify posted for PR #${pr.number} (${roadmapFiles.length} file(s)) to channel ${channelId}.`);
+
+              if (!messageId) {
+                const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bot ${botToken}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify(payload),
+                });
+                if (!res.ok) {
+                  const txt = await res.text();
+                  core.warning(`Roadmap Discord POST failed ${res.status}: ${txt}`);
+                  return;
+                }
+                const data = await res.json();
+                messageId = data.id;
+                didPost = true;
+                core.info(`🆕 New roadmap message created with id ${messageId}.`);
+                core.info(`👉 Set DISCORD_ROADMAP_MESSAGE_ID=${messageId} as a repo variable to update this message on future changes.`);
+                core.info(`   gh variable set DISCORD_ROADMAP_MESSAGE_ID ${messageId} --repo ${context.repo.owner}/${context.repo.repo}`);
+              }
             } catch (err) {
-              core.warning(`Roadmap Discord notify threw: ${err && err.message ? err.message : err}`);
+              core.warning(`Roadmap Discord sync threw: ${err && err.message ? err.message : err}`);
+              return;
+            }
+
+            // 6. Pin the message (idempotent: pinning an already-pinned message is a no-op).
+            // Only needed after a fresh POST — edits preserve pin state.
+            if (didPost) {
+              try {
+                const pinRes = await fetch(`https://discord.com/api/v10/channels/${channelId}/pins/${messageId}`, {
+                  method: "PUT",
+                  headers: {
+                    "Authorization": `Bot ${botToken}`,
+                  },
+                });
+                if (pinRes.status === 204 || pinRes.ok) {
+                  core.info(`Message ${messageId} pinned.`);
+                } else if (pinRes.status === 403) {
+                  core.warning(`Cannot pin message: bot lacks 'Manage Messages' on the channel. Add it via Discord channel permissions.`);
+                } else {
+                  const txt = await pinRes.text();
+                  core.warning(`Pin failed ${pinRes.status}: ${txt}`);
+                }
+              } catch (err) {
+                core.warning(`Pin threw: ${err && err.message ? err.message : err}`);
+              }
             }
