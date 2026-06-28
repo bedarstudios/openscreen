@@ -106,25 +106,17 @@ export default function App() {
 			default:
 				return (
 					<div>
-						{/* <div className="w-full h-full bg-background text-foreground">
-						<h1>Openscreen</h1>
-					</div> */}
+						<div className="w-full h-full bg-background text-foreground">
+							<h1>Openscreen</h1>
+						</div>
 					</div>
 				);
 		}
 	})();
 
-	if (showNotes) {
-		return (
-			<TooltipProvider>
-				<NotesWindow />
-				<Toaster theme="dark" />
-			</TooltipProvider>
-		);
-	}
-
 	return (
 		<TooltipProvider>
+			{showNotes && <NotesWindow />}
 			{content}
 			<Toaster theme="dark" />
 		</TooltipProvider>
