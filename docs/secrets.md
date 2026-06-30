@@ -23,9 +23,9 @@ Most of the repo's workflows (CI, build, Tier 3 publishers, Discord sync) only n
 3. **Repository access**: `getopenscreen/openscreen` only.
 4. **Permissions**:
    - `Contents`: Read and write
-   - `Issues**: Read and write
-   - **Pull requests**: Read-only (the release pipeline never opens PRs; the existing `bump-nix-package.yml` workflow keeps using `GITHUB_TOKEN` for its PR)
-   - **Metadata**: Read-only (auto-selected)
+   - `Issues`: Read and write
+   - `Pull requests`: Read and write (the release pipeline opens a PR to bump `package.json` and rebase-merges it into `main` because the org-level workflow permissions block `GITHUB_TOKEN` from creating PRs)
+   - `Metadata`: Read-only (auto-selected)
 5. **Expiration**: 1 year. Set a calendar reminder to rotate.
 6. Generate the token, copy it once, then add it as a repository secret. The `gh` CLI does **not** accept the value as a positional argument — use `--body` or stdin:
    ```bash
@@ -55,13 +55,36 @@ To allow that direct push, the ruleset has two bypass actors:
 - **`EtienneLescot`** (id `215859519`) — so manual pushes from the maintainer's local checkout work.
 - **`github-actions[bot]`** (id `41898282`) — so the workflow's `GITHUB_TOKEN` push (the default `actions/checkout@v4` auth) is also accepted.
 
-> **Why not just use the PAT?** Fine-grained PATs are deliberately excluded from ruleset bypasses by GitHub as a security measure (a leaked PAT must not bypass repo rules). Pushing with the PAT would still be rejected with `GH013`. Adding the bot user to the bypass list is the canonical fix.
+## Required repo ruleset bypass and PR flow
 
-If the bypass actors are ever reset (e.g. after a ruleset recreation), re-add them via:
+The `main` branch is protected by the repository ruleset `main-protection` (id `18060803` on this repo). It enforces:
+
+- `deletion` — branches can't be deleted
+- `non_fast_forward` — no force pushes
+- `required_linear_history` — fast-forward only
+- `pull_request` — 1 approving review + code owner review, only rebase merge allowed (`merge` and `squash` are disabled at the repo level)
+
+The release pipeline (`prerelease.yml` and `promote.yml`) cannot bypass this directly because:
+
+- The org policy disables `GITHUB_TOKEN` write permissions (`Allow GitHub Actions to create and approve pull requests` is OFF at the org level), so `GITHUB_TOKEN` cannot create the bump PR.
+- Fine-grained PATs do not satisfy ruleset bypass actors, so a PAT-driven direct push is rejected with `GH013`.
+
+So the workflow:
+
+1. Pushes the bump commit to a `release/vX.Y.Z` branch using the PAT (no rule check on non-main branches).
+2. Opens the PR using the PAT (`gh pr create` with `GH_TOKEN=$OPENSCREEN_RELEASE_TOKEN`).
+3. Rebase-merges the PR using the PAT. EtienneLescot is a ruleset bypass actor with `bypass_mode: "always"`, so the `pull_request` review requirement is skipped for this merge.
+
+The ruleset has two bypass actors:
+
+- **`EtienneLescot`** (id `215859519`) — so the PAT-driven PR merge satisfies the `pull_request` rule.
+- **`github-actions[bot]`** (id `41898282`) — added defensively, though `GITHUB_TOKEN`-driven operations are blocked by the org policy regardless.
+
+To confirm the bypass list:
 
 ```bash
 gh api /repos/getopenscreen/openscreen/rulesets/18060803 --jq '.bypass_actors'
-# Confirm both 215859519 and 41898282 are present with bypass_mode "always".
+# Expect both 215859519 and 41898282 with bypass_mode "always".
 ```
 
 ## Required for Discord announcements
