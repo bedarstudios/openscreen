@@ -292,11 +292,11 @@ jobs:
           fi
 
           VERSION="${TAG#v}"
-          # Strip pre-release suffix (e.g. "1.5.0-rc.1" -> "1.5.0") for package.json comparison.
-          STABLE_VERSION="${VERSION%%-*}"
+          # For an RC tag (e.g. v1.5.0-rc.1) package.json is at the pre-release version
+          # (1.5.0-rc.1), not the stable version (1.5.0). Compare against the full tag version.
           PACKAGE_VERSION="$(node -p 'require("./package.json").version')"
-          if [[ "$PACKAGE_VERSION" != "$STABLE_VERSION" ]]; then
-            echo "::error::package.json version ${PACKAGE_VERSION} does not match stable version ${STABLE_VERSION} from tag ${TAG}"
+          if [[ "$PACKAGE_VERSION" != "$VERSION" ]]; then
+            echo "::error::package.json version ${PACKAGE_VERSION} does not match ${VERSION} from tag ${TAG}"
             exit 1
           fi
 
