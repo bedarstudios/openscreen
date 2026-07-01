@@ -76,7 +76,7 @@ export function NewEditorShell() {
 	const [cropOpen, setCropOpen] = useState(false);
 	const [exportOpen, setExportOpen] = useState(false);
 	const [unsavedPrompt, setUnsavedPrompt] = useState<{
-		action: "new" | "open" | "record";
+		action: "close" | "new" | "open" | "record";
 		resolve: (choice: UnsavedChoice) => void;
 	} | null>(null);
 	const { settings: editorSettings, set: setEditorSettings } = useEditorSettings();
@@ -93,7 +93,7 @@ export function NewEditorShell() {
 	const initRef = useRef(false);
 
 	const promptUnsaved = useCallback(
-		(action: "new" | "open" | "record"): Promise<UnsavedChoice> => {
+		(action: "close" | "new" | "open" | "record"): Promise<UnsavedChoice> => {
 			if (!dirty) return Promise.resolve("discard");
 			return new Promise<UnsavedChoice>((resolve) => {
 				setUnsavedPrompt({ action, resolve });
@@ -142,6 +142,18 @@ export function NewEditorShell() {
 				const label = screenPath.split(/[\\/]/).pop() || "Recording";
 				await createProject(`Recording ${new Date().toLocaleString()}`);
 				await addAsset(screenPath, label);
+				// ponytail: MediaRecorder WebMs ship with duration = NaN until
+				// fix-webm-duration patches the EBML header; until that flows
+				// through the asset, drop a default 60s clip into the timeline
+				// so the editor isn't stuck on "No clips yet" the moment the
+				// user lands in the project. Real duration overwrites this
+				// when handleLoadedMetadata fires with a finite value.
+				const doc = useProjectStore.getState().document;
+				if (doc && doc.timeline.clips.length === 0 && doc.assets.length > 0) {
+					await useProjectStore
+						.getState()
+						.replaceTimeline([{ startSec: 0, endSec: 60 }], "Auto-imported recording");
+				}
 				toast.success("Recording added to a new project");
 			} catch (err) {
 				toast.error("Could not auto-create project from recording", {
@@ -177,7 +189,7 @@ export function NewEditorShell() {
 		// 2. Handle request-close-confirm from Electron
 		const unsubCloseConfirm = window.electronAPI.onRequestCloseConfirm(() => {
 			void (async () => {
-				const choice = await promptUnsaved("new"); // Use "new" as a generic action for close
+				const choice = await promptUnsaved("close");
 				if (choice === "discard") {
 					window.electronAPI.sendCloseConfirmResponse("discard");
 				} else if (choice === "save") {
@@ -220,20 +232,46 @@ export function NewEditorShell() {
 
 	const handleLoadedMetadata = useCallback(
 		(durationSec: number) => {
-			setSourceDuration(durationSec);
-			if (document && document.assets.length > 0 && document.timeline.clips.length === 0) {
-				const asset =
-					document.assets.find((a) => a.id === document.project.primaryAssetId) ??
-					document.assets[0];
-				if (asset) {
-					void replaceTimeline(
-						[{ startSec: 0, endSec: durationSec }],
-						"Auto-created full-duration clip",
-					);
-				}
+			// ponytail: WebM recordings from MediaRecorder report NaN/Infinity
+			// until the main-process EBML fix lands. Fall back to the existing
+			// 60s seed if duration is unknown so the timeline never gets stuck
+			// on an empty placeholder. All store reads go through getState() to
+			// avoid stale-closure bugs that hit the previous dependency on
+			// `document`.
+			const known = Number.isFinite(durationSec) && durationSec > 0 ? durationSec : 60;
+			const state = useProjectStore.getState();
+			setSourceDuration(known);
+			const doc = state.document;
+			console.log(
+				`[handleLoadedMetadata] durationSec=${durationSec} → known=${known} ` +
+					`document=${doc ? "set" : "null"} ` +
+					`assets=${doc?.assets.length ?? 0} ` +
+					`clips=${doc?.timeline.clips.length ?? 0} ` +
+					`primaryAssetId=${doc?.project.primaryAssetId ?? "none"}`,
+			);
+			if (!doc || doc.assets.length === 0) return;
+			if (doc.timeline.clips.length === 0) {
+				console.log(`[handleLoadedMetadata] creating clip endSec=${known}`);
+				void state.replaceTimeline(
+					[{ startSec: 0, endSec: known }],
+					"Auto-created full-duration clip",
+				);
+				return;
 			}
+			const primary = doc.timeline.clips[0];
+			if (!primary || primary.sourceEndSec === known) return;
+			const next = {
+				...doc,
+				timeline: {
+					...doc.timeline,
+					clips: doc.timeline.clips.map((c, i) =>
+						i === 0 ? { ...c, sourceEndSec: known, timelineEndSec: known } : c,
+					),
+				},
+			};
+			void state.saveDocument(next);
 		},
-		[document, replaceTimeline, setSourceDuration],
+		[setSourceDuration],
 	);
 
 	const handleSeek = useCallback(

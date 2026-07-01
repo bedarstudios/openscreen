@@ -238,10 +238,14 @@ export function VirtualPreview({
 						playsInline
 						onLoadedMetadata={(e) => {
 							setLoadState("ready");
-							const duration = e.currentTarget.duration;
-							if (Number.isFinite(duration) && duration > 0) {
-								onLoadedMetadata?.(duration);
-							}
+							// ponytail: forward the raw duration (possibly NaN for
+							// MediaRecorder WebMs) to the parent. handleLoadedMetadata
+							// falls back to a 60s seed when it isn't finite so the
+							// timeline gets a populated clip even before the EBML fix
+							// lands. Previously this gate skipped the callback for
+							// non-finite durations and stranded the editor on
+							// "No clips yet" until manual intervention.
+							onLoadedMetadata?.(e.currentTarget.duration);
 							if (pendingSeekRef.current) {
 								const { sourceTimeSec, play } = pendingSeekRef.current;
 								pendingSeekRef.current = null;

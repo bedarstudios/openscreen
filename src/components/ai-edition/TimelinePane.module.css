@@ -1,157 +1,28 @@
 .pane {
-	display: flex;
-	flex-direction: column;
-	gap: 0.5rem;
-	padding: 0.75rem;
-	background: var(--card);
+	display: grid;
+	grid-template-rows: 1fr auto;
+	gap: 4px;
+	padding: 4px 0 0;
+	background: var(--bg);
 	border-top: 1px solid var(--border);
-	min-height: 180px;
-}
-
-.header {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 1rem;
-}
-
-.heading {
-	font-size: 0.875rem;
-	font-weight: 600;
-	margin: 0;
-	color: var(--card-foreground);
-	text-transform: uppercase;
-	letter-spacing: 0.025em;
-}
-
-.meta {
-	font-size: 0.75rem;
-	color: var(--muted-foreground);
-	margin: 0;
-}
-
-.readout {
-	display: flex;
-	align-items: center;
-	gap: 0.625rem;
-	font-size: 0.8125rem;
-}
-
-.muted {
-	color: var(--muted-foreground);
-}
-
-.tool {
-	display: flex;
-	align-items: center;
-	gap: 0.25rem;
-	padding: 0.25rem 0.625rem;
-	border-radius: 0.375rem;
-	border: 1px solid var(--border);
-	background: var(--background);
-	color: var(--card-foreground);
-	font-size: 0.75rem;
-	cursor: pointer;
-}
-
-.tool:hover:not(:disabled) {
-	background: var(--accent);
-}
-
-.tool:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.navigatorRow {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.fitButton {
-	padding: 0.125rem 0.5rem;
-	border-radius: 0.25rem;
-	border: 1px solid var(--border);
-	background: var(--background);
-	color: var(--muted-foreground);
-	font-size: 0.6875rem;
-	cursor: pointer;
-}
-
-.fitButton:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-.navigator {
-	position: relative;
-	flex: 1;
-	height: 24px;
-	border-radius: 0.25rem;
-	background: var(--background);
-	border: 1px solid var(--border);
+	min-height: 0;
+	height: 100%;
 	overflow: hidden;
-	cursor: pointer;
-}
-
-.navigatorContent {
-	position: absolute;
-	inset: 0;
-}
-
-.navigatorCut {
-	position: absolute;
-	top: 4px;
-	bottom: 4px;
-	background: var(--destructive);
-	opacity: 0.3;
-	border-radius: 2px;
-}
-
-.navigatorWindow {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	background: var(--primary);
-	opacity: 0.15;
-	border: 1px solid var(--primary);
-	border-radius: 2px;
-	cursor: grab;
-}
-
-.navigatorHandle {
-	position: absolute;
-	top: 0;
-	bottom: 0;
-	width: 4px;
-	background: var(--primary);
-	border-radius: 1px;
-	cursor: ew-resize;
-}
-
-.navigatorHandle.start {
-	left: -2px;
-}
-
-.navigatorHandle.end {
-	right: -2px;
+	position: relative;
 }
 
 .viewport {
 	position: relative;
 	overflow-x: auto;
 	overflow-y: hidden;
-	flex: 1;
-	min-height: 80px;
+	min-height: 0;
 	cursor: crosshair;
 	user-select: none;
+	border-bottom: 1px solid var(--border-soft);
 }
-
 .viewport.panning {
 	cursor: grabbing;
 }
-
 .viewport.scrubbing {
 	cursor: grabbing;
 }
@@ -165,6 +36,7 @@
 	position: relative;
 	border-bottom: 1px solid var(--border);
 	overflow: hidden;
+	height: 22px;
 }
 
 .tick {
@@ -174,11 +46,9 @@
 	width: 1px;
 	background: var(--border);
 }
-
 .tickMajor {
 	background: var(--muted-foreground);
 }
-
 .tickMajor span {
 	position: absolute;
 	top: 4px;
@@ -190,8 +60,9 @@
 
 .trackLane {
 	position: relative;
-	height: 60px;
-	margin-top: 4px;
+	height: 36px;
+	padding: 4px 0;
+	margin-top: 2px;
 }
 
 .segment {
@@ -203,24 +74,20 @@
 	align-items: center;
 	overflow: hidden;
 }
-
 .kept {
-	background: var(--primary);
-	opacity: 0.25;
+	background: hsl(var(--accent) / 0.25);
+	border: 1px solid hsl(var(--accent) / 0.4);
 }
-
 .kept.active {
-	opacity: 0.45;
+	background: hsl(var(--accent) / 0.45);
+	border-color: hsl(var(--accent) / 0.7);
 }
-
 .cut {
-	background: var(--destructive);
-	opacity: 0.2;
-	border: 1px dashed var(--destructive);
+	background: hsl(var(--danger) / 0.16);
+	border: 1px dashed hsl(var(--danger) / 0.5);
 }
-
 .cut.active {
-	opacity: 0.35;
+	background: hsl(var(--danger) / 0.3);
 }
 
 .segmentLabel {
@@ -233,7 +100,6 @@
 	white-space: nowrap;
 	overflow: hidden;
 }
-
 .segmentLabel small {
 	color: var(--muted-foreground);
 }
@@ -248,16 +114,13 @@
 	border: none;
 	cursor: ew-resize;
 }
-
 .cutHandle:hover {
 	opacity: 1;
 }
-
 .handleStart {
 	left: 0;
 	border-radius: 0.25rem 0 0 0.25rem;
 }
-
 .handleEnd {
 	right: 0;
 	border-radius: 0 0.25rem 0.25rem 0;
@@ -279,7 +142,6 @@
 	cursor: pointer;
 	opacity: 0.7;
 }
-
 .cutDelete:hover {
 	opacity: 1;
 }
@@ -289,7 +151,7 @@
 	top: 0;
 	bottom: 0;
 	width: 2px;
-	background: var(--primary);
+	background: hsl(var(--accent));
 	z-index: 10;
 	pointer-events: none;
 }
@@ -301,4 +163,80 @@
 	height: 100%;
 	color: var(--muted-foreground);
 	font-size: 0.8125rem;
+}
+
+/* Bottom row inside TimelinePane: navigator + fit button. */
+.fitButton {
+	position: absolute;
+	right: 8px;
+	bottom: 4px;
+	padding: 2px 8px;
+	border-radius: var(--r-xs);
+	border: 1px solid var(--border);
+	background: var(--bg);
+	color: var(--muted-foreground, var(--muted));
+	font-size: 0.6875rem;
+	cursor: pointer;
+	z-index: 3;
+}
+.fitButton:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.navigator {
+	position: relative;
+	height: 18px;
+	margin: 0 8px 4px 8px;
+	border-radius: var(--r-xs);
+	background: var(--bg);
+	border: 1px solid var(--border);
+	overflow: hidden;
+	cursor: pointer;
+}
+.navigator.navigating {
+	cursor: grabbing;
+}
+
+.navigatorContent {
+	position: absolute;
+	inset: 0;
+}
+
+.navigatorCut {
+	position: absolute;
+	top: 3px;
+	bottom: 3px;
+	background: hsl(var(--danger) / 0.5);
+	opacity: 0.5;
+	border-radius: 2px;
+}
+
+.navigatorWindow {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	background: hsl(var(--accent) / 0.3);
+	border: 1px solid hsl(var(--accent));
+	border-radius: 2px;
+	cursor: grab;
+}
+.navigatorWindow:active {
+	cursor: grabbing;
+}
+
+.navigatorHandle {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 4px;
+	background: hsl(var(--accent));
+	border-radius: 1px;
+	cursor: ew-resize;
+}
+.navigatorHandle.start {
+	left: -2px;
+}
+.navigatorHandle.end {
+	right: -2px;
 }

@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
 	type CSSProperties,
 	type PointerEvent as ReactPointerEvent,
@@ -11,11 +11,7 @@ import {
 } from "react";
 import type { Interval } from "@/lib/ai-edition/document/timeline";
 import type { AxcutClip } from "@/lib/ai-edition/schema";
-import {
-	formatSeconds,
-	locateVirtualPosition,
-	totalVirtualDuration,
-} from "@/lib/ai-edition/timeline/virtual-preview";
+import { formatSeconds, locateVirtualPosition } from "@/lib/ai-edition/timeline/virtual-preview";
 import styles from "./TimelinePane.module.css";
 
 // ponytail: ported from axcut/apps/web/src/components/TimelinePane.tsx, adapted
@@ -69,7 +65,7 @@ const MIN_CUT_DURATION_SEC = 0.1;
 const MIN_SOURCE_DURATION_SEC = 0.001;
 const MAX_PX_PER_SEC = 280;
 const MIN_SEGMENT_WIDTH_PX = 1;
-const RULER_HEIGHT_PX = 28;
+const RULER_HEIGHT_PX = 22;
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
@@ -192,7 +188,6 @@ export function TimelinePane({
 	const [scrubbing, setScrubbing] = useState(false);
 	const [navigatorDragging, setNavigatorDragging] = useState(false);
 
-	const virtualDurationSec = totalVirtualDuration(clips);
 	const activePosition = locateVirtualPosition(clips, currentTimeSec);
 	const sourceDuration = useMemo(
 		() =>
@@ -361,24 +356,6 @@ export function TimelinePane({
 			}
 		});
 	}, []);
-
-	const addCut = useCallback(() => {
-		if (busy || sourceDuration <= MIN_SOURCE_DURATION_SEC) return;
-		const centerSec = activePosition?.sourceTimeSec ?? clips[0]?.sourceStartSec ?? 0;
-		const startSec = clamp(centerSec - 0.5, 0, Math.max(0, sourceDuration - MIN_CUT_DURATION_SEC));
-		const endSec = clamp(centerSec + 0.5, startSec + MIN_CUT_DURATION_SEC, sourceDuration);
-		replaceTimelineFromCuts(
-			[...committedCutRanges, { id: `cut_${committedCutRanges.length + 1}`, startSec, endSec }],
-			`Added cut ${formatSeconds(startSec)}-${formatSeconds(endSec)}`,
-		);
-	}, [
-		activePosition?.sourceTimeSec,
-		busy,
-		clips,
-		committedCutRanges,
-		replaceTimelineFromCuts,
-		sourceDuration,
-	]);
 
 	const deleteCut = useCallback(
 		(cut: SourceRange) => {
@@ -622,80 +599,6 @@ export function TimelinePane({
 
 	return (
 		<section className={styles.pane}>
-			<div className={styles.header}>
-				<div>
-					<h2 className={styles.heading}>Timeline</h2>
-					<p className={styles.meta}>
-						{clips.length} clip{clips.length === 1 ? "" : "s"} · {committedCutRanges.length} cut
-						{committedCutRanges.length === 1 ? "" : "s"} · {formatSeconds(virtualDurationSec)} total
-					</p>
-				</div>
-				<div className={styles.readout}>
-					<button
-						type="button"
-						className={styles.tool}
-						onClick={addCut}
-						disabled={busy || clips.length === 0}
-						title="Add cut at playhead"
-					>
-						<Plus size={14} />
-						<span>Add cut</span>
-					</button>
-					<strong>{formatSeconds(currentTimeSec)}</strong>
-					<span className={styles.muted}>
-						{activePosition
-							? `Clip ${activePosition.clipIndex + 1}/${clips.length}`
-							: "No active clip"}
-					</span>
-				</div>
-			</div>
-
-			<div className={styles.navigatorRow}>
-				<button
-					type="button"
-					className={styles.fitButton}
-					onClick={fitTimeline}
-					disabled={zoom <= 1.01}
-					title="Fit full timeline"
-				>
-					Fit
-				</button>
-				<div
-					ref={overviewRef}
-					className={
-						navigatorDragging ? `${styles.navigator} ${styles.navigating}` : styles.navigator
-					}
-					aria-label="Timeline zoom and pan navigator"
-				>
-					<div className={styles.navigatorContent}>
-						{committedCutRanges.map((cut) => (
-							<span
-								key={cut.id}
-								className={styles.navigatorCut}
-								style={{
-									left: `${(cut.startSec / Math.max(sourceDuration, MIN_SOURCE_DURATION_SEC)) * 100}%`,
-									width: `${((cut.endSec - cut.startSec) / Math.max(sourceDuration, MIN_SOURCE_DURATION_SEC)) * 100}%`,
-								}}
-							/>
-						))}
-					</div>
-					<div
-						className={styles.navigatorWindow}
-						style={navigatorWindowStyle}
-						onPointerDown={(e) => startNavigatorDrag("move", e)}
-					>
-						<span
-							className={`${styles.navigatorHandle} ${styles.start}`}
-							onPointerDown={(e) => startNavigatorDrag("start", e)}
-						/>
-						<span
-							className={`${styles.navigatorHandle} ${styles.end}`}
-							onPointerDown={(e) => startNavigatorDrag("end", e)}
-						/>
-					</div>
-				</div>
-			</div>
-
 			<div
 				ref={scrollRef}
 				className={[
@@ -808,6 +711,49 @@ export function TimelinePane({
 					<div className={styles.empty}>No clips yet. Add a video asset to start.</div>
 				)}
 			</div>
+			<div
+				ref={overviewRef}
+				className={
+					navigatorDragging ? `${styles.navigator} ${styles.navigating}` : styles.navigator
+				}
+				aria-label="Timeline zoom and pan navigator"
+			>
+				<div className={styles.navigatorContent}>
+					{committedCutRanges.map((cut) => (
+						<span
+							key={cut.id}
+							className={styles.navigatorCut}
+							style={{
+								left: `${(cut.startSec / Math.max(sourceDuration, MIN_SOURCE_DURATION_SEC)) * 100}%`,
+								width: `${((cut.endSec - cut.startSec) / Math.max(sourceDuration, MIN_SOURCE_DURATION_SEC)) * 100}%`,
+							}}
+						/>
+					))}
+				</div>
+				<div
+					className={styles.navigatorWindow}
+					style={navigatorWindowStyle}
+					onPointerDown={(e) => startNavigatorDrag("move", e)}
+				>
+					<span
+						className={`${styles.navigatorHandle} ${styles.start}`}
+						onPointerDown={(e) => startNavigatorDrag("start", e)}
+					/>
+					<span
+						className={`${styles.navigatorHandle} ${styles.end}`}
+						onPointerDown={(e) => startNavigatorDrag("end", e)}
+					/>
+				</div>
+			</div>
+			<button
+				type="button"
+				className={styles.fitButton}
+				onClick={fitTimeline}
+				disabled={zoom <= 1.01}
+				title="Fit full timeline"
+			>
+				Fit
+			</button>
 		</section>
 	);
 }
