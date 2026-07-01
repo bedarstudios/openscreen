@@ -1340,6 +1340,35 @@ export function TimelinePane({
 								aria-hidden="true"
 							/>
 						) : null}
+						{/* T24 + T25 — snap-guide lines + floating drag tooltip for
+						    skip-edge resize. Two thin vertical lines in the
+						    ruler (one per edge being dragged) plus a small
+						    pill near the cursor showing the new time range.
+						    Matches axcut TimelinePane.tsx dragPreview styling
+						    and controlsVisible. */}
+						{dragPreview ? (
+							<>
+								<div
+									className={styles.snapGuide}
+									style={{ left: TIMELINE_START_GUTTER_PX + dragPreview.startSec * pxPerSec }}
+									aria-hidden="true"
+								/>
+								<div
+									className={styles.snapGuide}
+									style={{ left: TIMELINE_START_GUTTER_PX + dragPreview.endSec * pxPerSec }}
+									aria-hidden="true"
+								/>
+								<div
+									className={styles.dragTooltip}
+									style={{
+										left: TIMELINE_START_GUTTER_PX + (dragPreview.endSec * pxPerSec + 6),
+									}}
+									aria-hidden="true"
+								>
+									{formatSeconds(dragPreview.startSec)} → {formatSeconds(dragPreview.endSec)}
+								</div>
+							</>
+						) : null}
 					</div>
 				)}
 			</div>
