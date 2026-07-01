@@ -53,28 +53,29 @@ body.timeline-reordering,
 body.timeline-reordering * {
 	cursor: grabbing !important;
 }
-body.timeline-placing-cut,
-body.timeline-placing-cut * {
+/* T15 — Place-skip cursor. The class is added via
+   document.body.classList.add() in Bottombar (raw string), so the
+   selector MUST use :global() — otherwise CSS modules would hash
+   `.timeline-placing-cut` and the rule would never match. Same hash
+   issue as the navigator CSS had. The `*` selector cascades to
+   every descendant with the body class applied. */
+body:global(.timeline-placing-cut),
+body:global(.timeline-placing-cut) * {
 	cursor: crosshair !important;
 }
-/* T15 — explicit overrides for the cursor states that other modules'
-   rules set on trackBlock and the skip chevrons. The body.* rule
-   above should already cover them via specificity (0,1,1)+!important
-   vs (0,1,0), but CSS modules' handling of `body *` can vary, so we
-   re-assert the placing-cut cursor on the specific elements that
-   otherwise stick at grab / ew-resize. */
-body.timeline-placing-cut .trackBlock,
-body.timeline-placing-cut .trackBlock:active,
-body.timeline-placing-cut .skipControlBtn,
-body.timeline-placing-cut .editIcon,
-body.timeline-placing-cut .clipDelete,
-body.timeline-placing-cut .trackBlock .segment,
-body.timeline-placing-cut .reorderMarker,
-body.timeline-placing-cut .dropMarker,
-body.timeline-placing-cut .timelineHeader,
-body.timeline-placing-cut .timelineHeader *,
-body.timeline-placing-cut button,
-body.timeline-placing-cut [class*="vtBtn"] {
+/* Same problem on the specific element overrides. */
+body:global(.timeline-placing-cut) .trackBlock,
+body:global(.timeline-placing-cut) .trackBlock:active,
+body:global(.timeline-placing-cut) .skipControlBtn,
+body:global(.timeline-placing-cut) .editIcon,
+body:global(.timeline-placing-cut) .clipDelete,
+body:global(.timeline-placing-cut) .trackBlock .segment,
+body:global(.timeline-placing-cut) .reorderMarker,
+body:global(.timeline-placing-cut) .dropMarker,
+body:global(.timeline-placing-cut) .timelineHeader,
+body:global(.timeline-placing-cut) .timelineHeader *,
+body:global(.timeline-placing-cut) button,
+body:global(.timeline-placing-cut) [class*="vtBtn"] {
 	cursor: crosshair !important;
 }
 
@@ -362,10 +363,13 @@ body.timeline-placing-cut [class*="vtBtn"] {
 }
 
 /* T15 — Place-skip preview marker: 1s-wide red-tinted strip at the
-   cursor's source time. Indicates where the next click would land. */
+   cursor's source time. Indicates where the next click would land.
+   Extends top: -6px to match the playhead's extent (axcut's marker
+   spans the full vertical timeline). The user reported the previous
+   version as visibly shorter than the playhead. */
 .placementMarker {
 	position: absolute;
-	top: 0;
+	top: -6px;
 	bottom: 0;
 	width: 12px;
 	margin-left: -6px;
