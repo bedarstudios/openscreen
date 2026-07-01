@@ -22,25 +22,10 @@ const MIN_SOURCE_DURATION_SEC = 0.001;
 const TIMELINE_START_GUTTER_PX = 6;
 const TIMELINE_END_GUTTER_PX = 6;
 const SKIP_CONTROLS_HIDE_DELAY_MS = 220;
-
-// ResizeState: live state of a single in-flight skip-edge resize. Refs are
-// used as a hot-path mirror so move handlers read fresh values without
-// re-creating callbacks every render.
-type ResizeState = {
-	id: number;
-	itemId: string;
-	edge: "start" | "end";
-	startClientX: number;
-	startSec: number;
-	endSec: number;
-	currentStartSec: number;
-	currentEndSec: number;
-	minStartSec: number;
-	maxEndSec: number;
-};
+const CLIP_REORDER_THRESHOLD_PX = 6;
+const CLIP_JOIN_THRESHOLD_PX = 1.5;
 
 const ASSET_MIME = "application/x-axcut-asset";
-const CLIP_MIME = "application/x-axcut-clip-index";
 
 interface AssetMeta {
 	id: string;
@@ -83,6 +68,50 @@ type CutSegment = {
 };
 type Segment = KeepSegment | CutSegment;
 
+// Live state of an in-flight skip-edge resize. Refs are used as a hot-path
+// mirror so move handlers read fresh values without re-creating callbacks.
+type ResizeState = {
+	id: number;
+	itemId: string;
+	edge: "start" | "end";
+	startClientX: number;
+	startSec: number;
+	endSec: number;
+	currentStartSec: number;
+	currentEndSec: number;
+	minStartSec: number;
+	maxEndSec: number;
+};
+
+// T07 — Pan via Alt+drag or middle-click-drag. Refs only; no state needed
+// because the visible window updates frequently and the only side-effect is
+// the cursor class.
+type PanState = {
+	startClientX: number;
+	startVisibleStartSec: number;
+};
+
+// T08 — Pointer reorder. dragging flips on once the cursor has moved past
+// CLIP_REORDER_THRESHOLD_PX (a small click vs drag distinction); insertIndex
+// is recomputed every move so the live marker tracks the cursor.
+type ClipReorderState = {
+	clipId: string;
+	startClientX: number;
+	startClientY: number;
+	currentClientX: number;
+	currentClientY: number;
+	startLeftPx: number;
+	widthPx: number;
+	insertIndex: number;
+	dragging: boolean;
+};
+
+interface ProjectedClipLayout {
+	leftPx: number;
+	widthPx: number;
+	dragging: boolean;
+}
+
 function clamp(value: number, min: number, max: number): number {
 	return Math.min(max, Math.max(min, value));
 }
@@ -121,8 +150,7 @@ function clipSegments(clip: AxcutClip, skips: SkipRange[]): Segment[] {
 
 // Adaptive ruler: major step is the smallest entry in the standard
 // [0.1..600s] ladder whose px-size ≥ 90. Minor ticks fall at major/4. As
-// you zoom in the step shrinks; zoom out, it grows. Source:
-// axcut TimelinePane.tsx chooseTickStep / buildRulerTicks.
+// you zoom in the step shrinks; zoom out, it grows.
 function chooseTickStep(minStepSec: number): number {
 	const steps = [0.1, 0.2, 0.5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600];
 	return steps.find((step) => step >= minStepSec) ?? steps.at(-1)!;
@@ -162,9 +190,13 @@ export function TimelinePane({
 }: TimelinePaneProps) {
 	const viewportRef = useRef<HTMLDivElement | null>(null);
 	const resizeRef = useRef<ResizeState | null>(null);
+	const panRef = useRef<PanState | null>(null);
+	const clipReorderRef = useRef<ClipReorderState | null>(null);
 	const [viewportWidthPx, setViewportWidthPx] = useState(0);
 	const [zoom, setZoom] = useState(1);
 	const [visibleStartSec, setVisibleStartSec] = useState(0);
+	const [panning, setPanning] = useState(false);
+	const [clipReorderState, setClipReorderState] = useState<ClipReorderState | null>(null);
 	const [hoveredCutId, setHoveredCutId] = useState<string | null>(null);
 	const [dragPreview, setDragPreview] = useState<{
 		skipId: string;
@@ -181,6 +213,10 @@ export function TimelinePane({
 				MIN_SOURCE_DURATION_SEC,
 				clips.reduce((m, c) => Math.max(m, c.timelineEndSec), 0),
 			),
+		[clips],
+	);
+	const virtualDurationSec = useMemo(
+		() => clips.reduce((m, c) => Math.max(m, c.timelineEndSec), 0),
 		[clips],
 	);
 	const usableWidthPx = Math.max(
@@ -209,8 +245,6 @@ export function TimelinePane({
 		[assets],
 	);
 
-	// ResizeObserver on the viewport + window resize listener. Source:
-	// axcut TimelinePane.tsx updateMetrics.
 	useEffect(() => {
 		const el = viewportRef.current;
 		if (!el) return;
@@ -227,16 +261,38 @@ export function TimelinePane({
 		};
 	}, []);
 
-	// Clamp visibleStartSec into the legal range whenever sourceDuration or
-	// pxPerSec changes (e.g. clips arrive or the viewport resizes).
 	useEffect(() => {
 		const maxVisibleStartSec = Math.max(0, sourceDuration - visibleDurationSec);
 		setVisibleStartSec((current) => clamp(current, 0, maxVisibleStartSec));
 	}, [sourceDuration, visibleDurationSec]);
 
+	useEffect(() => {
+		if (!panning) {
+			document.body.classList.remove("timeline-panning");
+		} else {
+			document.body.classList.add("timeline-panning");
+		}
+		return () => {
+			document.body.classList.remove("timeline-panning");
+		};
+	}, [panning]);
+
+	useEffect(() => {
+		if (!clipReorderState?.dragging) {
+			document.body.classList.remove("timeline-reordering");
+		} else {
+			document.body.classList.add("timeline-reordering");
+		}
+		return () => {
+			document.body.classList.remove("timeline-reordering");
+		};
+	}, [clipReorderState?.dragging]);
+
 	useEffect(
 		() => () => {
 			if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current);
+			document.body.classList.remove("timeline-panning");
+			document.body.classList.remove("timeline-reordering");
 		},
 		[],
 	);
@@ -257,8 +313,8 @@ export function TimelinePane({
 		}, SKIP_CONTROLS_HIDE_DELAY_MS);
 	}, []);
 
-	// Convert a screen-x (PointerEvent.clientX) to a source-time on the
-	// timeline, accounting for the canvas's translateX pan offset.
+	// Convert screen-x (PointerEvent.clientX) to source-time, accounting for
+	// the canvas's translateX pan offset.
 	const sourceSecFromClientX = useCallback(
 		(clientX: number): number => {
 			const viewport = viewportRef.current;
@@ -274,8 +330,46 @@ export function TimelinePane({
 		[canvasOffsetPx, pxPerSec, sourceDuration],
 	);
 
-	// Compute the clip index a drop at clientX should land at, by comparing
-	// the cursor's source-time against each clip's horizontal midpoint.
+	// T08 — Given a clip center in canvas-x coords, find the insertion index
+	// where the moving clip would land. axcut TimelinePane.tsx
+	// insertionIndexFromClipCenter.
+	const insertionIndexFromClipCenter = useCallback(
+		(clipId: string, clipCenterPx: number): number => {
+			const timelineSec = clamp(
+				(clipCenterPx - TIMELINE_START_GUTTER_PX) / Math.max(pxPerSec, 0.001),
+				0,
+				sourceDuration,
+			);
+			const remainingClips = orderedClips.filter((clip) => clip.id !== clipId);
+			for (let i = 0; i < remainingClips.length; i += 1) {
+				const c = remainingClips[i];
+				const midpointSec = (c.timelineStartSec + c.timelineEndSec) / 2;
+				if (timelineSec < midpointSec) return i;
+			}
+			return remainingClips.length;
+		},
+		[orderedClips, pxPerSec, sourceDuration],
+	);
+
+	const isReorderNoop = useCallback(
+		(clipId: string, insertIndex: number): boolean => {
+			const currentIds = orderedClips.map((clip) => clip.id);
+			const movingClip = orderedClips.find((clip) => clip.id === clipId);
+			if (!movingClip) return true;
+			const remainingIds = currentIds.filter((id) => id !== clipId);
+			const nextIds = [
+				...remainingIds.slice(0, insertIndex),
+				clipId,
+				...remainingIds.slice(insertIndex),
+			];
+			return (
+				nextIds.length === currentIds.length &&
+				nextIds.every((id, index) => id === currentIds[index])
+			);
+		},
+		[orderedClips],
+	);
+
 	const indexFromClientX = useCallback(
 		(clientX: number): number => {
 			const timelineSec = sourceSecFromClientX(clientX);
@@ -289,9 +383,6 @@ export function TimelinePane({
 		[orderedClips, sourceSecFromClientX],
 	);
 
-	// Drop marker px position: boundary between dropIndex-th and
-	// (dropIndex+1)-th clip. Edge cases: before all → 0, after all →
-	// virtualDurationSec.
 	const dropMarkerLeftPx = useMemo(() => {
 		if (dropIndex === null) return null;
 		const boundarySec =
@@ -303,14 +394,73 @@ export function TimelinePane({
 		return TIMELINE_START_GUTTER_PX + boundarySec * pxPerSec;
 	}, [dropIndex, orderedClips, pxPerSec]);
 
+	// T08 — Reorder marker lives at the boundary the moving clip would land
+	// on. axcut TimelinePane.tsx reorderMarkerLeftPx.
+	const reorderMarkerLeftPx = useMemo(() => {
+		if (!clipReorderState) return null;
+		const remainingClips = orderedClips.filter((clip) => clip.id !== clipReorderState.clipId);
+		const boundarySec =
+			clipReorderState.insertIndex <= 0
+				? 0
+				: clipReorderState.insertIndex >= remainingClips.length
+					? virtualDurationSec
+					: (remainingClips[clipReorderState.insertIndex]?.timelineStartSec ?? 0);
+		return TIMELINE_START_GUTTER_PX + boundarySec * pxPerSec;
+	}, [clipReorderState, orderedClips, pxPerSec, virtualDurationSec]);
+
+	// T08 — Each clip's effective leftPx/widthPx during a reorder drag.
+	// Outside of drag: matches the clip's natural timeline position.
+	// During drag: moving clip follows cursor, remaining clips resequence
+	// from 0 to fill the gap. axcut TimelinePane.tsx projectedClipLayoutById.
+	const projectedClipLayoutById = useMemo(() => {
+		const layout = new Map<string, ProjectedClipLayout>();
+		if (!clipReorderState?.dragging) {
+			for (const clip of orderedClips) {
+				layout.set(clip.id, {
+					leftPx: TIMELINE_START_GUTTER_PX + clip.timelineStartSec * pxPerSec,
+					widthPx: Math.max(1, (clip.timelineEndSec - clip.timelineStartSec) * pxPerSec),
+					dragging: false,
+				});
+			}
+			return layout;
+		}
+		const movingClip = orderedClips.find((clip) => clip.id === clipReorderState.clipId);
+		if (!movingClip) return layout;
+		const remainingClips = orderedClips.filter((clip) => clip.id !== clipReorderState.clipId);
+		const projectedOrder = [
+			...remainingClips.slice(0, clipReorderState.insertIndex),
+			movingClip,
+			...remainingClips.slice(clipReorderState.insertIndex),
+		];
+		let cursorSec = 0;
+		for (const clip of projectedOrder) {
+			const durationSec = Math.max(0, clip.timelineEndSec - clip.timelineStartSec);
+			const isDragging = clip.id === clipReorderState.clipId;
+			const widthPx = Math.max(1, durationSec * pxPerSec);
+			const dragLeftPx = clamp(
+				clipReorderState.startLeftPx +
+					clipReorderState.currentClientX -
+					clipReorderState.startClientX,
+				TIMELINE_START_GUTTER_PX,
+				Math.max(TIMELINE_START_GUTTER_PX, contentWidthPx - TIMELINE_END_GUTTER_PX - widthPx),
+			);
+			layout.set(clip.id, {
+				leftPx: isDragging ? dragLeftPx : TIMELINE_START_GUTTER_PX + cursorSec * pxPerSec,
+				widthPx,
+				dragging: isDragging,
+			});
+			cursorSec += durationSec;
+		}
+		return layout;
+	}, [clipReorderState, contentWidthPx, orderedClips, pxPerSec]);
+
 	const handleDragOver = useCallback(
 		(e: ReactDragEvent<HTMLDivElement>) => {
 			const dt = e.dataTransfer;
 			const isAsset = dt.types.includes(ASSET_MIME);
-			const isClip = dt.types.includes(CLIP_MIME);
-			if (!isAsset && !isClip) return;
+			if (!isAsset) return;
 			e.preventDefault();
-			dt.dropEffect = isClip ? "move" : "copy";
+			dt.dropEffect = "copy";
 			setDropIndex(indexFromClientX(e.clientX));
 		},
 		[indexFromClientX],
@@ -320,27 +470,44 @@ export function TimelinePane({
 		(e: ReactDragEvent<HTMLDivElement>) => {
 			const index = indexFromClientX(e.clientX);
 			const assetId = e.dataTransfer.getData(ASSET_MIME);
-			const clipIdxRaw = e.dataTransfer.getData(CLIP_MIME);
 			setDropIndex(null);
-			if (assetId) {
-				e.preventDefault();
-				onInsertAsset(assetId, index);
-				return;
-			}
-			if (clipIdxRaw !== "") {
-				e.preventDefault();
-				const from = Number(clipIdxRaw);
-				const clip = orderedClips[from];
-				if (!clip) return;
-				const to = index > from ? index - 1 : index;
-				if (to !== from) onMoveClip(clip.id, to);
-			}
+			if (!assetId) return;
+			e.preventDefault();
+			onInsertAsset(assetId, index);
 		},
-		[indexFromClientX, onInsertAsset, onMoveClip, orderedClips],
+		[indexFromClientX, onInsertAsset],
 	);
 
-	// Click+drag on the viewport → scrub. Uses startGlobalPointerDrag so
-	// the drag survives the pointer leaving the viewport.
+	// T07 — Pan via Alt+drag or middle-click-drag. Skips if everything fits
+	// the viewport (no pan needed). Mirrors axcut startPan.
+	const startPan = useCallback(
+		(event: ReactPointerEvent<HTMLDivElement>) => {
+			if (visibleDurationSec >= sourceDuration) return;
+			event.preventDefault();
+			panRef.current = {
+				startClientX: event.clientX,
+				startVisibleStartSec: visibleStartSec,
+			};
+			setPanning(true);
+			startGlobalPointerDrag(event, {
+				onMove: (moveEvent) => {
+					const pan = panRef.current;
+					if (!pan) return;
+					const maxVisibleStartSec = Math.max(0, sourceDuration - visibleDurationSec);
+					const deltaSec = (moveEvent.clientX - pan.startClientX) / Math.max(pxPerSec, 0.001);
+					setVisibleStartSec(clamp(pan.startVisibleStartSec - deltaSec, 0, maxVisibleStartSec));
+				},
+				onEnd: () => {
+					panRef.current = null;
+					setPanning(false);
+				},
+			});
+		},
+		[pxPerSec, sourceDuration, visibleDurationSec, visibleStartSec],
+	);
+
+	// Scrub via plain click+drag. Uses startGlobalPointerDrag so the drag
+	// survives the pointer leaving the viewport.
 	const startScrub = useCallback(
 		(event: ReactPointerEvent<HTMLDivElement>) => {
 			const target = event.target as Element | null;
@@ -356,9 +523,87 @@ export function TimelinePane({
 		[onSeek, orderedClips.length, sourceSecFromClientX],
 	);
 
-	// Drag a skip's start/end chevron. Reuses startGlobalPointerDrag so the
-	// drag survives pointer-leaves. The chevrons live on `.segment.cut`
-	// hover-revealed controls inside each clip's track-visual.
+	// Dispatch from the viewport's pointerdown. Order:
+	//   Alt/middle-click → pan; default click+drag → scrub.
+	// Clip blocks and skip chevrons handle their own pointerdown and call
+	// event.stopPropagation() to prevent this from firing.
+	const handleTimelinePointerDown = useCallback(
+		(event: ReactPointerEvent<HTMLDivElement>) => {
+			if (event.altKey || event.button === 1) {
+				startPan(event);
+				return;
+			}
+			startScrub(event);
+		},
+		[startPan, startScrub],
+	);
+
+	// T08 — Clip body pointerdown → reorder. 6px move threshold before the
+	// gesture is treated as a drag (vs. a click that selects). Mirrors axcut
+	// startClipReorder.
+	const startClipReorder = useCallback(
+		(clipId: string, event: ReactPointerEvent<HTMLElement>) => {
+			if (event.button !== 0) return;
+			event.preventDefault();
+			event.stopPropagation();
+			const movingClip = orderedClips.find((clip) => clip.id === clipId);
+			if (!movingClip) return;
+			onSelectClip(clipId);
+			const movingClipLeftPx = TIMELINE_START_GUTTER_PX + movingClip.timelineStartSec * pxPerSec;
+			const movingClipWidthPx = Math.max(
+				1,
+				(movingClip.timelineEndSec - movingClip.timelineStartSec) * pxPerSec,
+			);
+			const initial: ClipReorderState = {
+				clipId,
+				startClientX: event.clientX,
+				startClientY: event.clientY,
+				currentClientX: event.clientX,
+				currentClientY: event.clientY,
+				startLeftPx: movingClipLeftPx,
+				widthPx: movingClipWidthPx,
+				insertIndex: insertionIndexFromClipCenter(clipId, movingClipLeftPx + movingClipWidthPx / 2),
+				dragging: false,
+			};
+			clipReorderRef.current = initial;
+			setClipReorderState(initial);
+
+			startGlobalPointerDrag(event, {
+				onMove: (moveEvent) => {
+					const current = clipReorderRef.current;
+					if (!current) return;
+					const deltaX = moveEvent.clientX - current.startClientX;
+					const deltaY = moveEvent.clientY - current.startClientY;
+					const dragging =
+						current.dragging || Math.hypot(deltaX, deltaY) >= CLIP_REORDER_THRESHOLD_PX;
+					const clipCenterPx = current.startLeftPx + deltaX + current.widthPx / 2;
+					const next: ClipReorderState = {
+						...current,
+						currentClientX: moveEvent.clientX,
+						currentClientY: moveEvent.clientY,
+						insertIndex: insertionIndexFromClipCenter(current.clipId, clipCenterPx),
+						dragging,
+					};
+					clipReorderRef.current = next;
+					setClipReorderState(next);
+				},
+				onEnd: () => {
+					const current = clipReorderRef.current;
+					const shouldMove = Boolean(
+						current?.dragging && current && !isReorderNoop(current.clipId, current.insertIndex),
+					);
+					if (shouldMove && current) {
+						onMoveClip(current.clipId, current.insertIndex);
+					}
+					clipReorderRef.current = null;
+					setClipReorderState(null);
+				},
+			});
+		},
+		[insertionIndexFromClipCenter, isReorderNoop, onMoveClip, onSelectClip, orderedClips, pxPerSec],
+	);
+
+	// Skip chevron pointerdown → resize the cut's start or end.
 	const startResizeSkip = useCallback(
 		(
 			clipId: string,
@@ -404,7 +649,11 @@ export function TimelinePane({
 						current.edge === "end"
 							? clamp(current.endSec + deltaSec, nextStartSec + 0.05, current.maxEndSec)
 							: current.currentEndSec;
-					const next = { ...current, currentStartSec: nextStartSec, currentEndSec: nextEndSec };
+					const next = {
+						...current,
+						currentStartSec: nextStartSec,
+						currentEndSec: nextEndSec,
+					};
 					resizeRef.current = next;
 					setDragPreview({ skipId: seg.skipId, startSec: nextStartSec, endSec: nextEndSec });
 				},
@@ -433,9 +682,6 @@ export function TimelinePane({
 
 	const handleWheel = useCallback(
 		(event: ReactWheelEvent<HTMLDivElement>) => {
-			// T06 — Ctrl/Cmd+wheel zooms around the cursor. Plain wheel is
-			// intentionally ignored for now; the navigator strip (T11) will
-			// own pan gestures via Alt+drag.
 			if (!(event.ctrlKey || event.metaKey)) return;
 			event.preventDefault();
 			const direction = event.deltaY > 0 ? -1 : 1;
@@ -445,8 +691,6 @@ export function TimelinePane({
 				const next = clamp(z * factor, 1, maxZoom);
 				const rect = viewportRef.current?.getBoundingClientRect();
 				if (!rect) return next;
-				// Anchor: keep the source-time under the cursor stationary
-				// across the zoom.
 				const anchorOffsetPx = clamp(event.clientX - rect.left, 0, rect.width);
 				const sourceAtAnchor =
 					visibleStartSec + (anchorOffsetPx - TIMELINE_START_GUTTER_PX) / Math.max(pxPerSec, 0.001);
@@ -474,13 +718,19 @@ export function TimelinePane({
 		<section className={styles.pane}>
 			<div
 				ref={viewportRef}
-				className={styles.viewport}
-				onPointerDown={startScrub}
+				className={
+					panning
+						? `${styles.viewport} ${styles.panning}`
+						: clipReorderState?.dragging
+							? `${styles.viewport} ${styles.reordering}`
+							: styles.viewport
+				}
+				onPointerDown={handleTimelinePointerDown}
 				onDragOver={handleDragOver}
 				onDragLeave={() => setDropIndex(null)}
 				onDrop={handleDrop}
 				onWheel={handleWheel}
-				aria-label="Source timeline. Click and drag to scrub, Ctrl+wheel to zoom."
+				aria-label="Source timeline. Click and drag to scrub, Alt+drag to pan, Ctrl+wheel to zoom."
 			>
 				{clips.length === 0 ? (
 					<div className={styles.empty} data-drop-active={dropIndex !== null}>
@@ -509,7 +759,32 @@ export function TimelinePane({
 						</div>
 						<div className={styles.trackLane}>
 							{orderedClips.map((clip, i) => {
-								const durationSec = Math.max(0.001, clip.timelineEndSec - clip.timelineStartSec);
+								const layout = projectedClipLayoutById.get(clip.id);
+								const baseLeftPx =
+									layout?.leftPx ?? TIMELINE_START_GUTTER_PX + clip.timelineStartSec * pxPerSec;
+								const baseWidthPx =
+									layout?.widthPx ??
+									Math.max(1, (clip.timelineEndSec - clip.timelineStartSec) * pxPerSec);
+
+								// T09 — Clip join borders. If another clip's edge is within
+								// CLIP_JOIN_THRESHOLD_PX of this clip's edge, the seams
+								// overlap by 1px so the border doesn't double up.
+								const hasJoinedPrev = orderedClips.some((candidate) => {
+									if (candidate.id === clip.id) return false;
+									const candidateRightPx =
+										TIMELINE_START_GUTTER_PX + candidate.timelineEndSec * pxPerSec;
+									return Math.abs(candidateRightPx - baseLeftPx) <= CLIP_JOIN_THRESHOLD_PX;
+								});
+								const hasJoinedNext = orderedClips.some((candidate) => {
+									if (candidate.id === clip.id) return false;
+									const candidateLeftPx =
+										TIMELINE_START_GUTTER_PX + candidate.timelineStartSec * pxPerSec;
+									return (
+										Math.abs(candidateLeftPx - (baseLeftPx + baseWidthPx)) <= CLIP_JOIN_THRESHOLD_PX
+									);
+								});
+								const joinedLeftPx = hasJoinedPrev ? baseLeftPx - 1 : baseLeftPx;
+								const joinedWidthPx = hasJoinedPrev ? baseWidthPx + 1 : baseWidthPx;
 								const rawSegs = clipSegments(clip, skipRanges);
 								const segs = rawSegs.map((s) => {
 									if (s.kind !== "cut" || s.skipId !== dragPreview?.skipId) return s;
@@ -522,25 +797,32 @@ export function TimelinePane({
 								});
 								const segTotal = segs.reduce((m, s) => m + s.len, 0) || 1;
 								const selected = clip.id === selectedClipId;
-								const clipLeftPx = TIMELINE_START_GUTTER_PX + clip.timelineStartSec * pxPerSec;
-								const clipWidthPx = Math.max(1, durationSec * pxPerSec);
+								const classes = [styles.trackBlock];
+								if (selected) classes.push(styles.selected);
+								if (layout?.dragging) classes.push(styles.reordering);
+								if (hasJoinedPrev) classes.push(styles.joinedPrev);
+								if (hasJoinedNext) classes.push(styles.joinedNext);
 								return (
 									<div
 										key={clip.id}
 										data-clip-idx={i}
-										className={
-											selected ? `${styles.trackBlock} ${styles.selected}` : styles.trackBlock
-										}
+										className={classes.join(" ")}
 										style={{
-											left: clipLeftPx,
-											width: clipWidthPx,
+											left: joinedLeftPx,
+											width: joinedWidthPx,
 										}}
-										draggable
-										onDragStart={(e) => {
-											e.dataTransfer.setData(CLIP_MIME, String(i));
-											e.dataTransfer.effectAllowed = "move";
+										onPointerDown={(e) => startClipReorder(clip.id, e)}
+										onClick={(e) => {
+											// If the gesture upgraded to a reorder drag, suppress
+											// the synthetic click. startClipReorder sets
+											// clipReorderState.dragging only after the threshold.
+											if (clipReorderState?.clipId === clip.id && clipReorderState.dragging) {
+												e.stopPropagation();
+												return;
+											}
+											e.stopPropagation();
+											onSelectClip(clip.id);
 										}}
-										onClick={() => onSelectClip(clip.id)}
 										onKeyDown={(e) => {
 											if (e.key === "Enter" || e.key === " ") {
 												e.preventDefault();
@@ -620,6 +902,7 @@ export function TimelinePane({
 												className={styles.editIcon}
 												aria-label="Edit clip"
 												title="Edit clip in/out points"
+												onPointerDown={(e) => e.stopPropagation()}
 												onClick={(e) => {
 													e.stopPropagation();
 													onEditClip(clip);
@@ -641,6 +924,7 @@ export function TimelinePane({
 												className={styles.clipDelete}
 												aria-label="Remove clip"
 												title="Remove clip from timeline"
+												onPointerDown={(e) => e.stopPropagation()}
 												onClick={(e) => {
 													e.stopPropagation();
 													onRemoveClip(clip.id);
@@ -661,6 +945,13 @@ export function TimelinePane({
 								<div
 									className={styles.dropMarker}
 									style={{ left: dropMarkerLeftPx }}
+									aria-hidden="true"
+								/>
+							) : null}
+							{clipReorderState?.dragging && reorderMarkerLeftPx !== null ? (
+								<div
+									className={styles.reorderMarker}
+									style={{ left: reorderMarkerLeftPx }}
 									aria-hidden="true"
 								/>
 							) : null}

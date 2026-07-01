@@ -26,6 +26,12 @@
 .viewport::-webkit-scrollbar {
 	display: none;
 }
+.viewport.panning {
+	cursor: grabbing;
+}
+.viewport.reordering {
+	cursor: grabbing;
+}
 
 .canvas {
 	position: relative;
@@ -108,6 +114,21 @@
 .trackBlock.selected {
 	border-color: var(--accent);
 	box-shadow: 0 0 0 1px var(--accent), 0 4px 12px -4px var(--accent-soft);
+}
+.trackBlock.reordering {
+	opacity: 0.85;
+	box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.45);
+	z-index: 20;
+}
+.trackBlock.joinedPrev {
+	border-top-left-radius: 0;
+	border-bottom-left-radius: 0;
+	border-left-width: 0;
+}
+.trackBlock.joinedNext {
+	border-top-right-radius: 0;
+	border-bottom-right-radius: 0;
+	border-right-width: 0;
 }
 
 .trackVisual {
@@ -277,6 +298,19 @@
 	box-shadow: 0 0 6px var(--accent-soft);
 	pointer-events: none;
 	z-index: 9;
+}
+
+/* T08 — live marker shown between clips while a reorder drag is active. */
+.reorderMarker {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: var(--accent);
+	border-radius: 2px;
+	box-shadow: 0 0 8px var(--accent-soft);
+	pointer-events: none;
+	z-index: 11;
 }
 
 .playhead {
