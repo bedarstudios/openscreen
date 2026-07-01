@@ -1619,6 +1619,8 @@
 .timelineNavigator {
 	position: relative;
 	height: 1.15rem;
+	flex-shrink: 0;
+	margin: 4px var(--sp-3) 4px var(--sp-3);
 	border: 1px solid var(--border-soft);
 	border-radius: 6px;
 	background: color-mix(in oklch, var(--surface-2) 60%, transparent);

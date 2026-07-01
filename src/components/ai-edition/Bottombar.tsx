@@ -8,7 +8,7 @@ import {
 	WandSparkles,
 	ZoomIn,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AnnotationRegion } from "@/components/video-editor/types";
 import type { AxcutClip, AxcutDocument } from "@/lib/ai-edition/schema";
 import { useEditorSettings } from "@/lib/ai-edition/store/useEditorSettings";
@@ -39,9 +39,13 @@ interface BottombarProps {
 	selection: RegionHandle | null;
 	hasDoc: boolean;
 	onAddZoom: () => void;
-	onAddSkip: () => void;
 	onAddAnnotation: () => void;
 	onAddSpeed: () => void;
+	// T15 — receives a setter so the parent's "T" keyboard shortcut can
+	// call into our togglePlaceSkip (state lives here, body-class + Esc
+	// handler live here). The Scissors button in this component calls
+	// togglePlaceSkip directly.
+	setTogglePlaceSkip?: (fn: () => void) => void;
 	onSelectRegion: (kind: RegionKind, id: string) => void;
 	onCaptions: () => void;
 }
@@ -69,9 +73,9 @@ export function Bottombar({
 	selection,
 	hasDoc,
 	onAddZoom,
-	onAddSkip,
 	onAddAnnotation,
 	onAddSpeed,
+	setTogglePlaceSkip,
 	onSelectRegion,
 	onCaptions,
 }: BottombarProps) {
@@ -86,6 +90,54 @@ export function Bottombar({
 	// logical window + zoom multiplier.
 	const [zoom, setZoom] = useState(1);
 	const [visibleStartSec, setVisibleStartSec] = useState(0);
+	// T15 — Place-skip armed state. The Scissors (Trim) button toggles
+	// this; the timeline pane shows the red preview marker and the cursor
+	// becomes crosshair. Esc cancels. The preview is pinned to the
+	// playhead the moment the mode is armed so the user sees the marker
+	// right away (axcut's behavior).
+	const [pendingCutPlacement, setPendingCutPlacement] = useState(false);
+	const [pendingCutPreviewSec, setPendingCutPreviewSec] = useState<number | null>(null);
+	const togglePlaceSkip = useCallback(() => {
+		setPendingCutPlacement((active) => {
+			if (active) {
+				setPendingCutPreviewSec(null);
+				return false;
+			}
+			setPendingCutPreviewSec(currentTimeSec);
+			return true;
+		});
+	}, [currentTimeSec]);
+
+	// T15 — body cursor + Esc-to-cancel while placing a cut. Lives here
+	// (not in TimelinePane) because the state lives here.
+	useEffect(() => {
+		if (!pendingCutPlacement) {
+			document.body.classList.remove("timeline-placing-cut");
+			return;
+		}
+		document.body.classList.add("timeline-placing-cut");
+		const handleKey = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setPendingCutPlacement(false);
+				setPendingCutPreviewSec(null);
+			}
+		};
+		window.addEventListener("keydown", handleKey);
+		return () => {
+			document.body.classList.remove("timeline-placing-cut");
+			window.removeEventListener("keydown", handleKey);
+		};
+	}, [pendingCutPlacement]);
+
+	// ponytail: register our toggler with the parent (NewEditorShell)
+	// so the "T" keyboard shortcut can call the same function the
+	// Scissors button does. Uses an effect so re-renders (togglePlaceSkip
+	// identity is stable but the ref it points to may change) always
+	// see the latest implementation.
+	useEffect(() => {
+		setTogglePlaceSkip?.(togglePlaceSkip);
+	}, [togglePlaceSkip, setTogglePlaceSkip]);
+
 	const sourceDurationSec = Math.max(0.001, ...clips.map((c) => c.timelineEndSec));
 	const visibleEndSec = Math.min(visibleStartSec + sourceDurationSec, sourceDurationSec);
 	void visibleEndSec; // surfaced to the navigator (now inside TimelinePane)
@@ -136,7 +188,17 @@ export function Bottombar({
 								<circle cx="12" cy="12" r="1.6" />
 							</svg>
 						</VtBtn>
-						<VtBtn label="Trim" title="Press T to add trim" onClick={onAddSkip} disabled={!hasDoc}>
+						<VtBtn
+							label="Trim"
+							title={
+								pendingCutPlacement
+									? "Click on the timeline to place a 1s skip (Esc to cancel)"
+									: "Arm the place-skip tool (T) — next click drops a 1s skip"
+							}
+							onClick={togglePlaceSkip}
+							disabled={!hasDoc}
+							on={pendingCutPlacement}
+						>
 							<Scissors size={17} />
 						</VtBtn>
 						<VtBtn
@@ -269,6 +331,10 @@ export function Bottombar({
 							visibleStartSec={visibleStartSec}
 							setZoom={setZoom}
 							setVisibleStartSec={setVisibleStartSec}
+							pendingCutPlacement={pendingCutPlacement}
+							pendingCutPreviewSec={pendingCutPreviewSec}
+							setPendingCutPreviewSec={setPendingCutPreviewSec}
+							onCancelPlaceSkip={() => togglePlaceSkip()}
 						/>
 					</div>
 				</div>

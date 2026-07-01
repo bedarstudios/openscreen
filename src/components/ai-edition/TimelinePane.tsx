@@ -119,6 +119,13 @@ interface TimelinePaneProps {
 	// atomically using its internal fit/usable widths. Bottombar exposes
 	// this to the navigator via prop drilling.
 	onVisibleWindowRequest?: (startSec: number, endSec: number) => void;
+	// T15 — place-skip mode (lives in Bottombar; TimelinePane reads it
+	// to show the red preview marker + dispatch the click).
+	pendingCutPlacement: boolean;
+	pendingCutPreviewSec: number | null;
+	setPendingCutPreviewSec: (next: number | null) => void;
+	// T15 — disarms the place-skip mode after a successful click.
+	onCancelPlaceSkip: () => void;
 }
 
 type KeepSegment = { kind: "keep"; len: number };
@@ -264,6 +271,10 @@ export function TimelinePane({
 	setZoom,
 	setVisibleStartSec,
 	onVisibleWindowRequest,
+	pendingCutPlacement,
+	pendingCutPreviewSec,
+	setPendingCutPreviewSec,
+	onCancelPlaceSkip,
 	onSeek,
 	onInsertAsset,
 	onMoveClip,
@@ -296,11 +307,9 @@ export function TimelinePane({
 		endSec: number;
 	} | null>(null);
 	const [dropIndex, setDropIndex] = useState<number | null>(null);
-	// T15 — Place-skip mode. When armed, the viewport cursor becomes
-	// crosshair, the live pendingCutPreviewSec follows the pointer, and the
-	// next click adds a 1s skip via onAddSkip. Esc cancels.
-	const [pendingCutPlacement, setPendingCutPlacement] = useState(false);
-	const [pendingCutPreviewSec, setPendingCutPreviewSec] = useState<number | null>(null);
+	// T15 — place-skip state lives in Bottombar (it owns the body class
+	// + Esc-to-cancel). TimelinePane reads it as a prop to render the
+	// preview marker and dispatch the click.
 	const hideControlsTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 	const resizeSequenceRef = useRef(0);
 
@@ -439,38 +448,11 @@ export function TimelinePane({
 			if (hideControlsTimerRef.current) clearTimeout(hideControlsTimerRef.current);
 			document.body.classList.remove("timeline-panning");
 			document.body.classList.remove("timeline-reordering");
-			document.body.classList.remove("timeline-placing-cut");
+			// ponytail: timeline-placing-cut body class is now owned by
+			// Bottombar (where the state lives); nothing to clean up here.
 		},
 		[],
 	);
-
-	// T15 — Place-skip mode side effects: body cursor class + Esc-to-cancel.
-	useEffect(() => {
-		if (!pendingCutPlacement) {
-			document.body.classList.remove("timeline-placing-cut");
-			return;
-		}
-		document.body.classList.add("timeline-placing-cut");
-		const handleKey = (event: KeyboardEvent) => {
-			if (event.key === "Escape") {
-				setPendingCutPlacement(false);
-				setPendingCutPreviewSec(null);
-			}
-		};
-		window.addEventListener("keydown", handleKey);
-		return () => {
-			document.body.classList.remove("timeline-placing-cut");
-			window.removeEventListener("keydown", handleKey);
-		};
-	}, [pendingCutPlacement]);
-
-	// Auto-disable place-skip if the timeline empties out.
-	useEffect(() => {
-		if (pendingCutPlacement && orderedClips.length === 0) {
-			setPendingCutPlacement(false);
-			setPendingCutPreviewSec(null);
-		}
-	}, [pendingCutPlacement, orderedClips.length]);
 
 	// T15 — Place a 1s skip centered on `centerSec` (timeline time),
 	// landing inside whatever clip the cursor is over. Mirrors axcut's
@@ -734,15 +716,18 @@ export function TimelinePane({
 	const handleTimelinePointerDown = useCallback(
 		(event: ReactPointerEvent<HTMLDivElement>) => {
 			// T15 — Place-skip mode. A left-click places a 1s skip centered
-			// on the cursor; Esc cancels. Skip buttons / clip bodies stop
-			// propagation so they take precedence.
+			// on the cursor; Esc cancels. Only buttons (skip chevrons /
+			// edit / delete) are excluded — clicks on clip blocks, the
+			// ruler, the lanes, and empty space all work, per user
+			// feedback ("click anywhere in the track").
 			if (pendingCutPlacement && event.button === 0) {
 				const target = event.target as Element | null;
-				if (target?.closest("button, [data-clip-idx]")) return;
+				if (target?.closest("button")) return;
 				event.preventDefault();
+				event.stopPropagation();
 				addCut(sourceSecFromClientX(event.clientX));
-				setPendingCutPlacement(false);
 				setPendingCutPreviewSec(null);
+				onCancelPlaceSkip();
 				return;
 			}
 			if (event.altKey || event.button === 1) {
@@ -751,7 +736,15 @@ export function TimelinePane({
 			}
 			startScrub(event);
 		},
-		[pendingCutPlacement, addCut, sourceSecFromClientX, startPan, startScrub],
+		[
+			pendingCutPlacement,
+			addCut,
+			sourceSecFromClientX,
+			setPendingCutPreviewSec,
+			onCancelPlaceSkip,
+			startPan,
+			startScrub,
+		],
 	);
 
 	// T08 — Clip body pointerdown → reorder. 6px move threshold before the
@@ -1337,35 +1330,14 @@ export function TimelinePane({
 				<span className={styles.headerDivider}>·</span>
 				<span className={styles.headerStat}>{formatSeconds(virtualDurationSec)} total</span>
 				<span className={styles.headerSpacer} />
-				<button
-					type="button"
-					className={
-						pendingCutPlacement
-							? `${styles.headerButton} ${styles.headerButtonActive}`
-							: styles.headerButton
-					}
-					onClick={() => {
-						// ponytail: matches axcut TimelinePane.tsx — when the
-						// button is clicked into "armed" state, immediately
-						// pin the preview marker to the playhead (or first
-						// clip's start) so the user sees the marker right away
-						// instead of having to wiggle the mouse for pointermove
-						// to fire. Disarming clears the preview.
-						setPendingCutPlacement((active) => {
-							if (active) {
-								setPendingCutPreviewSec(null);
-								return false;
-							}
-							setPendingCutPreviewSec(currentTimeSec);
-							return true;
-						});
-					}}
-					disabled={orderedClips.length === 0}
-					title="Place a 1-second skip where you next click on the timeline (Esc to cancel)"
-					aria-pressed={pendingCutPlacement}
-				>
-					{pendingCutPlacement ? "Click on timeline to place (Esc)" : "Place skip"}
-				</button>
+				{pendingCutPlacement ? (
+					<span
+						className={`${styles.headerButton} ${styles.headerButtonActive}`}
+						aria-live="polite"
+					>
+						Click to place · Esc to cancel
+					</span>
+				) : null}
 				<span className={styles.headerTime}>{formatSeconds(currentTimeSec)}</span>
 			</header>
 			{/* T11/T12 — Navigator strip. Mini-map of sourceDurationSec
