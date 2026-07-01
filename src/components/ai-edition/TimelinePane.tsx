@@ -273,6 +273,13 @@ export function TimelinePane({
 	const panRef = useRef<PanState | null>(null);
 	const clipReorderRef = useRef<ClipReorderState | null>(null);
 	const [viewportWidthPx, setViewportWidthPx] = useState(0);
+	// T18 — viewportLeftPx + windowWidthPx for viewport-aware controlsShiftPx
+	// (keeps skip hover-controls onscreen near the viewport edge).
+	const [viewportLeftPx, setViewportLeftPx] = useState(0);
+	const [windowWidthPx, setWindowWidthPx] = useState(0);
+	// T16 — tracks whether the user is currently scrubbing so the body
+	// cursor can flip to ew-resize. Cleared on pointerup.
+	const [scrubbing, setScrubbing] = useState(false);
 	// viewport state is owned by Bottombar (T11). We only mirror it here.
 	const [panning, setPanning] = useState(false);
 	const [clipReorderState, setClipReorderState] = useState<ClipReorderState | null>(null);
@@ -332,11 +339,46 @@ export function TimelinePane({
 		[assets],
 	);
 
+	// T18 — per-skip viewport-aware shift so the hover-controls stay onscreen
+	// when the skip is near the viewport's left/right edge. axcut
+	// TimelinePane.tsx builds the same map inline.
+	const skipControlsShiftPxBySkipId = useMemo(() => {
+		if (viewportLeftPx <= 0) return new Map<string, number>();
+		const SKIP_CONTROLS_VIEWPORT_MARGIN_PX = 4;
+		const visibleLeftPx = SKIP_CONTROLS_VIEWPORT_MARGIN_PX;
+		const visibleRightPx = Math.max(
+			visibleLeftPx,
+			windowWidthPx - SKIP_CONTROLS_VIEWPORT_MARGIN_PX,
+		);
+		// Resize=25 + remove=31 + two 3px gaps. Actual values mirror axcut.
+		const controlsHalfWidthPx = (31 + 25 + 25 + 3 * 3) / 2;
+		const map = new Map<string, number>();
+		for (const clip of orderedClips) {
+			for (const skip of clip.sourceEndSec == null
+				? []
+				: skipRanges.filter((k) => k.assetId === clip.assetId)) {
+				const skipCenterSec = (skip.startSec + skip.endSec) / 2;
+				const skipScreenCenterPx =
+					viewportLeftPx + TIMELINE_START_GUTTER_PX + skipCenterSec * pxPerSec - canvasOffsetPx;
+				let shift = 0;
+				if (skipScreenCenterPx - controlsHalfWidthPx < visibleLeftPx) {
+					shift = visibleLeftPx - (skipScreenCenterPx - controlsHalfWidthPx);
+				} else if (skipScreenCenterPx + controlsHalfWidthPx > visibleRightPx) {
+					shift = visibleRightPx - (skipScreenCenterPx + controlsHalfWidthPx);
+				}
+				if (shift !== 0) map.set(skip.id, shift);
+			}
+		}
+		return map;
+	}, [orderedClips, skipRanges, pxPerSec, canvasOffsetPx, viewportLeftPx, windowWidthPx]);
+
 	useEffect(() => {
 		const el = viewportRef.current;
 		if (!el) return;
 		const updateMetrics = () => {
 			setViewportWidthPx(el.clientWidth);
+			setViewportLeftPx(el.getBoundingClientRect().left);
+			setWindowWidthPx(window.innerWidth);
 		};
 		updateMetrics();
 		const observer = new ResizeObserver(updateMetrics);
@@ -366,6 +408,14 @@ export function TimelinePane({
 			document.body.classList.remove("timeline-panning");
 		};
 	}, [panning]);
+
+	// T16 — body cursor class while scrubbing. `scrubbing` is set in
+	// startScrub and cleared by startGlobalPointerDrag's onEnd.
+	useEffect(() => {
+		if (scrubbing) document.body.classList.add("timeline-scrubbing");
+		else document.body.classList.remove("timeline-scrubbing");
+		return () => document.body.classList.remove("timeline-scrubbing");
+	}, [scrubbing]);
 
 	useEffect(() => {
 		if (!clipReorderState?.dragging) {
@@ -662,9 +712,10 @@ export function TimelinePane({
 			if (event.button !== 0 || orderedClips.length === 0) return;
 			event.preventDefault();
 			onSeek(sourceSecFromClientX(event.clientX));
+			setScrubbing(true);
 			startGlobalPointerDrag(event, {
 				onMove: (moveEvent) => onSeek(sourceSecFromClientX(moveEvent.clientX)),
-				onEnd: () => undefined,
+				onEnd: () => setScrubbing(false),
 			});
 		},
 		[onSeek, orderedClips.length, sourceSecFromClientX],
@@ -890,7 +941,11 @@ export function TimelinePane({
 						? `${styles.viewport} ${styles.panning}`
 						: clipReorderState?.dragging
 							? `${styles.viewport} ${styles.reordering}`
-							: styles.viewport
+							: scrubbing
+								? `${styles.viewport} ${styles.scrubbing}`
+								: pendingCutPlacement
+									? `${styles.viewport} ${styles.placingCut}`
+									: styles.viewport
 				}
 				onPointerDown={handleTimelinePointerDown}
 				onPointerMove={
@@ -1097,6 +1152,13 @@ export function TimelinePane({
 														{hoveredCutId === s.skipId || dragPreview?.skipId === s.skipId ? (
 															<div
 																className={styles.skipControls}
+																style={
+																	skipControlsShiftPxBySkipId.has(s.skipId)
+																		? ({
+																				"--skip-controls-shift-px": `${skipControlsShiftPxBySkipId.get(s.skipId)}px`,
+																			} as React.CSSProperties)
+																		: undefined
+																}
 																onPointerEnter={() => showCutControls(s.skipId)}
 																onPointerLeave={() => scheduleHideCutControls(s.skipId)}
 															>

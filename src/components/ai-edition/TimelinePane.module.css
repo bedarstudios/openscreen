@@ -32,6 +32,31 @@
 .viewport.reordering {
 	cursor: grabbing;
 }
+.viewport.scrubbing {
+	cursor: ew-resize;
+}
+.viewport.placingCut {
+	cursor: crosshair;
+}
+
+/* T16 — body-level cursor classes that override child cursors while a
+   timeline interaction is active. */
+body.timeline-scrubbing,
+body.timeline-scrubbing * {
+	cursor: ew-resize !important;
+}
+body.timeline-panning,
+body.timeline-panning * {
+	cursor: grabbing !important;
+}
+body.timeline-reordering,
+body.timeline-reordering * {
+	cursor: grabbing !important;
+}
+body.timeline-placing-cut,
+body.timeline-placing-cut * {
+	cursor: crosshair !important;
+}
 
 .canvas {
 	position: relative;
@@ -162,7 +187,10 @@
 	position: absolute;
 	top: 50%;
 	left: 50%;
-	transform: translate(-50%, -50%);
+	transform: translate(
+		calc(-50% + var(--skip-controls-shift-px, 0px)),
+		-50%
+	);
 	display: flex;
 	align-items: center;
 	gap: 2px;
