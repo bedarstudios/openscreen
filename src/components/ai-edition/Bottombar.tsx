@@ -73,6 +73,12 @@ const ZOOM_LABEL: Record<number, string> = {
 	6: "5×",
 };
 
+// 24px/sec matches the design's .timeline-ruler 24px tick grid. The
+// timeline body's pxPerSec = BASE_PX_PER_SEC * zoomLevel (slider value 10..80
+// → 1×..8×), so a 60s clip fits in ~1440px at 1× and stretches to ~11520px
+// at 8×. The body is overflow-x: auto, so wider timelines become scrollable.
+const BASE_PX_PER_SEC = 24;
+
 export function Bottombar({
 	clips,
 	videoSources,
@@ -94,13 +100,19 @@ export function Bottombar({
 	const { settings, set } = useEditorSettings();
 	const tl = useTimeline();
 	const [ratioOpen, setRatioOpen] = useState(false);
-	const [zoomRange, setZoomRange] = useState<[number, number]>([0, 100]);
+	// Slider value 10..80 → zoomLevel 1×..8×. Default 10 (1×) keeps long
+	// timelines at the design's 24px/sec baseline; pushing the slider right
+	// widens every clip/ruler/playhead pixel proportionally so the track
+	// overflows its container and the timeline body becomes horizontally
+	// scrollable.
+	const [zoomLevel, setZoomLevel] = useState(1);
 	const [editClipTarget, setEditClipTarget] = useState<AxcutClip | null>(null);
 	const firstClip = clips[0] ?? null;
 	const totalMs = useMemo(
 		() => Math.round(Math.max(0.001, ...clips.map((c) => c.timelineEndSec)) * 1000),
 		[clips],
 	);
+	const pxPerSec = BASE_PX_PER_SEC * zoomLevel;
 	const handleRegionSpanChange = (id: string, span: Span) => {
 		if (zoomRegions.some((z) => z.id === id)) void tl.updateZoomSpan(id, span.start, span.end);
 		else if (speedRegions.some((s) => s.id === id))
@@ -273,7 +285,7 @@ export function Bottombar({
 							]}
 							onItemSpanChange={(id, span) => handleRegionSpanChange(id, span)}
 						>
-							<RegionTimelineSurface>
+							<RegionTimelineSurface pxPerSec={pxPerSec} totalMs={totalMs}>
 								<RegionRow id="annotation" empty="No annotations yet">
 									{annotationRegions.map((a) => (
 										<RegionItem
@@ -326,12 +338,34 @@ export function Bottombar({
 							</RegionTimelineSurface>
 						</RegionTimelineProvider>
 					</div>
-					<div className="timelinePaneWrap" style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
+					<div
+						className="timelinePaneWrap"
+						style={{
+							flex: 1,
+							minHeight: 0,
+							minWidth: 0,
+							overflowX: "auto",
+							overflowY: "hidden",
+						}}
+						onWheel={(e) => {
+							// Ctrl/Cmd + scroll = zoom around the pointer. Plain
+							// scroll falls through to native horizontal pan
+							// (overflow-x: auto).
+							if (!(e.ctrlKey || e.metaKey)) return;
+							e.preventDefault();
+							const factor = Math.exp(-e.deltaY / 200);
+							setZoomLevel((z) => {
+								const next = Math.min(8, Math.max(1, z * factor));
+								return Number(next.toFixed(2));
+							});
+						}}
+					>
 						<TimelinePane
 							clips={clips}
 							assets={tl.assets}
 							skipRanges={skipRanges}
 							currentTimeSec={currentTimeSec}
+							pxPerSec={pxPerSec}
 							selectedClipId={tl.clipSelection}
 							onSelectClip={tl.selectClip}
 							onSeek={onSeek}
@@ -347,20 +381,22 @@ export function Bottombar({
 				<div className={styles.zoombar} role="group" aria-label="Zoom range">
 					<Slider.Root
 						className={styles.sliderRoot}
-						value={zoomRange}
-						min={0}
-						max={100}
+						value={[zoomLevel * 10]}
+						min={10}
+						max={80}
 						step={1}
-						minStepsBetweenThumbs={1}
-						onValueChange={(v) => setZoomRange([v[0] ?? 0, v[1] ?? 100])}
-						aria-label="Timeline visible range"
+						onValueChange={(v) => setZoomLevel((v[0] ?? 10) / 10)}
+						aria-label="Timeline zoom level"
 					>
 						<Slider.Track className={styles.sliderTrack}>
 							<Slider.Range className={styles.sliderRange} />
 						</Slider.Track>
-						<Slider.Thumb className={styles.sliderThumb} aria-label="Zoom in start" />
-						<Slider.Thumb className={styles.sliderThumb} aria-label="Zoom in end" />
+						<Slider.Thumb
+							className={styles.sliderThumb}
+							aria-label={`Zoom level ${zoomLevel.toFixed(1)}×`}
+						/>
 					</Slider.Root>
+					<span className={styles.zoomLabel}>{zoomLevel.toFixed(1)}×</span>
 				</div>
 			</section>
 			<EditClipModal

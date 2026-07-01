@@ -41,6 +41,7 @@ interface TimelinePaneProps {
 	assets: AssetMeta[];
 	skipRanges: SkipRange[];
 	currentTimeSec: number;
+	pxPerSec: number;
 	selectedClipId: string | null;
 	onSelectClip: (id: string) => void;
 	onSeek: (timelineSec: number) => void;
@@ -110,6 +111,7 @@ export function TimelinePane({
 	assets,
 	skipRanges,
 	currentTimeSec,
+	pxPerSec,
 	selectedClipId,
 	onSelectClip,
 	onSeek,
@@ -147,7 +149,6 @@ export function TimelinePane({
 		(assetId: string) => assets.find((a) => a.id === assetId)?.label ?? "Untitled source",
 		[assets],
 	);
-	const playheadPct = Math.max(0, Math.min(100, (currentTimeSec / totalDuration) * 100));
 
 	const showCutControls = useCallback((cutId: string) => {
 		if (hideControlsTimerRef.current) {
@@ -290,22 +291,20 @@ export function TimelinePane({
 	);
 
 	return (
-		<section className={styles.pane}>
-			{/* biome-ignore lint/a11y/noStaticElementInteractions: ruler is a scrub affordance, keyboard seek is handled by transport controls */}
-			<div className={styles.ruler} onPointerDown={handleRulerPointerDown}>
+		<section className={styles.pane} style={{ width: Math.max(0.001, totalDuration) * pxPerSec }}>
+			<div
+				className={styles.ruler}
+				onPointerDown={handleRulerPointerDown}
+				style={{ width: "100%" }}
+			>
 				{ticks.map((t) => (
-					<span
-						key={t}
-						className={styles.rulerTick}
-						style={{ left: `${(t / totalDuration) * 100}%` }}
-					>
+					<span key={t} className={styles.rulerTick} style={{ left: t * pxPerSec }}>
 						{formatSeconds(t)}
 					</span>
 				))}
 			</div>
 
 			{clips.length === 0 ? (
-				// biome-ignore lint/a11y/noStaticElementInteractions: drop target for media assets; primary insert path is the Insert-source controls
 				<div
 					className={styles.empty}
 					onDragOver={handleDragOver}
@@ -318,6 +317,7 @@ export function TimelinePane({
 				<div
 					ref={wrapRef}
 					className={styles.tracksWrapper}
+					style={{ width: Math.max(0.001, totalDuration) * pxPerSec }}
 					onDragOver={handleDragOver}
 					onDragLeave={() => setDropIndex(null)}
 					onDrop={handleDrop}
@@ -352,7 +352,7 @@ export function TimelinePane({
 								key={clip.id}
 								data-clip-idx={i}
 								className={selected ? `${styles.trackBlock} ${styles.selected}` : styles.trackBlock}
-								style={{ flexGrow: durationSec, order: i * 2 + 1 }}
+								style={{ width: durationSec * pxPerSec, flexShrink: 0, order: i * 2 + 1 }}
 								draggable
 								onDragStart={(e) => {
 									e.dataTransfer.setData(CLIP_MIME, String(i));
@@ -475,7 +475,11 @@ export function TimelinePane({
 							</div>
 						);
 					})}
-					<div className={styles.playhead} style={{ left: `${playheadPct}%` }} aria-hidden="true" />
+					<div
+						className={styles.playhead}
+						style={{ left: currentTimeSec * pxPerSec }}
+						aria-hidden="true"
+					/>
 				</div>
 			)}
 		</section>
