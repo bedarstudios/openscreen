@@ -70,7 +70,11 @@ body.timeline-placing-cut .editIcon,
 body.timeline-placing-cut .clipDelete,
 body.timeline-placing-cut .trackBlock .segment,
 body.timeline-placing-cut .reorderMarker,
-body.timeline-placing-cut .dropMarker {
+body.timeline-placing-cut .dropMarker,
+body.timeline-placing-cut .timelineHeader,
+body.timeline-placing-cut .timelineHeader *,
+body.timeline-placing-cut button,
+body.timeline-placing-cut [class*="vtBtn"] {
 	cursor: crosshair !important;
 }
 
@@ -467,4 +471,70 @@ body.timeline-placing-cut .dropMarker {
 	border-color: var(--accent);
 	color: var(--accent);
 	background: var(--accent-wash);
+}
+
+/* T11/T12 — Navigator strip. The Navigator is the row that drives
+   the timeline's pan/zoom (axcut TimelinePane.tsx timeline-navigator
+   + .timeline-navigator-window). Lives here, not in
+   NewEditorShell.module.css, because TimelinePane applies the
+   className via its own styles import — CSS modules' class hashes
+   don't match across files. */
+.timelineNavigator {
+	position: relative;
+	height: 1.15rem;
+	flex-shrink: 0;
+	margin: 4px var(--sp-3) 4px var(--sp-3);
+	border: 1px solid var(--border-soft);
+	border-radius: 6px;
+	background: color-mix(in oklch, var(--surface-2) 60%, transparent);
+	overflow: hidden;
+}
+.timelineNavigator.navigating {
+	border-color: var(--accent);
+}
+.timelineNavigatorContent {
+	position: absolute;
+	inset: 0;
+	background: transparent;
+	pointer-events: none;
+}
+.timelineNavigatorSkip {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 1px;
+	background: color-mix(in oklch, var(--accent) 50%, transparent);
+	border-left: 1px solid var(--accent);
+	border-right: 1px solid var(--accent);
+	pointer-events: none;
+}
+.timelineNavigatorWindow {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	min-width: 1.8rem;
+	border: 2px solid color-mix(in oklch, var(--accent) 92%, transparent);
+	border-radius: 6px;
+	background: color-mix(in oklch, var(--accent) 16%, transparent);
+	box-shadow:
+		0 0 0 1px rgba(0, 0, 0, 0.45),
+		inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+	cursor: grab;
+}
+.timelineNavigator.navigating .timelineNavigatorWindow {
+	cursor: grabbing;
+}
+.timelineNavigatorHandleStart,
+.timelineNavigatorHandleEnd {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	width: 6px;
+	cursor: ew-resize;
+}
+.timelineNavigatorHandleStart {
+	left: 0;
+}
+.timelineNavigatorHandleEnd {
+	right: 0;
 }
