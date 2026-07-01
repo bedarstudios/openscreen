@@ -364,12 +364,12 @@ body:global(.timeline-placing-cut) [class*="vtBtn"] {
 
 /* T15 — Place-skip preview marker: 1s-wide red-tinted strip at the
    cursor's source time. Indicates where the next click would land.
-   Extends top: -6px to match the playhead's extent (axcut's marker
-   spans the full vertical timeline). The user reported the previous
-   version as visibly shorter than the playhead. */
+   Top: -22px; bottom: 0; relative to the .canvas (sibling of
+   .trackLane) so it spans the entire visible timeline: ruler above +
+   clip tracks below. Matches the playhead's vertical extent. */
 .placementMarker {
 	position: absolute;
-	top: -6px;
+	top: -22px;
 	bottom: 0;
 	width: 12px;
 	margin-left: -6px;
@@ -437,7 +437,11 @@ body:global(.timeline-placing-cut) [class*="vtBtn"] {
 
 .playhead {
 	position: absolute;
-	top: -6px;
+	/* Top: -22px so the diamond head (::before, 8px tall, at top: 0)
+	   lands inside the .ruler (22px tall) instead of hovering above
+	   it. The vertical line still extends down through the lanes into
+	   the trackLane for full visibility. */
+	top: -22px;
 	bottom: 0;
 	width: 2px;
 	background: var(--accent);
