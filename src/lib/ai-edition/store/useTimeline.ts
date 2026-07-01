@@ -456,6 +456,31 @@ export function useTimeline() {
 		[document, saveDocument],
 	);
 
+	// Duplicate a clip in place (same asset + source range), inserted right
+	// after the original, then resequenced. Mirrors Axcut's Ctrl+C/Ctrl+V.
+	const duplicateClip = useCallback(
+		async (clipId: string) => {
+			if (!document) return;
+			const arr = [...document.timeline.clips];
+			const from = arr.findIndex((c) => c.id === clipId);
+			if (from === -1) return;
+			const source = arr[from];
+			const copy: Clip = {
+				...source,
+				id: createId("clip"),
+				reason: "Duplicated clip",
+			};
+			arr.splice(from + 1, 0, copy);
+			const next: AxcutDocument = {
+				...document,
+				timeline: { ...document.timeline, clips: resequenceClips(arr) },
+			};
+			await saveDocument(next);
+			setClipSelection(copy.id);
+		},
+		[document, saveDocument],
+	);
+
 	const removeClip = useCallback(
 		async (clipId: string) => {
 			if (!document) return;
@@ -506,6 +531,7 @@ export function useTimeline() {
 		splitAndInsert,
 		insertClipAt,
 		moveClip,
+		duplicateClip,
 		removeClip,
 		selectClip,
 		clearClipSelection,

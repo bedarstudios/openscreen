@@ -88,6 +88,7 @@ export function NewEditorShell() {
 	const [captionsOpen, setCaptionsOpen] = useState(false);
 	const [captionsMinW, setCaptionsMinW] = useState(2);
 	const [captionsMaxW, setCaptionsMaxW] = useState(7);
+	const [copiedClipId, setCopiedClipId] = useState<string | null>(null);
 	const [projectSummaries, setProjectSummaries] = useState<AiEditionProjectSummary[]>([]);
 	const seekSeqRef = useRef(0);
 	const initRef = useRef(false);
@@ -688,13 +689,28 @@ export function NewEditorShell() {
 				window.dispatchEvent(new CustomEvent("openscreen:open-shortcuts"));
 				return;
 			}
-			if (ctrl && e.key.toLowerCase() === "c" && tl.selection) {
-				e.preventDefault();
-				void handleCopyRegion();
-				return;
+			if (ctrl && e.key.toLowerCase() === "c") {
+				if (tl.clipSelection) {
+					e.preventDefault();
+					setCopiedClipId(tl.clipSelection);
+					return;
+				}
+				if (tl.selection) {
+					e.preventDefault();
+					void handleCopyRegion();
+					return;
+				}
 			}
 			if (ctrl && e.key.toLowerCase() === "v") {
 				e.preventDefault();
+				// A selected/copied clip takes priority — pasting with a clip in
+				// hand is unambiguously "duplicate this clip", even if a region
+				// was copied earlier in the session.
+				const clipToDuplicate = copiedClipId ?? tl.clipSelection;
+				if (clipToDuplicate) {
+					void tl.duplicateClip(clipToDuplicate);
+					return;
+				}
 				void pasteRegion();
 				return;
 			}
@@ -740,7 +756,16 @@ export function NewEditorShell() {
 		};
 		window.addEventListener("keydown", onKey);
 		return () => window.removeEventListener("keydown", onKey);
-	}, [hasProject, handleCopyRegion, handleSave, pasteRegion, tl, promptUnsaved, saveDocument]);
+	}, [
+		hasProject,
+		handleCopyRegion,
+		handleSave,
+		pasteRegion,
+		tl,
+		promptUnsaved,
+		saveDocument,
+		copiedClipId,
+	]);
 
 	const collapseAttr = useMemo(() => {
 		const list: string[] = [];
