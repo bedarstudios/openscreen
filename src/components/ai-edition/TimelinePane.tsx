@@ -305,6 +305,9 @@ export function TimelinePane({
 	// T16 — tracks whether the user is currently scrubbing so the body
 	// cursor can flip to ew-resize. Cleared on pointerup.
 	const [scrubbing, setScrubbing] = useState(false);
+	// P3.7 — source time under the cursor while hovering the timeline; drives
+	// the ruler's hover marker + time chip. Null when the pointer is outside.
+	const [hoverSec, setHoverSec] = useState<number | null>(null);
 	// viewport state is owned by Bottombar (T11). We only mirror it here.
 	const [panning, setPanning] = useState(false);
 	const [clipReorderState, setClipReorderState] = useState<ClipReorderState | null>(null);
@@ -1015,17 +1018,22 @@ export function TimelinePane({
 									: styles.viewport
 				}
 				onPointerDown={handleTimelinePointerDown}
-				onPointerMove={
-					pendingCutPlacement
-						? (event) => {
-								// pointerType guards against touch-emulation hover
-								if (event.pointerType === "touch") return;
-								setPendingCutPreviewSec(sourceSecFromClientX(event.clientX));
-							}
-						: undefined
-				}
+				onPointerMove={(event) => {
+					// pointerType guards against touch-emulation hover
+					if (event.pointerType === "touch") return;
+					if (pendingCutPlacement) {
+						setPendingCutPreviewSec(sourceSecFromClientX(event.clientX));
+						return;
+					}
+					// P3.7 — hover feedback: a marker + time chip in the ruler
+					// under the cursor. Click to seek (startScrub handles it).
+					if (orderedClips.length > 0) {
+						setHoverSec(Math.max(0, Math.min(sourceDuration, sourceSecFromClientX(event.clientX))));
+					}
+				}}
 				onPointerLeave={() => {
 					if (pendingCutPlacement) setPendingCutPreviewSec(null);
+					setHoverSec(null);
 				}}
 				onDragOver={handleDragOver}
 				onDragLeave={() => setDropIndex(null)}
@@ -1061,6 +1069,20 @@ export function TimelinePane({
 									{tick.major ? <span>{formatSeconds(tick.timeSec)}</span> : null}
 								</div>
 							))}
+							{hoverSec !== null && !scrubbing && !panning ? (
+								<>
+									<div
+										className={styles.hoverGuide}
+										style={{ left: TIMELINE_START_GUTTER_PX + hoverSec * pxPerSec }}
+									/>
+									<div
+										className={styles.dragTooltip}
+										style={{ left: TIMELINE_START_GUTTER_PX + hoverSec * pxPerSec + 6 }}
+									>
+										{formatSeconds(hoverSec)}
+									</div>
+								</>
+							) : null}
 						</div>
 						{/* T10 — region lanes (annotation / speed / zoom). They live
 						    inside the same .canvas as the clip track so the

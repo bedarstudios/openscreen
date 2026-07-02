@@ -38,7 +38,6 @@ function formatTimecode(sec: number | undefined): string {
 }
 
 function formatSize(bytes: number | undefined): string {
-	// ponytail: AxcutAsset has no size field yet — always em-dash.
 	if (!bytes || !Number.isFinite(bytes)) return "—";
 	if (bytes < 1024) return `${bytes} B`;
 	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
@@ -81,7 +80,7 @@ function MediaList({
 			{assets.map((asset, i) => {
 				const label = asset.label || basename(asset.originalPath);
 				const tc = formatTimecode(asset.durationSec);
-				const size = formatSize(undefined);
+				const size = formatSize(asset.sizeBytes);
 				const palette = THUMB_PALETTE[i % THUMB_PALETTE.length];
 				const isReady = transcriptReadyIds?.has(asset.id);
 				const status = isReady ? "complete" : (assetStatuses?.[asset.id] ?? "idle");
