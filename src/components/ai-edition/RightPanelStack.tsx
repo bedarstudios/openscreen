@@ -9,6 +9,12 @@ import {
 	Trash2,
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import {
+	MAX_ZOOM_SCALE,
+	MIN_ZOOM_SCALE,
+	ZOOM_DEPTH_SCALES,
+	type ZoomDepth,
+} from "@/components/video-editor/types";
 import type {
 	AxcutAnnotationRegion,
 	AxcutClip,
@@ -164,8 +170,18 @@ function RegionInspector({
 					: null;
 
 	const depthNames = ["1.25×", "1.5×", "1.8×", "2.2×", "3.5×", "5×"];
-	const currentDepth =
-		selection.kind === "zoom" ? ((region as { depth?: number })?.depth ?? 3) - 1 : 0;
+	const zoomRegion =
+		selection.kind === "zoom"
+			? (region as { depth?: ZoomDepth; customScale?: number } | undefined)
+			: undefined;
+	const zoomDepth = zoomRegion?.depth ?? 3;
+	// ponytail: matches main's SettingsPanel `effectiveScale` — a custom slider
+	// value overrides the depth preset, so no preset button is highlighted
+	// unless the value happens to equal one exactly.
+	const effectiveZoomScale = zoomRegion?.customScale ?? ZOOM_DEPTH_SCALES[zoomDepth];
+	const currentDepth = depthNames.findIndex(
+		(_, i) => ZOOM_DEPTH_SCALES[(i + 1) as ZoomDepth] === effectiveZoomScale,
+	);
 
 	// ponytail: keep rapid text edits in local state and flush on blur so we
 	// don't push an undo snapshot per keystroke.
@@ -256,6 +272,29 @@ function RegionInspector({
 								</button>
 							))}
 						</div>
+						<Field label={`Scale — ${effectiveZoomScale.toFixed(2)}×`}>
+							<input
+								type="range"
+								min={MIN_ZOOM_SCALE}
+								max={MAX_ZOOM_SCALE}
+								step={0.01}
+								value={effectiveZoomScale}
+								onChange={(e) => {
+									if (!region) return;
+									const scale = Number(e.target.value);
+									const next = document.zoomRanges.map((z) =>
+										z.id === selection.id ? { ...z, customScale: scale } : z,
+									) as AxcutDocument["zoomRanges"];
+									// ponytail: live-only while dragging — mirrors the
+									// zoom-focus-overlay drag fix (setDocument, no IPC
+									// save, per pixel). Commits on release below.
+									setDocument({ ...document, zoomRanges: next });
+								}}
+								onMouseUp={() => void saveDocument(document)}
+								onTouchEnd={() => void saveDocument(document)}
+								style={{ width: "100%" }}
+							/>
+						</Field>
 						{region ? (
 							<div
 								style={{
