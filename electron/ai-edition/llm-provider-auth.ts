@@ -430,7 +430,7 @@ async function safeErrorDetail(response: Response): Promise<string | undefined> 
  * id token). Returns undefined if the claim is missing — model discovery
  * then omits the `chatgpt-account-id` header.
  */
-function extractChatgptAccountId(accessToken: string, idToken?: string): string | undefined {
+export function extractChatgptAccountId(accessToken: string, idToken?: string): string | undefined {
 	for (const token of [accessToken, idToken ?? ""]) {
 		if (!token) continue;
 		const segments = token.split(".");

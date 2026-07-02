@@ -18,7 +18,7 @@ import {
 	executeAgentTool,
 	isMutatingTool,
 } from "./agent-tools";
-import { type ChatMessage, callLlm } from "./llm-call";
+import { type ChatMessage, type LlmToolCall, streamLlm } from "./llm-call";
 import type { LlmConfigStore } from "./llm-config-store";
 import { PROVIDER_DEFINITIONS } from "./provider-registry";
 
@@ -230,22 +230,34 @@ export async function runChat(
 	let finalContent = "";
 
 	for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
-		const result = await callLlm({
-			provider: config.provider,
-			model: config.model,
-			apiKey: apiKey ?? "",
-			baseUrl: config.baseUrl,
-			reasoningEffort: config.reasoningEffort,
-			accountId,
-			messages: loopMessages,
-			tools: workingDocument ? AGENT_TOOL_SPECS : undefined,
-		});
+		const collectedToolCalls: LlmToolCall[] = [];
+		const result = await streamLlm(
+			{
+				provider: config.provider,
+				model: config.model,
+				apiKey: apiKey ?? "",
+				baseUrl: config.baseUrl,
+				reasoningEffort: config.reasoningEffort,
+				accountId,
+				messages: loopMessages,
+				tools: workingDocument ? AGENT_TOOL_SPECS : undefined,
+			},
+			{
+				// ponytail: streamLlm already accumulates the deltas internally
+				// and the renderer's chat panel still consumes the finalized
+				// `result.content`. Collecting tool calls here so the existing
+				// tool-execution flow keeps working unchanged.
+				onToolCall: (call) => collectedToolCalls.push(call),
+			},
+		);
 
 		if (!result.success) {
 			return { success: false, error: result.error ?? "Empty response from model." };
 		}
 
-		if (!result.toolCalls?.length) {
+		const toolCalls = collectedToolCalls.length ? collectedToolCalls : (result.toolCalls ?? []);
+
+		if (!toolCalls.length) {
 			finalContent = result.content ?? "";
 			break;
 		}
@@ -253,10 +265,10 @@ export async function runChat(
 		loopMessages.push({
 			role: "assistant",
 			content: result.content ?? "",
-			toolCalls: result.toolCalls,
+			toolCalls,
 		});
 
-		for (const call of result.toolCalls) {
+		for (const call of toolCalls) {
 			if (!workingDocument) {
 				loopMessages.push({
 					role: "tool",
