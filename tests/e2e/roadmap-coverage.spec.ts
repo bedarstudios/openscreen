@@ -55,7 +55,7 @@ function makeDoc(
 				id: "asset_test",
 				kind: "video",
 				label: "Test Recording.mp4",
-				originalPath: "C:\\Users\\test\\AppData\\Roaming\\openscreen\\recordings\\test.mp4",
+				originalPath: "C:\\nonexistent\\test.mp4",
 				durationSec: 60,
 				sizeBytes: 314_572_800,
 				video: { codec: "h264", width: 1920, height: 1080, fps: 30 },
@@ -69,9 +69,11 @@ function makeDoc(
 						id: "clip_test",
 						assetId: asset.id,
 						sourceStartSec: 0,
-						sourceEndSec: 30,
+						// ponytail: long enough that fit-zoom (pxPerSec) sits well
+						// below MAX_PX_PER_SEC, so Ctrl+wheel has headroom to zoom in.
+						sourceEndSec: 600,
 						timelineStartSec: 0,
-						timelineEndSec: 30,
+						timelineEndSec: 600,
 						wordRefs: [],
 						origin: "system" as const,
 						reason: "",
@@ -101,7 +103,13 @@ function makeDoc(
 			kind: "text" as const,
 			style: { color: "#ffffff", fontFamily: "Inter", animation: "none" },
 		})),
-		zoomRanges: opts.zoomRegions ?? [],
+		zoomRanges: (opts.zoomRegions ?? []).map((r) => ({
+			id: r.id,
+			startMs: Math.round((r.startSec ?? 0) * 1000),
+			endMs: Math.round((r.endSec ?? 0) * 1000),
+			depth: 2,
+			focus: { cx: 0.5, cy: 0.5 },
+		})),
 		legacyEditor: null,
 		agent: { pendingQuestions: [], suggestions: [], lastAppliedOperations: [] },
 		preview: { strategy: "seek" as const, revision: 0 },
@@ -114,9 +122,33 @@ async function seedAndOpen(page: Page, doc: Doc): Promise<void> {
 	await page.addInitScript((serialized) => {
 		const d = JSON.parse(serialized);
 		localStorage.setItem("browser-shim-document", JSON.stringify(d));
+		// ponytail: the editor's mount flow calls listProjects and loads
+		// the first entry on launch. We need to seed the matching summary
+		// so the project is discoverable.
+		const summary = [
+			{
+				id: d.project.id,
+				title: d.project.title,
+				updatedAt: d.project.updatedAt,
+				assetCount: d.assets.length,
+			},
+		];
+		localStorage.setItem("browser-shim-projects", JSON.stringify(summary));
 	}, JSON.stringify(doc));
 	await page.goto(EDITOR_URL, { waitUntil: "domcontentloaded" });
 	await page.getByTestId("timeline-pane").waitFor({ state: "visible", timeout: 10_000 });
+	// ponytail: the mount useEffect calls listProjects → loadProject, both
+	// async. Wait for the document to actually be loaded (data-clip-count
+	// reflects the seeded doc) before tests start asserting.
+	await page.waitForFunction(
+		(expected) => {
+			const el = document.querySelector('[data-testid="timeline-pane"]');
+			const n = el?.getAttribute("data-clip-count");
+			return n !== null && Number(n) >= expected;
+		},
+		doc.timeline.clips.length,
+		{ timeout: 5_000 },
+	);
 }
 
 async function captureConsoleErrors(page: Page): Promise<string[]> {
@@ -161,8 +193,21 @@ test.describe("Roadmap coverage (✅ rows) — agentic behavior specs", () => {
 		const errors = await captureConsoleErrors(page);
 		await seedAndOpen(page, makeDoc({ withAsset: true, withClip: true }));
 
-		// Find a HelpCircle button (rendered as an icon button in pane headers).
-		const helpButton = page.getByRole("button", { name: /help/i }).first();
+		// ponytail: the right panel is hidden by default. Click the
+		// "Toggle right panel" button to open it.
+		const toggleRight = page.getByRole("button", { name: /toggle right panel/i });
+		if (await toggleRight.isVisible().catch(() => false)) {
+			await toggleRight.click();
+		}
+		// Click the "Background" tab to open the Background pane.
+		const backgroundTab = page.getByRole("button", { name: /background/i }).first();
+		if (await backgroundTab.isVisible().catch(() => false)) {
+			await backgroundTab.click();
+		}
+		// ponytail: the P3.3 help button has aria-label="Help" (the RightPanes
+		// code sets it from the helpLabel prop, which defaults to "Help"). It
+		// lives in a pane header.
+		const helpButton = page.getByRole("button", { name: /^help$/i }).first();
 		await helpButton.waitFor({ state: "visible", timeout: 5_000 });
 		await helpButton.click();
 
@@ -279,10 +324,20 @@ test.describe("Roadmap coverage (✅ rows) — agentic behavior specs", () => {
 		const errors = await captureConsoleErrors(page);
 		await seedAndOpen(page, makeDoc({ withAsset: true, withClip: true }));
 
-		// Open the chat input. LeftPanel has the chat. We don't know the exact
-		// role yet; look for a textarea or contenteditable.
+		// ponytail: the chat panel is hidden by default. Click the "Chat"
+		// left-tab button to open it.
+		const chatTab = page.getByRole("button", { name: /^chat$/i }).first();
+		if (await chatTab.isVisible().catch(() => false)) {
+			await chatTab.click();
+			await page.waitForTimeout(500);
+		}
+
+		// Look for the chat input. Look for a textarea, contenteditable, or
+		// placeholder mentioning chat.
 		const input = page
-			.locator('textarea[placeholder*="message" i], [contenteditable="true"]')
+			.locator(
+				'textarea, textarea[placeholder*="message" i], [contenteditable="true"], input[type="text"][placeholder*="message" i]',
+			)
 			.first();
 		if (!(await input.isVisible().catch(() => false))) {
 			// ponytail: if we can't find the chat input, the test fails — either
