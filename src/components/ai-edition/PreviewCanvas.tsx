@@ -24,8 +24,12 @@
 
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { WebcamLayoutPreset, WebcamMaskShape } from "@/components/video-editor/types";
-import type { AxcutClip } from "@/lib/ai-edition/schema";
+import type {
+	WebcamLayoutPreset,
+	WebcamMaskShape,
+	ZoomFocus,
+} from "@/components/video-editor/types";
+import type { AxcutClip, AxcutZoomRegion } from "@/lib/ai-edition/schema";
 import { useEditorSettings } from "@/lib/ai-edition/store/useEditorSettings";
 import {
 	computeCompositeLayout,
@@ -36,10 +40,15 @@ import { getCssClipPath } from "@/lib/webcamMaskShapes";
 import styles from "./NewEditorShell.module.css";
 import { type VideoSource, VirtualPreview } from "./VirtualPreview";
 import { WebcamOverlay } from "./WebcamOverlay";
+import { ZoomFocusOverlay } from "./ZoomFocusOverlay";
 
 interface PreviewCanvasProps {
 	videoSources: VideoSource[];
 	clips: AxcutClip[];
+	zoomRegions?: AxcutZoomRegion[];
+	selectedZoomRegionId?: string | null;
+	onZoomFocusChange?: (id: string, focus: ZoomFocus) => void;
+	onZoomFocusCommit?: () => void;
 	seekTarget: { timeSec: number; requestId: number } | null;
 	onTimeChange: (sec: number) => void;
 	onSeek: (sec: number) => void;
@@ -170,12 +179,24 @@ export function PreviewCanvas(props: PreviewCanvasProps) {
 
 	const isPipGrab = settings.webcamLayoutPreset === "picture-in-picture";
 
+	const selectedZoomRegion = props.selectedZoomRegionId
+		? (props.zoomRegions?.find((z) => z.id === props.selectedZoomRegionId) ?? null)
+		: null;
+
 	return (
 		<div ref={frameRef} className={styles.previewFrame} style={frameStyle}>
 			<div className={styles.bgBlur} style={blurStyle} aria-hidden />
 			{layout?.screenRect ? (
 				<div className={styles.screenStage} style={screenStyle}>
 					<VirtualPreview {...relayProps} videoStyle={videoBorderRadiusStyle(settings)} />
+					{selectedZoomRegion && props.onZoomFocusChange ? (
+						<ZoomFocusOverlay
+							region={selectedZoomRegion}
+							isPlaying={isPlaying}
+							onFocusChange={props.onZoomFocusChange}
+							onFocusCommit={props.onZoomFocusCommit}
+						/>
+					) : null}
 				</div>
 			) : null}
 			{layout?.webcamRect ? (

@@ -1,6 +1,7 @@
 import { Maximize2, Pause, Play, Repeat, SkipBack, SkipForward } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AxcutClip } from "@/lib/ai-edition/schema";
+import type { ZoomFocus } from "@/components/video-editor/types";
+import type { AxcutClip, AxcutZoomRegion } from "@/lib/ai-edition/schema";
 import { useEditorSettings } from "@/lib/ai-edition/store/useEditorSettings";
 import { EditorEmptyState } from "./EditorEmptyState";
 import styles from "./NewEditorShell.module.css";
@@ -11,6 +12,10 @@ interface PreviewProps {
 	hasAsset: boolean;
 	videoSources: import("./VirtualPreview").VideoSource[];
 	clips: AxcutClip[];
+	zoomRegions?: AxcutZoomRegion[];
+	selectedZoomRegionId?: string | null;
+	onZoomFocusChange?: (id: string, focus: ZoomFocus) => void;
+	onZoomFocusCommit?: () => void;
 	seekTarget: { timeSec: number; requestId: number } | null;
 	onTimeChange: (sec: number) => void;
 	onSeek: (sec: number) => void;
@@ -31,6 +36,10 @@ export function Preview({
 	hasAsset,
 	videoSources,
 	clips,
+	zoomRegions,
+	selectedZoomRegionId,
+	onZoomFocusChange,
+	onZoomFocusCommit,
 	seekTarget,
 	onTimeChange,
 	onSeek,
@@ -149,6 +158,10 @@ export function Preview({
 					<PreviewCanvas
 						videoSources={videoSources}
 						clips={clips}
+						zoomRegions={zoomRegions}
+						selectedZoomRegionId={selectedZoomRegionId}
+						onZoomFocusChange={onZoomFocusChange}
+						onZoomFocusCommit={onZoomFocusCommit}
 						seekTarget={seekTarget}
 						onTimeChange={onTimeChange}
 						onSeek={onSeek}

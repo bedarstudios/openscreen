@@ -34,6 +34,7 @@ export function useTimeline() {
 	const projectId = useProjectStore((s) => s.projectId);
 	const currentTimeSec = useProjectStore((s) => s.currentTimeSec);
 	const saveDocument = useProjectStore((s) => s.saveDocument);
+	const setDocument = useProjectStore((s) => s.setDocument);
 	const [selection, setSelection] = useState<RegionHandle | null>(null);
 	// F2.7 — shift-click multi-selection. `selection` stays the inspector's
 	// focused region (the last one clicked); `multiSelection` is the full set
@@ -208,6 +209,33 @@ export function useTimeline() {
 		},
 		[document, saveDocument],
 	);
+
+	// ponytail: the focus overlay drags at pointermove frequency (~60-120 Hz).
+	// Routing every frame through `saveDocument` (IPC round-trip + disk write
+	// + zod re-parse + full store replace) made dragging visibly laggy.
+	// `updateZoomFocusLive` mirrors `useEditorSettings`'s setLive/commit split:
+	// local-only store writes while dragging, one persisted save on release.
+	const updateZoomFocusLive = useCallback(
+		(id: string, focus: { cx: number; cy: number }) => {
+			const doc = useProjectStore.getState().document;
+			if (!doc) return;
+			const clamp01 = (n: number) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5);
+			const next: AxcutDocument = {
+				...doc,
+				zoomRanges: doc.zoomRanges.map((z) =>
+					z.id === id ? { ...z, focus: { cx: clamp01(focus.cx), cy: clamp01(focus.cy) } } : z,
+				) as AxcutDocument["zoomRanges"],
+			};
+			setDocument(next);
+		},
+		[setDocument],
+	);
+
+	const commitZoomFocus = useCallback(async () => {
+		const doc = useProjectStore.getState().document;
+		if (!doc) return;
+		await saveDocument(doc);
+	}, [saveDocument]);
 
 	const updateAnnotationSpan = useCallback(
 		async (id: string, startMs: number, endMs: number) => {
@@ -749,6 +777,8 @@ export function useTimeline() {
 		clearClipSelection,
 		updateSkipRange,
 		updateZoomSpan,
+		updateZoomFocusLive,
+		commitZoomFocus,
 		updateAnnotationSpan,
 		updateSpeedSpan,
 		// T19 — drives the preview video during skip-edge resize.
