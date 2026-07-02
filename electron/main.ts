@@ -20,6 +20,7 @@ import {
 } from "./globalShortcut";
 import { mainT, setMainLocale } from "./i18n";
 import { getSelectedDesktopSource, registerIpcHandlers } from "./ipc/handlers";
+import { installMainProcessErrorGuards } from "./main-process-errors";
 import { acquireStableInstanceLock } from "./singleInstanceLock";
 import {
 	createCountdownOverlayWindow,
@@ -47,6 +48,8 @@ if (process.platform === "linux") {
 		app.commandLine.appendSwitch("enable-features", "WaylandWindowDrag,WebRTCPipeWireCapturer");
 	}
 }
+
+installMainProcessErrorGuards();
 
 export const RECORDINGS_DIR = path.join(app.getPath("userData"), "recordings");
 
