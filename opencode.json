@@ -5,6 +5,11 @@
 			"type": "local",
 			"command": ["npx", "playwright", "run-test-mcp-server"],
 			"enabled": true
+		},
+		"open-computer-use": {
+			"type": "local",
+			"command": ["open-computer-use", "mcp"],
+			"enabled": true
 		}
 	},
 	"tools": {
