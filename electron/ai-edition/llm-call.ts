@@ -1,14 +1,22 @@
 // Real LLM call via fetch — no LangChain dependency. Supports the
 // OpenAI-compatible `/chat/completions` endpoint (OpenAI, Mistral,
-// OpenRouter, openai-compatible) and Anthropic's `/v1/messages`, both with
-// tool calling (P1). OAuth providers stay stubbed and return a clear
-// "not yet implemented" error.
+// OpenRouter, openai-compatible, Gemini via OpenAI-compat), Anthropic's
+// `/v1/messages`, the Codex (ChatGPT OAuth) Responses path, and GitHub
+// Copilot's runtime-token chat path.
 //
-// ponytail: keep this file small and dependency-free so it works in both
-// Electron and the browser-mode shim. Streaming is not supported in this
-// pass — the chat panel does request/response.
+// Reasoning-effort transport is per-provider (see
+// ./agent-provider-capabilities). Streaming is not implemented in this pass —
+// the chat panel does request/response. Add via the streaming extension point
+// at the bottom of this file.
 
-import { PROVIDER_DEFINITIONS, type ProviderDefinition } from "./provider-registry";
+import { getReasoningCallOptions } from "./agent-provider-capabilities";
+import { exchangeGithubCopilotRuntimeToken, OPENAI_ACCOUNT_BASE_URL } from "./llm-provider-auth";
+import {
+	getProviderDefinition,
+	normalizeProviderId,
+	PROVIDER_DEFINITIONS,
+	type ProviderDefinition,
+} from "./provider-registry";
 
 export interface LlmToolSpec {
 	name: string;
@@ -30,12 +38,19 @@ export type ChatMessage =
 
 export interface CallLlmOptions {
 	provider: string;
+	/** Provider model id (e.g. `gpt-4o`). Empty string falls back to the
+	 * provider's `defaultModel`. */
 	model: string;
+	/** Bearer credential string (env var, API key, OAuth access token, or
+	 * GitHub PAT for Copilot). */
 	apiKey: string;
 	baseUrl?: string;
 	reasoningEffort?: string;
 	messages: ChatMessage[];
 	tools?: LlmToolSpec[];
+	/** OAuth account id (Codex only). When present the call sets the
+	 * `chatgpt-account-id` header required by chatgpt.com/backend-api. */
+	accountId?: string;
 }
 
 export interface CallLlmResult {
@@ -45,39 +60,15 @@ export interface CallLlmResult {
 	error?: string;
 }
 
-const REASONING_BY_PROVIDER: Record<string, "low" | "medium" | "high"> = {
-	low: "low",
-	medium: "medium",
-	high: "high",
-};
-
-function findProvider(id: string): ProviderDefinition | undefined {
-	return PROVIDER_DEFINITIONS.find((p) => p.id === id);
-}
-
-function defaultBaseUrl(providerId: string): string {
-	switch (providerId) {
-		case "openai":
-			return "https://api.openai.com/v1";
-		case "anthropic":
-			return "https://api.anthropic.com/v1";
-		case "google":
-			return "https://generativelanguage.googleapis.com/v1beta";
-		case "mistral":
-			return "https://api.mistral.ai/v1";
-		case "openrouter":
-			return "https://openrouter.ai/api/v1";
-		default:
-			return "https://api.openai.com/v1";
-	}
-}
-
-// --- OpenAI-compatible wire mapping -------------------------------------
-
 interface OpenAiToolCall {
 	id?: string;
 	type?: string;
 	function?: { name?: string; arguments?: string };
+}
+
+function resolveProvider(rawId: string): ProviderDefinition | undefined {
+	const id = normalizeProviderId(rawId) ?? rawId;
+	return getProviderDefinition(id);
 }
 
 function toOpenAiMessage(message: ChatMessage): Record<string, unknown> {
@@ -98,42 +89,64 @@ function toOpenAiMessage(message: ChatMessage): Record<string, unknown> {
 	return { role: message.role, content: message.content };
 }
 
+function defaultBaseUrl(providerId: string): string | undefined {
+	return PROVIDER_DEFINITIONS.find((p) => p.id === providerId)?.baseUrl;
+}
+
 export async function callLlm(opts: CallLlmOptions): Promise<CallLlmResult> {
-	const def = findProvider(opts.provider);
+	const def = resolveProvider(opts.provider);
 	if (!def) {
 		return { success: false, error: `Unknown provider: ${opts.provider}` };
 	}
 	if (!opts.apiKey && def.authKind === "api-key") {
 		return { success: false, error: `Missing API key for ${def.label}` };
 	}
-	// OAuth + PAT providers are not yet wired. Return a clear error.
+	// Special-case the OAuth-backed Codex path and the PAT-backed Copilot
+	// path; everything else flows through the OpenAI-compatible or Anthropic
+	// branches below.
 	if (def.authKind === "oauth-device") {
-		return {
-			success: false,
-			error: `Provider "${def.label}" uses OAuth — device-flow is not implemented yet.`,
-		};
+		if (def.id !== "openai-oauth") {
+			return {
+				success: false,
+				error: `Provider "${def.label}" uses OAuth — not implemented.`,
+			};
+		}
+		return callCodex(opts);
 	}
 	if (def.authKind === "pat") {
-		return {
-			success: false,
-			error: `Provider "${def.label}" uses a personal access token — wire it via env var.`,
-		};
+		if (def.id !== "copilot-proxy") {
+			return {
+				success: false,
+				error: `Provider "${def.label}" uses a personal access token — not implemented.`,
+			};
+		}
+		return callCopilot(opts);
 	}
 
-	// Anthropic has its own /v1/messages endpoint with a different schema.
-	// Wire it separately so the OpenAI-compatible path stays small.
-	if (opts.provider === "anthropic") {
+	if (def.id === "anthropic") {
 		return callAnthropic(opts);
 	}
 
-	const baseUrl = (opts.baseUrl || def.baseUrl || defaultBaseUrl(opts.provider)).replace(
+	return callOpenAiCompatible(opts);
+}
+
+function buildOpenAiHeaders(opts: CallLlmOptions): Record<string, string> {
+	return {
+		"Content-Type": "application/json",
+		Authorization: `Bearer ${opts.apiKey}`,
+	};
+}
+
+async function callOpenAiCompatible(opts: CallLlmOptions): Promise<CallLlmResult> {
+	const def = getProviderDefinition(opts.provider);
+	const baseUrl = (opts.baseUrl || def?.baseUrl || defaultBaseUrl(opts.provider) || "").replace(
 		/\/+$/,
 		"",
 	);
 	const url = `${baseUrl}/chat/completions`;
 
 	const body: Record<string, unknown> = {
-		model: opts.model || def.defaultModel,
+		model: opts.model || def?.defaultModel,
 		messages: opts.messages.map(toOpenAiMessage),
 	};
 	if (opts.tools?.length) {
@@ -146,19 +159,132 @@ export async function callLlm(opts: CallLlmOptions): Promise<CallLlmResult> {
 			},
 		}));
 	}
-	if (def.supportsReasoningEffort && opts.reasoningEffort) {
-		body.reasoning_effort = REASONING_BY_PROVIDER[opts.reasoningEffort] ?? opts.reasoningEffort;
+
+	const reasoning = getReasoningCallOptions(
+		opts.provider,
+		opts.model,
+		opts.reasoningEffort as never,
+	);
+	if (reasoning.extraBody) Object.assign(body, reasoning.extraBody);
+
+	return postChatCompletions(url, buildOpenAiHeaders(opts), body);
+}
+
+// --- Codex (ChatGPT OAuth) -------------------------------------------------
+
+async function callCodex(opts: CallLlmOptions): Promise<CallLlmResult> {
+	const def = getProviderDefinition("openai-oauth");
+	const model = opts.model || def?.defaultModel || "gpt-5";
+	const baseUrl = (opts.baseUrl || OPENAI_ACCOUNT_BASE_URL).replace(/\/+$/, "");
+	const url = `${baseUrl}/codex/responses`;
+
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Authorization: `Bearer ${opts.apiKey}`,
+		Accept: "application/json",
+	};
+	if (opts.accountId) headers["chatgpt-account-id"] = opts.accountId;
+
+	const reasoning = getReasoningCallOptions("openai-oauth", model, opts.reasoningEffort as never);
+	const messages = opts.messages.filter((m) => m.role !== "system");
+	const system = opts.messages.find((m) => m.role === "system")?.content;
+
+	const body: Record<string, unknown> = {
+		model,
+		stream: false,
+		input: messages.map(toCodexInputItem),
+	};
+	if (system) body.instructions = system;
+	if (opts.tools?.length) {
+		body.tools = opts.tools.map((tool) => ({
+			type: "function",
+			name: tool.name,
+			description: tool.description,
+			parameters: tool.parameters,
+		}));
+	}
+	if (reasoning.effort && reasoning.effort !== "none") {
+		body.reasoning = { effort: reasoning.effort };
 	}
 
+	return postCodexResponses(url, headers, body);
+}
+
+function toCodexInputItem(message: ChatMessage): Record<string, unknown> {
+	if (message.role === "assistant" && message.toolCalls?.length) {
+		return {
+			role: "assistant",
+			content: message.toolCalls.map((call) => ({
+				type: "tool_call",
+				name: call.name,
+				arguments: call.arguments,
+				call_id: call.id,
+			})),
+		};
+	}
+	if (message.role === "tool") {
+		return {
+			type: "tool_result",
+			role: "tool",
+			tool_call_id: message.toolCallId,
+			content: message.content,
+		};
+	}
+	return { role: message.role === "user" ? "user" : "assistant", content: message.content };
+}
+
+async function postCodexResponses(
+	url: string,
+	headers: Record<string, string>,
+	body: Record<string, unknown>,
+): Promise<CallLlmResult> {
 	try {
-		const res = await fetch(url, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Authorization: `Bearer ${opts.apiKey}`,
-			},
-			body: JSON.stringify(body),
-		});
+		const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
+		if (!res.ok) {
+			const text = await res.text();
+			return { success: false, error: `${res.status} ${res.statusText}: ${text.slice(0, 200)}` };
+		}
+		const json = (await res.json()) as {
+			output?: Array<{
+				type?: string;
+				content?: Array<{ type?: string; text?: string }>;
+				name?: string;
+				arguments?: string;
+				call_id?: string;
+			}>;
+		};
+		const text = (json.output ?? [])
+			.flatMap((item) => item.content ?? [])
+			.filter((block) => block.type === "output_text" || typeof block.text === "string")
+			.map((block) => block.text ?? "")
+			.join("");
+		const toolCalls = (json.output ?? [])
+			.filter((item) => item.type === "tool_call" || item.type === "function_call")
+			.map((item, index) => ({
+				id: item.call_id ?? `call_${index}`,
+				name: item.name ?? "",
+				arguments: item.arguments ?? "{}",
+			}));
+		if (!text && toolCalls.length === 0) {
+			return { success: false, error: "Empty response from Codex." };
+		}
+		return {
+			success: true,
+			content: text,
+			toolCalls: toolCalls.length ? toolCalls : undefined,
+		};
+	} catch (err) {
+		return { success: false, error: err instanceof Error ? err.message : String(err) };
+	}
+}
+
+async function postChatCompletions(
+	url: string,
+	headers: Record<string, string>,
+	body: Record<string, unknown>,
+): Promise<CallLlmResult> {
+	try {
+		const res = await fetch(url, { method: "POST", headers, body: JSON.stringify(body) });
 		if (!res.ok) {
 			const text = await res.text();
 			return { success: false, error: `${res.status} ${res.statusText}: ${text.slice(0, 200)}` };
@@ -186,6 +312,63 @@ export async function callLlm(opts: CallLlmOptions): Promise<CallLlmResult> {
 	}
 }
 
+// --- GitHub Copilot -------------------------------------------------------
+//
+// Stored credential is the user's GitHub PAT (or the PAT from the OAuth
+// device flow). At call time we exchange it for a short-lived Copilot
+// runtime bearer and hit the Copilot chat-completions endpoint with the
+// right user-agent headers.
+
+async function callCopilot(opts: CallLlmOptions): Promise<CallLlmResult> {
+	const def = getProviderDefinition("copilot-proxy");
+	let runtime: { token: string; baseUrl: string };
+	try {
+		runtime = await exchangeGithubCopilotRuntimeToken(opts.apiKey);
+	} catch (err) {
+		return { success: false, error: err instanceof Error ? err.message : String(err) };
+	}
+
+	const baseUrl = (opts.baseUrl || runtime.baseUrl || def?.baseUrl || "").replace(/\/+$/, "");
+	const url = `${baseUrl}/chat/completions`;
+
+	const body: Record<string, unknown> = {
+		model: opts.model || def?.defaultModel,
+		messages: opts.messages.map(toOpenAiMessage),
+		stream: false,
+	};
+	if (opts.tools?.length) {
+		body.tools = opts.tools.map((tool) => ({
+			type: "function",
+			function: {
+				name: tool.name,
+				description: tool.description,
+				parameters: tool.parameters,
+			},
+		}));
+	}
+	const reasoning = getReasoningCallOptions(
+		"copilot-proxy",
+		opts.model,
+		opts.reasoningEffort as never,
+	);
+	if (reasoning.extraBody) Object.assign(body, reasoning.extraBody);
+
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Authorization: `Bearer ${runtime.token}`,
+		Accept: "application/json",
+		"User-Agent": "GitHubCopilotChat/0.26.7",
+		"Editor-Version": "vscode/1.96.2",
+		"Editor-Plugin-Version": "copilot-chat/0.26.7",
+		"Openai-Intent": "copilot-gpt-chat-completions",
+	};
+	if (opts.reasoningEffort && opts.reasoningEffort !== "none") {
+		headers["X-Initiator"] = "user";
+	}
+
+	return postChatCompletions(url, headers, body);
+}
+
 // --- Anthropic wire mapping ----------------------------------------------
 
 type AnthropicContentBlock =
@@ -200,7 +383,6 @@ function toAnthropicMessages(
 	for (const message of messages) {
 		if (message.role === "system") continue;
 		if (message.role === "tool") {
-			// Anthropic wants tool results as user-role tool_result blocks.
 			out.push({
 				role: "user",
 				content: [
@@ -230,13 +412,17 @@ function toAnthropicMessages(
 }
 
 async function callAnthropic(opts: CallLlmOptions): Promise<CallLlmResult> {
-	const baseUrl = (opts.baseUrl || defaultBaseUrl("anthropic")).replace(/\/+$/, "");
+	const def = getProviderDefinition("anthropic");
+	const baseUrl = (opts.baseUrl || def?.baseUrl || "https://api.anthropic.com/v1").replace(
+		/\/+$/,
+		"",
+	);
 	const url = `${baseUrl}/messages`;
 	const systemMessage = opts.messages.find((m) => m.role === "system")?.content;
 
 	const body: Record<string, unknown> = {
-		model: opts.model || "claude-haiku-4-5",
-		max_tokens: 4096,
+		model: opts.model || def?.defaultModel || "claude-haiku-4-5",
+		max_tokens: 8192,
 		messages: toAnthropicMessages(opts.messages),
 	};
 	if (systemMessage) body.system = systemMessage;
@@ -247,9 +433,30 @@ async function callAnthropic(opts: CallLlmOptions): Promise<CallLlmResult> {
 			input_schema: tool.parameters,
 		}));
 	}
-	if (opts.reasoningEffort === "high") {
-		body.thinking = { type: "enabled", budget_tokens: 4096 };
+
+	// MiniMax rides this transport too — both `minimax` and the token-plan
+	// variant point at the Anthropic-compatible `api.minimax.io/anthropic`.
+	// The capability module returns the OpenAI-responses strategy for those,
+	// which would send the wrong shape; force the Anthropic-style thinking
+	// patch off and let MiniMax's proxy translate raw effort via the
+	// `reasoning_effort` extra_body if it wants to.
+	const isMinimax = opts.provider === "minimax" || opts.provider === "minimax-token-plan";
+	const reasoning = getReasoningCallOptions(
+		opts.provider,
+		opts.model,
+		opts.reasoningEffort as never,
+	);
+	if (reasoning.requestBodyPatch && !isMinimax) {
+		if (reasoning.requestBodyPatch.thinking) {
+			body.thinking = reasoning.requestBodyPatch.thinking;
+		}
+		if (reasoning.requestBodyPatch.outputConfig) {
+			body.output_config = reasoning.requestBodyPatch.outputConfig;
+		}
+	} else if (reasoning.extraBody && isMinimax) {
+		Object.assign(body, reasoning.extraBody);
 	}
+	if (isMinimax) body.max_tokens = 8192;
 
 	try {
 		const res = await fetch(url, {

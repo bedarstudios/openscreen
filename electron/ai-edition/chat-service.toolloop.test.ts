@@ -56,6 +56,10 @@ function stubConfig(overrides: Record<string, unknown> = {}): LlmConfigStore {
 	return {
 		getConfig: () => ({ provider: "openai", model: "gpt-4o", ...overrides }),
 		getApiKey: () => "sk-test",
+		getCredential: (_id: string, _envKeys: string[]) => ({
+			value: "sk-test",
+			entry: { kind: "api-key", apiKey: "sk-test" },
+		}),
 	} as unknown as LlmConfigStore;
 }
 

@@ -174,13 +174,16 @@ export async function runChat(
 		return { success: false, error: `Unknown provider: ${config.provider}` };
 	}
 
-	const apiKey = llmConfig.getApiKey(def.id, def.envKeys);
+	const credential = llmConfig.getCredential(def.id, def.envKeys);
+	const apiKey = credential?.value ?? null;
 	if (!apiKey && def.authKind === "api-key") {
 		return {
 			success: false,
 			error: `No API key for ${def.label}. Add one in Settings → AI.`,
 		};
 	}
+	const accountId =
+		credential?.entry.kind === "codex" ? (credential.entry.accountId ?? undefined) : undefined;
 
 	const sessions = getProjectSessions(projectId);
 	let session = sessions.get(sessionId);
@@ -233,6 +236,7 @@ export async function runChat(
 			apiKey: apiKey ?? "",
 			baseUrl: config.baseUrl,
 			reasoningEffort: config.reasoningEffort,
+			accountId,
 			messages: loopMessages,
 			tools: workingDocument ? AGENT_TOOL_SPECS : undefined,
 		});
