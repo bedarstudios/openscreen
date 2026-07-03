@@ -980,6 +980,22 @@ function findCollapsedDeletionWordId(
 	const boundaryNode = node instanceof Element ? node : node.parentElement;
 	if (!boundaryNode) return null;
 	const childNodes = Array.from(boundaryNode.childNodes);
+
+	// ponytail: when restoreCaretBeforeWord places the caret before word W
+	// (via setStartBefore), `anchorNode` becomes the parent div and
+	// `anchorOffset` is W's index. The naive "previous sibling" lookup
+	// below would always return the word that was *just* trimmed, which
+	// is a no-op (the previous word is already skipped). The user
+	// expects Backspace at the start of W to delete W. So when the
+	// previous adjacent word is already trimmed, fall forward to W.
+	if (direction === "backward" && node instanceof Element && node === editor) {
+		const idx = Math.max(0, Math.min(offset, wordNodes.length) - 1);
+		const previousWord = wordNodes[idx];
+		if (previousWord?.dataset.skipId) {
+			return wordNodes[idx]?.dataset.wordId ?? null;
+		}
+	}
+
 	const candidates =
 		direction === "backward" ? childNodes.slice(0, offset).reverse() : childNodes.slice(offset);
 	for (const candidate of candidates) {
