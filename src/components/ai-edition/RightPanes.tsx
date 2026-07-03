@@ -653,6 +653,7 @@ function TranscriptClipBlock({
 					selection.anchorNode,
 					selection.anchorOffset,
 					direction,
+					words,
 				);
 				if (!wordId) return false;
 				const cw = words.find((w) => w.word.id === wordId);
@@ -661,11 +662,29 @@ function TranscriptClipBlock({
 				return true;
 			}
 			const anchorId =
-				findSelectionWordId(editor, selection.anchorNode, selection.anchorOffset, "forward") ??
-				findSelectionWordId(editor, selection.anchorNode, selection.anchorOffset, "backward");
+				findSelectionWordId(
+					editor,
+					selection.anchorNode,
+					selection.anchorOffset,
+					"forward",
+					words,
+				) ??
+				findSelectionWordId(
+					editor,
+					selection.anchorNode,
+					selection.anchorOffset,
+					"backward",
+					words,
+				);
 			const focusId =
-				findSelectionWordId(editor, selection.focusNode, selection.focusOffset, "backward") ??
-				findSelectionWordId(editor, selection.focusNode, selection.focusOffset, "forward");
+				findSelectionWordId(
+					editor,
+					selection.focusNode,
+					selection.focusOffset,
+					"backward",
+					words,
+				) ??
+				findSelectionWordId(editor, selection.focusNode, selection.focusOffset, "forward", words);
 			if (!anchorId || !focusId) return false;
 			const fromIdx = words.findIndex((w) => w.word.id === anchorId);
 			const toIdx = words.findIndex((w) => w.word.id === focusId);
@@ -950,8 +969,9 @@ function findSelectionWordId(
 	node: Node | null,
 	offset: number,
 	direction: "backward" | "forward",
+	words: ClipWord[],
 ): string | null {
-	return findWordId(node) ?? findCollapsedDeletionWordId(editor, node, offset, direction);
+	return findWordId(node) ?? findCollapsedDeletionWordId(editor, node, offset, direction, words);
 }
 
 function findCollapsedDeletionWordId(
@@ -959,7 +979,15 @@ function findCollapsedDeletionWordId(
 	node: Node | null,
 	offset: number,
 	direction: "backward" | "forward",
+	words: ClipWord[],
 ): string | null {
+	// ponytail: read the kept/skip state from the words array, not the
+	// DOM's data-skip-id. The DOM may be lagging a render behind (its
+	// skipId is only set on the next React commit), so a DOM check would
+	// re-trim an already-trimmed word. The words array is the React state
+	// captured at the call site — always current.
+	const skippedIds = new Set(words.filter((w) => !w.kept).map((w) => w.word.id));
+
 	const direct = closestWordElement(node);
 	if (direct) {
 		const textLength = node?.textContent?.length ?? 0;
@@ -970,14 +998,14 @@ function findCollapsedDeletionWordId(
 				// trimmed, that would be a no-op. Fall back to the current
 				// word so Backspace always does something.
 				const prev = adjacentWordId(editor, direct, "backward");
-				if (prev && !isWordSkipped(prev)) {
+				if (prev && !skippedIds.has(prev)) {
 					return prev;
 				}
 				return direct.dataset.wordId ?? null;
 			}
 			if (direction === "forward" && offset >= textLength) {
 				const next = adjacentWordId(editor, direct, "forward");
-				if (next && !isWordSkipped(next)) {
+				if (next && !skippedIds.has(next)) {
 					return next;
 				}
 				return direct.dataset.wordId ?? null;
@@ -1001,8 +1029,8 @@ function findCollapsedDeletionWordId(
 	// previous adjacent word is already trimmed, fall forward to W.
 	if (direction === "backward" && node instanceof Element && node === editor) {
 		const idx = Math.max(0, Math.min(offset, wordNodes.length) - 1);
-		const previousWord = wordNodes[idx];
-		if (previousWord?.dataset.skipId) {
+		const previousWordId = wordNodes[idx]?.dataset.wordId ?? null;
+		if (previousWordId && skippedIds.has(previousWordId)) {
 			return wordNodes[idx]?.dataset.wordId ?? null;
 		}
 	}
@@ -1034,12 +1062,6 @@ function findDescendantWordId(node: Node): string | null {
 function closestWordElement(node: Node | null): HTMLElement | null {
 	const element = node instanceof Element ? node : node?.parentElement;
 	return element?.closest<HTMLElement>("[data-word-id]") ?? null;
-}
-
-/** ponytail: skip status is encoded as `data-skip-id` on the word span. */
-function isWordSkipped(wordId: string): boolean {
-	const el = document.querySelector<HTMLElement>(`[data-word-id="${wordId}"]`);
-	return Boolean(el?.dataset.skipId);
 }
 
 function adjacentWordId(
