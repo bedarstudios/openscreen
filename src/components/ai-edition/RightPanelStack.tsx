@@ -54,6 +54,7 @@ interface RightPanelStackProps {
 	currentTimeSec: number;
 	onSeek: (sec: number) => void;
 	onDropWordRange: (start: number, end: number) => void;
+	onRestoreWordRange: (start: number, end: number) => void;
 	onTranscribe: () => void;
 	canTranscribe: boolean;
 	isTranscribing: boolean;
@@ -85,6 +86,7 @@ export function RightPanelStack({
 	currentTimeSec,
 	onSeek,
 	onDropWordRange,
+	onRestoreWordRange,
 	onTranscribe,
 	canTranscribe,
 	isTranscribing,
@@ -118,6 +120,7 @@ export function RightPanelStack({
 						currentTimeSec={currentTimeSec}
 						onSeek={onSeek}
 						onDropWordRange={onDropWordRange}
+						onRestoreWordRange={onRestoreWordRange}
 						onTranscribe={onTranscribe}
 						canTranscribe={canTranscribe}
 						isTranscribing={isTranscribing}

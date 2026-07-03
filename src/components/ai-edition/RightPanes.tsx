@@ -13,6 +13,7 @@ import {
 	MousePointerClick,
 	Palette,
 	Sliders,
+	Trash2,
 } from "lucide-react";
 import {
 	type ChangeEvent,
@@ -395,7 +396,6 @@ function normaliseHex(raw: string): string | null {
 // timeline order. Each section shows the kept / removed words for that
 // clip's source range, inline trim-duration pills, and filler chips.
 // Mirrors the `Current Transcription` pane in axcut's reference design.
-
 export function TranscriptPane({
 	clips,
 	transcripts,
@@ -403,6 +403,7 @@ export function TranscriptPane({
 	currentTimeSec,
 	onSeek,
 	onDropWordRange,
+	onRestoreWordRange,
 	onTranscribe,
 	canTranscribe,
 	isTranscribing,
@@ -413,6 +414,7 @@ export function TranscriptPane({
 	currentTimeSec: number;
 	onSeek: (sec: number) => void;
 	onDropWordRange: (start: number, end: number) => void;
+	onRestoreWordRange: (start: number, end: number) => void;
 	onTranscribe: () => void;
 	canTranscribe: boolean;
 	isTranscribing: boolean;
@@ -476,6 +478,7 @@ export function TranscriptPane({
 						currentTimeSec={currentTimeSec}
 						onSeek={onSeek}
 						onDropWordRange={onDropWordRange}
+						onRestoreWordRange={onRestoreWordRange}
 					/>
 				))}
 			</div>
@@ -484,8 +487,9 @@ export function TranscriptPane({
 }
 
 // Per-clip transcript section: head with badge + filename + source range,
-// and a flowing text body. Word click = seek; shift-click + click = range
-// select across words; "Cut" button drops the selected range.
+// and a flowing text body. Words are grouped into runs (kept / removed)
+// matching the Axcut reference's <span class="hl"> blocks. Trim pills
+// sit between runs. Hovering a removed run shows a restore icon.
 
 interface ClipTranscriptSectionProps {
 	index: number;
@@ -493,6 +497,7 @@ interface ClipTranscriptSectionProps {
 	currentTimeSec: number;
 	onSeek: (sec: number) => void;
 	onDropWordRange: (start: number, end: number) => void;
+	onRestoreWordRange: (start: number, end: number) => void;
 }
 
 function ClipTranscriptSection({
@@ -501,10 +506,12 @@ function ClipTranscriptSection({
 	currentTimeSec,
 	onSeek,
 	onDropWordRange,
+	onRestoreWordRange,
 }: ClipTranscriptSectionProps) {
 	const { clip, asset, words, trims } = section;
 	const [anchorId, setAnchorId] = useState<string | null>(null);
 	const [focusId, setFocusId] = useState<string | null>(null);
+	const [hoverTrimIdx, setHoverTrimIdx] = useState<number | null>(null);
 
 	const handleWordClick = useCallback(
 		(event: ReactMouseEvent, wordId: string, startSec: number) => {
@@ -547,6 +554,49 @@ function ClipTranscriptSection({
 		clip.sourceEndSec !== undefined
 			? `${formatMs(clip.sourceStartSec * 1000)}—${formatMs(clip.sourceEndSec * 1000)}`
 			: `${formatMs(clip.sourceStartSec * 1000)}—`;
+
+	// Build runs: consecutive words of the same kept/removed type grouped
+	// into one span block, mimicking Axcut's <span class="hl">.
+	const runs = useMemo(() => {
+		const result: Array<{
+			words: ClipWord[];
+			kept: boolean;
+			trimDurationSec?: number;
+		}> = [];
+		let batch: ClipWord[] = [];
+		let batchKept: boolean = true;
+		for (let i = 0; i < words.length; i++) {
+			const cw = words[i];
+			if (i === 0) {
+				batch = [cw];
+				batchKept = cw.kept;
+				continue;
+			}
+			if (cw.kept === batchKept) {
+				batch.push(cw);
+			} else {
+				const trim = trims.find(
+					(t) => t.startWordIndex === i - batch.length || t.startWordIndex === i,
+				);
+				result.push({
+					words: batch,
+					kept: batchKept,
+					trimDurationSec: batchKept ? undefined : trim?.durationSec,
+				});
+				batch = [cw];
+				batchKept = cw.kept;
+			}
+		}
+		if (batch.length > 0) {
+			const trim = trims.find((t) => t.startWordIndex === words.length - batch.length);
+			result.push({
+				words: batch,
+				kept: batchKept,
+				trimDurationSec: batchKept ? undefined : trim?.durationSec,
+			});
+		}
+		return result;
+	}, [words, trims]);
 
 	return (
 		<section style={{ marginBottom: 16 }}>
@@ -644,17 +694,13 @@ function ClipTranscriptSection({
 						textWrap: "pretty",
 					}}
 				>
-					{words.map((cw, i) => {
-						const w = cw.word;
-						const isCurrent = currentTimeSec >= w.startSec && currentTimeSec <= w.endSec;
-						const isSelected =
-							anchorId !== null &&
-							focusId !== null &&
-							isWordInRange(w.id, anchorId, focusId, words);
+					{runs.map((run, ri) => {
+						const runStartSec = run.words[0]?.word.startSec ?? 0;
+						const runEndSec = run.words[run.words.length - 1]?.word.endSec ?? 0;
+						const isHovering = run.kept ? false : hoverTrimIdx === ri;
 						return (
-							<span key={w.id}>
-								{i > 0 && shouldGroupWithPrev(words, i, trims) ? " " : null}
-								{isTrimBoundary(i, trims) ? (
+							<span key={ri}>
+								{ri > 0 && !run.kept ? (
 									<span
 										style={{
 											display: "inline-block",
@@ -667,48 +713,101 @@ function ClipTranscriptSection({
 											whiteSpace: "nowrap",
 										}}
 									>
-										{trimDurationAt(i, trims).toFixed(1)}s
+										{run.trimDurationSec?.toFixed(1)}s
 									</span>
 								) : null}
 								<span
 									role="button"
 									tabIndex={0}
-									onClick={(e) => handleWordClick(e, w.id, w.startSec)}
-									onKeyDown={(e) => {
-										if (e.key === "Enter" || e.key === " ") {
-											e.preventDefault();
-											handleWordClick(e as unknown as ReactMouseEvent, w.id, w.startSec);
-										}
-									}}
 									style={{
-										padding: "1px 2px",
-										borderRadius: 3,
-										cursor: "pointer",
-										background: isSelected ? "var(--accent-wash)" : undefined,
-										color: cw.kept ? (isCurrent ? "var(--accent)" : "var(--fg)") : "var(--danger)",
-										fontWeight: cw.kept ? 400 : 600,
-										textDecoration: cw.kept ? "none" : "line-through",
-										textDecorationColor: cw.kept ? undefined : "var(--danger)",
-										opacity: cw.kept ? 1 : 0.85,
+										padding: "2px 3px",
+										borderRadius: 4,
+										cursor: run.kept ? "pointer" : "default",
+										position: "relative",
+										whiteSpace: "pre-wrap",
+										color: run.kept ? "var(--fg)" : "var(--danger)",
+										fontWeight: run.kept ? 400 : 600,
+										textDecoration: run.kept ? "none" : "line-through",
+										opacity: run.kept ? 1 : 0.85,
 									}}
+									onMouseEnter={() => setHoverTrimIdx(ri)}
+									onMouseLeave={() => setHoverTrimIdx(null)}
 								>
-									{cw.filler ? (
-										<span
+									{run.words.map((cw, wi) => {
+										const word = cw.word;
+										const isCurrent =
+											currentTimeSec >= word.startSec && currentTimeSec <= word.endSec;
+										const isSelected =
+											anchorId !== null &&
+											focusId !== null &&
+											isWordInRange(word.id, anchorId, focusId, words);
+										return (
+											<span key={word.id}>
+												{wi > 0 ? " " : null}
+												<span
+													role="button"
+													tabIndex={0}
+													onClick={(e) => handleWordClick(e, word.id, word.startSec)}
+													onKeyDown={(e) => {
+														if (e.key === "Enter" || e.key === " ") {
+															e.preventDefault();
+															handleWordClick(
+																e as unknown as ReactMouseEvent,
+																word.id,
+																word.startSec,
+															);
+														}
+													}}
+													style={{
+														background: isSelected ? "var(--accent-wash)" : undefined,
+														color: isCurrent ? "var(--accent)" : undefined,
+													}}
+												>
+													{cw.filler ? (
+														<span
+															style={{
+																display: "inline-block",
+																padding: "1px 6px",
+																margin: "0 1px",
+																background: "var(--danger-soft)",
+																color: "var(--danger)",
+																borderRadius: "var(--r-sm)",
+																fontWeight: 500,
+															}}
+														>
+															{word.text}
+														</span>
+													) : (
+														word.text
+													)}
+												</span>
+											</span>
+										);
+									})}
+									{!run.kept && isHovering ? (
+										<button
+											type="button"
+											title="Restore these words to the timeline"
+											aria-label="Restore these words to the timeline"
+											onClick={() => onRestoreWordRange(runStartSec, runEndSec)}
 											style={{
-												display: "inline-block",
-												padding: "1px 6px",
-												margin: "0 1px",
+												display: "inline-flex",
+												alignItems: "center",
+												justifyContent: "center",
+												width: 20,
+												height: 20,
+												border: 0,
+												borderRadius: 4,
 												background: "var(--danger-soft)",
 												color: "var(--danger)",
-												borderRadius: "var(--r-sm)",
-												fontWeight: 500,
+												cursor: "pointer",
+												verticalAlign: "middle",
+												marginLeft: 4,
 											}}
 										>
-											{w.text}
-										</span>
-									) : (
-										w.text
-									)}
+											<Trash2 size={12} />
+										</button>
+									) : null}
 								</span>
 							</span>
 						);
@@ -735,35 +834,6 @@ function isWordInRange(
 	const [lo, hi] = fromIdx <= toIdx ? [fromIdx, toIdx] : [toIdx, fromIdx];
 	const idx = words.findIndex((cw) => cw.word.id === wordId);
 	return idx >= lo && idx <= hi;
-}
-
-function isTrimBoundary(wordIndex: number, trims: { startWordIndex: number }[]): boolean {
-	return trims.some((t) => t.startWordIndex === wordIndex);
-}
-
-function trimDurationAt(
-	wordIndex: number,
-	trims: { startWordIndex: number; endWordIndex: number; durationSec: number }[],
-): number {
-	const t = trims.find((tr) => tr.startWordIndex === wordIndex);
-	return t?.durationSec ?? 0;
-}
-
-// ponytail: don't double-space across trim pills — words are already
-// separated by their natural whitespace, but a trim pill eats the spaces
-// around it so we only need a single space between adjacent kept words.
-function shouldGroupWithPrev(
-	words: ClipWord[],
-	i: number,
-	trims: { startWordIndex: number; endWordIndex: number }[],
-): boolean {
-	const prev = words[i - 1];
-	const curr = words[i];
-	if (!prev || !curr) return false;
-	if (!prev.kept || !curr.kept) return false;
-	// A trim boundary at `i` already injects its own visual gap.
-	const isAtTrim = trims.some((t) => t.startWordIndex === i || t.endWordIndex === i - 1);
-	return !isAtTrim;
 }
 
 // ─── Video Effects ─────────────────────────────────────────────────
