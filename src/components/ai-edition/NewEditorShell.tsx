@@ -100,6 +100,12 @@ export function NewEditorShell() {
 	const seekSeqRef = useRef(0);
 	const initRef = useRef(false);
 
+	// ponytail: serialise timeline-edit saves so two rapid Backspaces
+	// don't race each other's IPC save and overwrite one another in the
+	// store. Each new save chains off the previous one, so the store is
+	// always updated in the order the user issued the trims.
+	const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
 	const promptUnsaved = useCallback(
 		(action: "close" | "new" | "open" | "record"): Promise<UnsavedChoice> => {
 			if (!dirty) return Promise.resolve("discard");
@@ -423,31 +429,59 @@ export function NewEditorShell() {
 	// axcut's `queueAddSkipRange` / `queueRemoveSkipRange` callbacks in
 	// apps/web/src/App.tsx.
 	const handleAddSkipRange = useCallback(
-		async (assetId: string, startSec: number, endSec: number, reason: string) => {
-			if (!document) return;
-			const { applyTimelineOperation } = await import("@/lib/ai-edition/document/operations");
-			const next = applyTimelineOperation(document, {
-				type: "add_skip_range",
-				assetId,
-				startSec,
-				endSec,
-				reason,
-			});
-			await saveDocument(next.document);
+		(assetId: string, startSec: number, endSec: number, reason: string) => {
+			// ponytail: read the latest document from the store, not the
+			// closure. The closure captures the document at render time; if
+			// the user fires two rapid Backspaces before React re-renders,
+			// the second call would see the same stale document and add the
+			// second skip to a base that already has the first skip's
+			// pending-state. Then the two saveDocument calls race and the
+			// last one to call set() wins. Reading from getState() always
+			// returns the latest committed value.
+			const doc = useProjectStore.getState().document ?? document;
+			if (!doc) return;
+			// ponytail: serialise via saveQueueRef so two rapid trims
+			// can't race each other's IPC save and overwrite one another.
+			const queued = saveQueueRef.current
+				.then(() => import("@/lib/ai-edition/document/operations"))
+				.then(({ applyTimelineOperation }) =>
+					applyTimelineOperation(doc, {
+						type: "add_skip_range",
+						assetId,
+						startSec,
+						endSec,
+						reason,
+					}),
+				)
+				.then((next) => saveDocument(next.document));
+			saveQueueRef.current = queued.then(
+				() => undefined,
+				() => undefined,
+			);
+			return queued;
 		},
 		[document, saveDocument],
 	);
 
 	const handleRemoveSkipRange = useCallback(
-		async (skipId: string) => {
-			if (!document) return;
-			const { applyTimelineOperation } = await import("@/lib/ai-edition/document/operations");
-			const next = applyTimelineOperation(document, {
-				type: "remove_skip_range",
-				skipId,
-				reason: "Restored from transcript pane.",
-			});
-			await saveDocument(next.document);
+		(skipId: string) => {
+			const doc = useProjectStore.getState().document ?? document;
+			if (!doc) return;
+			const queued = saveQueueRef.current
+				.then(() => import("@/lib/ai-edition/document/operations"))
+				.then(({ applyTimelineOperation }) =>
+					applyTimelineOperation(doc, {
+						type: "remove_skip_range",
+						skipId,
+						reason: "Restored from transcript pane.",
+					}),
+				)
+				.then((next) => saveDocument(next.document));
+			saveQueueRef.current = queued.then(
+				() => undefined,
+				() => undefined,
+			);
+			return queued;
 		},
 		[document, saveDocument],
 	);
