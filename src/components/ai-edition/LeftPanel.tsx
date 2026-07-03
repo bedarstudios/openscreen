@@ -790,7 +790,6 @@ function ChatStripPanel() {
 				text,
 				documentSnapshot,
 			);
-			console.log("[debug chatRun result]", JSON.stringify(result, null, 2));
 			setMessages((prev) => [
 				...prev,
 				{ role: "user", content: text, time: new Date().toLocaleTimeString() },
