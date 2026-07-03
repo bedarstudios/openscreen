@@ -901,6 +901,14 @@ function ChatStripPanel() {
 	}, []);
 
 	const toggleModelPopoverOpen = useCallback(() => {
+		// Mirrors axcut's providerButtonRef handler: with no provider configured
+		// yet there's nothing to quick-pick a model from, so go straight to the
+		// full settings modal (the "providers" screen) instead of toggling a
+		// popover that would render empty.
+		if (!llmConfig) {
+			setSettingsOpen(true);
+			return;
+		}
 		setModelPopoverOpen((wasOpen) => {
 			if (!wasOpen) {
 				const rect = modelButtonRef.current?.getBoundingClientRect();
@@ -918,7 +926,7 @@ function ChatStripPanel() {
 			}
 			return !wasOpen;
 		});
-	}, []);
+	}, [llmConfig]);
 
 	// Real context usage — feeds the badge in the chat strip and gates the
 	// auto-compact heuristic on the main side. Recomputed on every messages

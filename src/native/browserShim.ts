@@ -163,10 +163,15 @@ function createShimBridgeClient() {
 						{ id: "anthropic", label: "Claude", authKind: "api-key" },
 						{ id: "openai", label: "OpenAI", authKind: "api-key" },
 					],
+					credentialSummary: [],
 				}),
 			llmSetConfig: () => Promise.resolve({ success: true }),
 			llmSetApiKey: () => Promise.resolve({ success: true }),
 			llmRemoveApiKey: () => Promise.resolve({ success: true }),
+			llmListProviderModels: (providerId: string) =>
+				Promise.resolve({
+					models: [`${providerId}-demo-model-1`, `${providerId}-demo-model-2`],
+				}),
 			chatRun: (projectId: string, sessionId: string) => {
 				const sessions = getSessions(projectId);
 				let s = sessions.get(sessionId);
