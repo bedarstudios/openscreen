@@ -565,52 +565,40 @@ function TranscriptClipBlock({
 	const pendingCaretWordIdRef = useRef<string | null>(null);
 
 	// ponytail: auto-scroll the cue word into view as the playback head
-	// moves. Mirrors axcut's `scrollCueWordIntoView` in CurrentTranscriptView
+	// moves. The right pane has ONE scroll container (paneBody, which
+	// already has overflow-y: auto) — the per-clip editor itself is not
+	// scrollable, so the cue scroll always lands on the paneBody.
+	// Mirrors axcut's `scrollCueWordIntoView` in CurrentTranscriptView
 	// (margins keep the highlighted word clear of the editor's edges).
-	// Each clip's contentEditable has its own `overflow-y: auto`, so the
-	// local scroll handles "word moved out of the visible area inside
-	// this clip". The parent paneBody scroll handles "the cue crossed
-	// into a new clip that is below the viewport".
 	const SCROLL_MARGIN_PX = 56;
 	useLayoutEffect(() => {
 		const editor = editorRef.current;
 		if (!editor || !cueWordId) return;
 		const wordElement = editor.querySelector<HTMLElement>(`[data-word-id="${cueWordId}"]`);
 		if (!wordElement) return;
-		const editorRect = editor.getBoundingClientRect();
-		const wordRect = wordElement.getBoundingClientRect();
-		// ponytail: if the word is in a different scroll container (a
-		// previous or next clip block), the local scroll can't help —
-		// scroll the nearest scrollable ancestor (paneBody) instead.
-		const inView =
-			wordRect.top >= editorRect.top + SCROLL_MARGIN_PX &&
-			wordRect.bottom <= editorRect.bottom - SCROLL_MARGIN_PX;
-		if (inView) return;
-		const isInsideEditor = editor.contains(wordElement);
-		if (isInsideEditor) {
-			if (wordRect.top < editorRect.top + SCROLL_MARGIN_PX) {
-				editor.scrollTop -= editorRect.top + SCROLL_MARGIN_PX - wordRect.top;
-			} else {
-				editor.scrollTop += wordRect.bottom - (editorRect.bottom - SCROLL_MARGIN_PX);
-			}
-		} else {
-			// ponytail: walk up to the first scrollable ancestor (paneBody)
-			// and scroll so the word element lands inside its viewport.
-			let ancestor: HTMLElement | null = wordElement.parentElement;
-			while (ancestor && ancestor !== document.body) {
-				const style = globalThis.getComputedStyle(ancestor);
-				const overflowY = style.overflowY;
-				if (overflowY === "auto" || overflowY === "scroll") {
-					const ancestorRect = ancestor.getBoundingClientRect();
-					if (wordRect.top < ancestorRect.top + SCROLL_MARGIN_PX) {
-						ancestor.scrollTop -= ancestorRect.top + SCROLL_MARGIN_PX - wordRect.top;
-					} else if (wordRect.bottom > ancestorRect.bottom - SCROLL_MARGIN_PX) {
-						ancestor.scrollTop += wordRect.bottom - (ancestorRect.bottom - SCROLL_MARGIN_PX);
-					}
-					break;
+		// ponytail: walk up to the first scrollable ancestor (paneBody)
+		// and scroll so the word element lands inside its viewport.
+		let ancestor: HTMLElement | null = wordElement.parentElement;
+		while (ancestor && ancestor !== document.body) {
+			const style = globalThis.getComputedStyle(ancestor);
+			const overflowY = style.overflowY;
+			if (overflowY === "auto" || overflowY === "scroll") {
+				const ancestorRect = ancestor.getBoundingClientRect();
+				const wordRect = wordElement.getBoundingClientRect();
+				if (
+					wordRect.top >= ancestorRect.top + SCROLL_MARGIN_PX &&
+					wordRect.bottom <= ancestorRect.bottom - SCROLL_MARGIN_PX
+				) {
+					return;
 				}
-				ancestor = ancestor.parentElement;
+				if (wordRect.top < ancestorRect.top + SCROLL_MARGIN_PX) {
+					ancestor.scrollTop -= ancestorRect.top + SCROLL_MARGIN_PX - wordRect.top;
+				} else if (wordRect.bottom > ancestorRect.bottom - SCROLL_MARGIN_PX) {
+					ancestor.scrollTop += wordRect.bottom - (ancestorRect.bottom - SCROLL_MARGIN_PX);
+				}
+				return;
 			}
+			ancestor = ancestor.parentElement;
 		}
 	}, [cueWordId]);
 
@@ -745,14 +733,8 @@ function TranscriptClipBlock({
 	return (
 		<span
 			style={{
-				display: "flex",
-				flexDirection: "column",
+				display: "block",
 				marginBottom: 16,
-				// ponytail: bound each clip block to the pane height. Combined
-				// with the parent paneBody's overflow-y:auto, only one block
-				// is fully visible at a time and the user scrolls between them.
-				height: "calc(100vh - 220px)",
-				minHeight: 360,
 			}}
 		>
 			<span
@@ -839,14 +821,11 @@ function TranscriptClipBlock({
 						textWrap: "pretty",
 						cursor: "text",
 						outline: "none",
-						// ponytail: the wrapper above is flex-column; the editor
-						// grows to fill whatever height the wrapper leaves after
-						// the header. Combined with overflow-y:auto, the cue
-						// highlight scrolls inside the editor, and the parent
-						// paneBody scrolls across clip blocks.
-						flex: "1 1 auto",
-						minHeight: 0,
-						overflowY: "auto",
+						// ponytail: no overflow on the per-clip editor — the
+						// parent paneBody (already overflow-y: auto) is the
+						// single scroll container for the whole transcript.
+						// Scrolling within the editor would create a nested
+						// scrollbar that breaks the cue auto-scroll UX.
 					}}
 				>
 					{words.map((cw) => (
