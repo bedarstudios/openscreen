@@ -110,6 +110,29 @@ describe("buildClipSection", () => {
 		expect(section.trims[1]).toMatchObject({ startWordIndex: 3, endWordIndex: 3 });
 	});
 
+	it("treats empty wordRefs as default-keep-all (fresh clips before any cuts)", () => {
+		// ponytail: split/insert operators in useTimeline.ts create clips
+		// with an empty wordRefs array. Without a default the transcript view
+		// would render every word in the source range as trimmed. Empty
+		// wordRefs means "no explicit cuts yet" — keep every word.
+		const clip = makeClip({
+			sourceStartSec: 0,
+			sourceEndSec: 3,
+			wordRefs: [],
+		});
+		const transcript = makeTranscript({
+			words: [
+				{ id: "w1", segmentId: "s1", startSec: 0, endSec: 1, text: "hi" },
+				{ id: "w2", segmentId: "s1", startSec: 1, endSec: 2, text: "there" },
+				{ id: "w3", segmentId: "s1", startSec: 2, endSec: 3, text: "friend" },
+			],
+		});
+
+		const section = buildClipSection(clip, transcript, makeAsset());
+		expect(section.words.map((cw) => cw.kept)).toEqual([true, true, true]);
+		expect(section.trims).toEqual([]);
+	});
+
 	it("flags English filler words regardless of keep state", () => {
 		const clip = makeClip({
 			sourceStartSec: 0,

@@ -70,19 +70,27 @@ function wordsInRange(transcript: AxcutTranscript, startSec: number, endSec: num
  * Build one clip section: every transcript word inside the clip's source
  * range, tagged kept/removed, plus the contiguous removed ranges that turn
  * into `<span class="hl">…</span><span class="tc-pill">Xs</span>` blocks.
+ *
+ * ponytail: clips created via split/insert in `useTimeline.ts` start with
+ * an empty `wordRefs` (the operators don't recompute the list). Without
+ * a default that'd render every word as trimmed. Empty wordRefs → every
+ * word in the clip's source range is kept, which matches Axcut's model
+ * where a fresh clip is by-default untrimmed.
  */
 export function buildClipSection(
 	clip: AxcutClip,
 	transcript: AxcutTranscript | null,
 	asset: AxcutAsset | null,
 ): ClipSection {
-	const kept = new Set(clip.wordRefs);
 	const words = transcript
 		? wordsInRange(transcript, clip.sourceStartSec, clip.sourceEndSec ?? Infinity)
 		: [];
+	// ponytail: empty wordRefs means "no explicit cuts yet" — keep every word.
+	// Non-empty wordRefs is the authoritative keep-list (from `replaceTimeline`).
+	const kept = clip.wordRefs.length === 0 ? null : new Set(clip.wordRefs);
 	const tagged: ClipWord[] = words.map((word) => ({
 		word,
-		kept: kept.has(word.id),
+		kept: kept === null ? true : kept.has(word.id),
 		filler: isFiller(word.text),
 	}));
 
