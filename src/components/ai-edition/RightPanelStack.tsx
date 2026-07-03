@@ -51,10 +51,8 @@ interface RightPanelStackProps {
 	transcripts: AxcutTranscript[];
 	assets: AxcutAsset[];
 	clips: AxcutClip[];
-	currentTimeSec: number;
 	onSeek: (sec: number) => void;
-	onDropWordRange: (start: number, end: number) => void;
-	onRestoreWordRange: (start: number, end: number) => void;
+	onEditTranscript: (assetId: string, editedText: string) => void;
 	onTranscribe: () => void;
 	canTranscribe: boolean;
 	isTranscribing: boolean;
@@ -83,10 +81,8 @@ export function RightPanelStack({
 	transcripts,
 	assets,
 	clips,
-	currentTimeSec,
 	onSeek,
-	onDropWordRange,
-	onRestoreWordRange,
+	onEditTranscript,
 	onTranscribe,
 	canTranscribe,
 	isTranscribing,
@@ -117,10 +113,8 @@ export function RightPanelStack({
 						transcripts={transcripts}
 						assets={assets}
 						clips={clips}
-						currentTimeSec={currentTimeSec}
 						onSeek={onSeek}
-						onDropWordRange={onDropWordRange}
-						onRestoreWordRange={onRestoreWordRange}
+						onEditTranscript={onEditTranscript}
 						onTranscribe={onTranscribe}
 						canTranscribe={canTranscribe}
 						isTranscribing={isTranscribing}

@@ -417,34 +417,31 @@ export function NewEditorShell() {
 		}
 	}, [loadProject]);
 
-	const handleDropWordRange = useCallback(
-		async (startSec: number, endSec: number) => {
+	// ponytail: editable transcript → timeline update. Runs LCS against
+	// the per-asset transcript to figure out which words the user just
+	// deleted from the editable text, then subtracts those source-time
+	// ranges from the kept timeline intervals. Mirrors axcut's
+	// `lib/editable-transcript.ts` + `deriveEditableTranscriptUpdate`.
+	const handleEditTranscript = useCallback(
+		async (assetId: string, editedText: string) => {
 			if (!document) return;
-			const { subtractInterval, timelineIntervals: getIntervals } = await import(
+			const transcript = document.transcripts.find((t) => t.assetId === assetId);
+			if (!transcript) return;
+			const { deriveEditableTranscriptUpdate } = await import(
+				"@/lib/ai-edition/timeline/editable-transcript"
+			);
+			const { ranges, deletedWordIds } = deriveEditableTranscriptUpdate(transcript, editedText);
+			if (deletedWordIds.length === 0) return;
+			const { timelineIntervals: getIntervals, subtractInterval } = await import(
 				"@/lib/ai-edition/document/timeline"
 			);
-			const intervals = getIntervals(document);
-			const next = subtractInterval(intervals, { startSec, endSec });
+			let intervals = getIntervals(document);
+			for (const range of ranges) {
+				intervals = subtractInterval(intervals, { startSec: range.startSec, endSec: range.endSec });
+			}
 			await replaceTimeline(
-				next,
-				`Dropped word range ${startSec.toFixed(1)}s-${endSec.toFixed(1)}s`,
-			);
-		},
-		[document, replaceTimeline],
-	);
-
-	const handleRestoreWordRange = useCallback(
-		async (startSec: number, endSec: number) => {
-			if (!document) return;
-			const { timelineIntervals: getIntervals } = await import(
-				"@/lib/ai-edition/document/timeline"
-			);
-			const intervals = getIntervals(document);
-			// merge the restored range back — replaceTimeline normalizes
-			// overlapped intervals internally via normalizeIntervals.
-			await replaceTimeline(
-				[...intervals, { startSec, endSec }],
-				`Restored word range ${startSec.toFixed(1)}s-${endSec.toFixed(1)}s`,
+				intervals,
+				`Edited transcript — deleted ${deletedWordIds.length} word${deletedWordIds.length === 1 ? "" : "s"}`,
 			);
 		},
 		[document, replaceTimeline],
@@ -977,10 +974,8 @@ export function NewEditorShell() {
 						transcripts={document?.transcripts ?? []}
 						assets={document?.assets ?? []}
 						clips={clips}
-						currentTimeSec={currentTimeSec}
 						onSeek={handleSeek}
-						onDropWordRange={handleDropWordRange}
-						onRestoreWordRange={handleRestoreWordRange}
+						onEditTranscript={handleEditTranscript}
 						onTranscribe={handleTranscribe}
 						canTranscribe={hasAsset}
 						isTranscribing={isTranscribing}
