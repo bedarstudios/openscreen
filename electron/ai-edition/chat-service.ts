@@ -16,7 +16,6 @@ import type {
 	AiEditionChatResult,
 	AiEditionToolCallSummary,
 } from "../../src/native/contracts";
-import { isMutatingTool } from "./agent-tools";
 import {
 	applyCompaction,
 	budgetSnapshot,
@@ -31,9 +30,81 @@ import { PROVIDER_DEFINITIONS } from "./provider-registry";
 
 const sessionsByProject = new Map<string, Map<string, ChatSession>>();
 
-// P1.3/P1.8 — pre-batch document snapshot per session, taken right before the
-// first write tool of a chat turn runs. undoLastToolBatch() re-applies it.
-const checkpointsBySession = new Map<string, { document: AxcutDocument; createdAt: string }>();
+// ponytail: per-message checkpoints, stored as an ordered list per session
+// (insertion order == the session's message order). Each entry captures the
+// document *right before* the agent runs that user message — same restore
+// semantics as axcut's per-user-message checkpoint. The renderer surfaces a
+// ↩ button on every user message that has a checkpoint.
+interface MessageCheckpoint {
+	userMessageId: string;
+	document: AxcutDocument;
+	createdAt: string;
+}
+const messageCheckpointsBySession = new Map<string, MessageCheckpoint[]>();
+
+function sessionKey(projectId: string, sessionId: string): string {
+	return `${projectId}::${sessionId}`;
+}
+
+function checkpointsForSession(projectId: string, sessionId: string): MessageCheckpoint[] {
+	return messageCheckpointsBySession.get(sessionKey(projectId, sessionId)) ?? [];
+}
+
+function recordMessageCheckpoint(
+	projectId: string,
+	sessionId: string,
+	userMessageId: string,
+	document: AxcutDocument,
+): void {
+	const key = sessionKey(projectId, sessionId);
+	const list = messageCheckpointsBySession.get(key) ?? [];
+	list.push({
+		userMessageId,
+		document,
+		createdAt: new Date().toISOString(),
+	});
+	messageCheckpointsBySession.set(key, list);
+}
+
+function findCheckpointForMessage(
+	projectId: string,
+	sessionId: string,
+	userMessageId: string,
+): MessageCheckpoint | null {
+	return (
+		checkpointsForSession(projectId, sessionId).find((c) => c.userMessageId === userMessageId) ??
+		null
+	);
+}
+
+// ponytail: drop every checkpoint at or after the given user message id.
+// Called after a rewind truncates the message list, so future checkpoints
+// stay aligned with the surviving messages. We compare against the
+// session's current message order; if the target message is gone we drop
+// all checkpoints created after the surviving tail.
+function dropCheckpointsFrom(
+	projectId: string,
+	sessionId: string,
+	fromUserMessageId: string,
+): void {
+	const key = sessionKey(projectId, sessionId);
+	const list = messageCheckpointsBySession.get(key);
+	if (!list) return;
+	const session = sessionsByProject.get(projectId)?.get(sessionId);
+	const surviving = session?.messages.find((m) => m.id === fromUserMessageId);
+	const cutIndex = surviving ? list.findIndex((c) => c.userMessageId === fromUserMessageId) : -1;
+	if (cutIndex === -1) {
+		// ponytail: target message vanished (e.g. already rewound past it).
+		// Drop the entire session's checkpoints — they all reference a
+		// lineage that's no longer valid.
+		messageCheckpointsBySession.delete(key);
+		return;
+	}
+	messageCheckpointsBySession.set(
+		key,
+		list.filter((_c, i) => i < cutIndex),
+	);
+}
 
 export interface ChatSession {
 	id: string;
@@ -125,20 +196,6 @@ export function deleteSession(projectId: string, sessionId: string): boolean {
 	return true;
 }
 
-function sessionKey(projectId: string, sessionId: string): string {
-	return `${projectId}::${sessionId}`;
-}
-
-// P1.8 — return the pre-batch checkpoint document so the renderer can
-// re-apply it. The checkpoint survives the undo (re-undo is idempotent).
-export function undoLastToolBatch(projectId: string, sessionId: string): AiEditionChatResult {
-	const checkpoint = checkpointsBySession.get(sessionKey(projectId, sessionId));
-	if (!checkpoint) {
-		return { success: false, error: "Nothing to undo — the agent has not edited this project." };
-	}
-	return { success: true, document: checkpoint.document };
-}
-
 export interface ChatEventSink {
 	/** Streamed text delta from the model. */
 	text?: (delta: string) => void;
@@ -221,6 +278,19 @@ export async function runChat(
 		content: message,
 		createdAt: new Date().toISOString(),
 	};
+
+	// ponytail: snapshot the document *right before* this user message
+	// triggers a turn — same restore semantics as axcut's per-message
+	// checkpoint. We hold a stable `workingDocument` ref so this snapshot
+	// reflects what the user saw when they hit Send.
+	const documentForCheckpoint: AxcutDocument | null = workingDocument
+		? structuredClone(workingDocument)
+		: null;
+	if (documentForCheckpoint) {
+		recordMessageCheckpoint(projectId, sessionId, userMessage.id, documentForCheckpoint);
+	}
+	userMessage.checkpointId = documentForCheckpoint ? userMessage.id : null;
+
 	session.messages.push(userMessage);
 
 	const editsAllowed = config.allowAgentEdits !== false;
@@ -247,27 +317,13 @@ export async function runChat(
 		.slice(-20)
 		.map((m) => ({ role: m.role as "user" | "assistant" | "system", content: m.content }));
 
-	// P1.3 — checkpoint the pre-batch document before the first write tool
-	// runs. The agent runtime calls back into the sink we hand it, so we
-	// snapshot at the first `toolStart` whose tool is mutating.
-	let checkpointSaved = false;
-	const ensureCheckpoint = () => {
-		if (checkpointSaved) return;
-		if (!workingDocument) return;
-		checkpointsBySession.set(sessionKey(projectId, sessionId), {
-			document: workingDocument,
-			createdAt: new Date().toISOString(),
-		});
-		checkpointSaved = true;
-	};
-
 	const appliedToolCalls: AiEditionToolCallSummary[] = [];
 
 	const agentSink = {
 		text: (delta: string) => emit.text(delta),
 		toolStart: (name: string, args: unknown) => {
 			emit.toolStart(name, args);
-			if (isMutatingTool(name) && editsAllowed) ensureCheckpoint();
+			void editsAllowed;
 		},
 		toolEnd: (name: string, ok: boolean, summary?: string) => {
 			emit.toolEnd(name, ok, summary);
@@ -316,6 +372,124 @@ export async function runChat(
 		assistantMessage,
 		document: result.mutated ? result.document : undefined,
 		toolCalls: appliedToolCalls.length ? appliedToolCalls : undefined,
+		userMessageCheckpointId: userMessage.checkpointId ?? undefined,
+	};
+}
+
+// ponytail: port of axcut's AxcutAgentRuntime.rewindToMessage. Restores the
+// document snapshot taken right before the given user message, truncates the
+// session's message list (exclusive of the rewound message), drops every
+// checkpoint at or after that message id, and returns the rewound message
+// content so the renderer can put it back in the composer.
+//
+// The renderer is responsible for applying the returned document — that
+// mirrors axcut's exact "the assistant rewrites itself" flow, including
+// the same projectId's local files going back to that state (we hit
+// DocumentService in the IPC handler).
+export function rewindToMessage(
+	projectId: string,
+	sessionId: string,
+	messageId: string,
+):
+	| { success: true; prompt: string; document: AxcutDocument; messages: AiEditionChatMessage[] }
+	| {
+			success: false;
+			error: string;
+	  } {
+	const session = sessionsByProject.get(projectId)?.get(sessionId);
+	if (!session) return { success: false, error: "Chat session not found." };
+	const messageIndex = session.messages.findIndex((m) => m.id === messageId);
+	if (messageIndex === -1) {
+		return { success: false, error: "Message not found in this session." };
+	}
+	const target = session.messages[messageIndex];
+	if (target.role !== "user") {
+		return { success: false, error: "Rewind must target a user message." };
+	}
+	if (!target.checkpointId) {
+		return { success: false, error: "No checkpoint stored for this message." };
+	}
+	const cp = findCheckpointForMessage(projectId, sessionId, target.checkpointId);
+	if (!cp) {
+		return {
+			success: false,
+			error: "Checkpoint expired — start a fresh chat to recover state.",
+		};
+	}
+
+	const survived = session.messages.slice(0, messageIndex + 1).map((m) => ({
+		...m,
+		toolCalls: m.toolCalls ? [...m.toolCalls] : undefined,
+	}));
+	session.messages = survived;
+	dropCheckpointsFrom(projectId, sessionId, target.checkpointId);
+
+	return {
+		success: true,
+		prompt: target.content,
+		document: cp.document,
+		messages: [...survived],
+	};
+}
+
+// ponytail: port of axcut's compactSession — manual compaction from a button
+// press. Returns the latest session snapshot + the inserted summary message
+// id, so the renderer can highlight it.
+export async function compactSessionNow(
+	projectId: string,
+	sessionId: string,
+	llmConfig: LlmConfigStore,
+): Promise<{ summaryMessageId: string | null; summary: string; session: ChatSession } | null> {
+	const session = sessionsByProject.get(projectId)?.get(sessionId);
+	if (!session) return null;
+	const config = llmConfig.getConfig();
+	if (!config) return null;
+	const def = PROVIDER_DEFINITIONS.find((d) => d.id === config.provider);
+	if (!def) return null;
+	const credential = llmConfig.getCredential(def.id, def.envKeys);
+	const apiKey = credential?.value ?? "";
+	const accountId =
+		credential?.entry.kind === "codex" ? (credential.entry.accountId ?? undefined) : undefined;
+
+	const decision = shouldCompact(session.messages);
+	if (!decision || !decision.compact) return null;
+
+	const ok = await tryCompactSession({
+		session,
+		splitIndex: decision.splitIndex,
+		apiKey,
+		provider: config.provider,
+		model: config.model,
+		baseUrl: config.baseUrl,
+		reasoningEffort: config.reasoningEffort,
+		accountId,
+	});
+	if (!ok) return null;
+	return {
+		summaryMessageId: ok.summaryMessageId,
+		summary: ok.summary,
+		session: selectSession(projectId, sessionId) as ChatSession,
+	};
+}
+
+// ponytail: port of axcut's getContextUsage. Returns the current session's
+// token estimate + window budget so the renderer can fill the "% context"
+// pill with real numbers (no probe — char-based heuristic matching the
+// in-call compaction one).
+export function getSessionContextUsage(
+	projectId: string,
+	sessionId: string,
+	budgetTokens: number = DEFAULT_BUDGET_TOKENS,
+): { usedTokens: number; budgetTokens: number; ratio: number; fillPercent: number } | null {
+	const session = sessionsByProject.get(projectId)?.get(sessionId);
+	if (!session) return null;
+	const snap = budgetSnapshot(session.messages, budgetTokens);
+	const fillPercent = Math.min(100, Math.round(snap.ratio * 100));
+	return {
+		usedTokens: snap.usedTokens,
+		budgetTokens: snap.budgetTokens,
+		ratio: snap.ratio,
+		fillPercent,
 	};
 }
 
@@ -370,6 +544,7 @@ export interface SessionBudgetSnapshot {
 	usedTokens: number;
 	budgetTokens: number;
 	ratio: number;
+	fillPercent: number;
 }
 
 export function getSessionBudget(
@@ -384,6 +559,7 @@ export function getSessionBudget(
 		usedTokens: snap.usedTokens,
 		budgetTokens: snap.budgetTokens,
 		ratio: snap.ratio,
+		fillPercent: Math.min(100, Math.round(snap.ratio * 100)),
 	};
 }
 

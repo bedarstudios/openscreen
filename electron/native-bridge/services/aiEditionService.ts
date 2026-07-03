@@ -1,10 +1,10 @@
-import { documentSchema } from "../../../src/lib/ai-edition/schema";
 import type {
 	AiEditionAssetResult,
 	AiEditionChatBudget,
 	AiEditionChatCompactResult,
 	AiEditionChatMessage,
 	AiEditionChatResult,
+	AiEditionChatRewindResult,
 	AiEditionChatSession,
 	AiEditionChatSessionSummary,
 	AiEditionDeviceChallenge,
@@ -16,8 +16,8 @@ import type {
 	AiEditionProjectSummary,
 } from "../../../src/native/contracts";
 import type { ChatEventSink } from "../../ai-edition/chat-service";
-import { compactSession, getSessionBudget } from "../../ai-edition/chat-service";
 import type { DocumentService } from "../../ai-edition/document-service";
+import { documentSchema } from "../../../src/lib/ai-edition/schema";
 import type { LlmConfigStore, LlmCredential } from "../../ai-edition/llm-config-store";
 import {
 	beginCodexDeviceAuth,
@@ -50,6 +50,25 @@ export interface AiEditionServiceOptions {
 		message: string,
 		sink?: ChatEventSink,
 	) => Promise<AiEditionChatResult>;
+	rewindToMessage: (
+		projectId: string,
+		sessionId: string,
+		messageId: string,
+	) =>
+		| {
+				success: true;
+				prompt: string;
+				document: unknown;
+				messages: AiEditionChatMessage[];
+		  }
+		| { success: false; error: string };
+	compactNow: (projectId: string, sessionId: string) => Promise<AiEditionChatCompactResult | null>;
+	getContextUsage: (
+		projectId: string,
+		sessionId: string,
+	) => { usedTokens: number; budgetTokens: number; ratio: number; fillPercent: number } | null;
+	// ponytail: legacy per-batch undo retired in favor of per-message rewind.
+	// Kept on the surface for IPC compatibility; always returns success=false.
 	undoLastToolBatch: (projectId: string, sessionId: string) => AiEditionChatResult;
 	getDefaultChatHistory: (projectId: string) => AiEditionChatMessage[];
 	clearDefaultChatHistory: (projectId: string) => void;
@@ -328,8 +347,24 @@ export class AiEditionService {
 		return this.options.runChat(projectId, sessionId, message, document, sink);
 	}
 
-	chatUndoLastBatch(projectId: string, sessionId: string): AiEditionChatResult {
-		return this.options.undoLastToolBatch(projectId, sessionId);
+	chatUndoLastBatch(_projectId: string, _sessionId: string): AiEditionChatResult {
+		return { success: false, error: "Per-tool-batch undo retired in favor of per-message rewind." };
+	}
+
+	chatRewindToMessage(
+		projectId: string,
+		sessionId: string,
+		messageId: string,
+	): AiEditionChatRewindResult | { success: false; error: string } {
+		return this.options.rewindToMessage(projectId, sessionId, messageId);
+	}
+
+	chatContextUsage(projectId: string, sessionId: string): AiEditionChatBudget | null {
+		return this.options.getContextUsage(projectId, sessionId);
+	}
+
+	chatCompactNow(projectId: string, sessionId: string): Promise<AiEditionChatCompactResult | null> {
+		return this.options.compactNow(projectId, sessionId);
 	}
 
 	async chatRunDefault(
@@ -379,21 +414,22 @@ export class AiEditionService {
 	}
 
 	chatBudget(projectId: string, sessionId: string): AiEditionChatBudget | null {
-		return getSessionBudget(projectId, sessionId);
+		const usage = this.options.getContextUsage(projectId, sessionId);
+		if (!usage) return null;
+		return {
+			usedTokens: usage.usedTokens,
+			budgetTokens: usage.budgetTokens,
+			ratio: usage.ratio,
+			fillPercent: usage.fillPercent,
+		};
 	}
 
 	async chatCompact(
 		projectId: string,
 		sessionId: string,
 	): Promise<AiEditionChatCompactResult | null> {
-		const result = await compactSession(projectId, sessionId, this.options.llmConfig);
+		const result = await this.options.compactNow(projectId, sessionId);
 		if (!result) return null;
-		const session = this.options.selectSession(projectId, sessionId);
-		if (!session) return null;
-		return {
-			session,
-			summaryMessageId: result.summaryMessageId,
-			summary: result.summary,
-		};
+		return result;
 	}
 }

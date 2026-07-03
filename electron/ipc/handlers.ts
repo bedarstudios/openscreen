@@ -37,15 +37,17 @@ import type {
 } from "../../src/native/contracts";
 import {
 	clearDefaultChatHistory,
+	compactSessionNow,
 	createSession,
 	deleteSession,
 	getDefaultChatHistory,
+	getSessionContextUsage,
 	listSessions,
 	renameSession,
+	rewindToMessage,
 	runChat,
 	runChatDefault,
 	selectSession,
-	undoLastToolBatch,
 } from "../ai-edition/chat-service";
 import { DocumentService } from "../ai-edition/document-service";
 import { LlmConfigStore } from "../ai-edition/llm-config-store";
@@ -3038,7 +3040,15 @@ export function registerIpcHandlers(
 				document,
 				sink,
 			),
-		undoAiEditionToolBatch: (projectId, sessionId) => undoLastToolBatch(projectId, sessionId),
+		undoAiEditionToolBatch: (_projectId, _sessionId) => ({
+			success: false,
+			error: "Per-tool-batch undo retired in favor of per-message rewind.",
+		}),
+		rewindToMessage: (projectId, sessionId, messageId) =>
+			rewindToMessage(projectId, sessionId, messageId),
+		compactNow: (projectId, sessionId) =>
+			compactSessionNow(projectId, sessionId, new LlmConfigStore(app.getPath("userData"))),
+		getContextUsage: getSessionContextUsage,
 		runAiEditionChatDefault: (projectId, message, sink) =>
 			runChatDefault(projectId, message, new LlmConfigStore(app.getPath("userData")), sink),
 		getAiEditionChatHistoryDefault: (projectId) => getDefaultChatHistory(projectId),

@@ -176,6 +176,12 @@ export interface AiEditionChatMessage {
 	content: string;
 	createdAt: string;
 	toolCalls?: AiEditionToolCallSummary[];
+	/**
+	 * ponytail: id of the rewind-able document snapshot taken right before
+	 * the user message triggered its chat turn. Non-null = the per-message
+	 * ↩ button is shown. Matches axcut's Message.checkpointId.
+	 */
+	checkpointId?: string | null;
 }
 
 export interface AiEditionChatResult {
@@ -185,6 +191,16 @@ export interface AiEditionChatResult {
 	document?: unknown;
 	toolCalls?: AiEditionToolCallSummary[];
 	error?: string;
+	/** Document checkpoint id recorded for the user message that triggered this turn (axcut parity). */
+	userMessageCheckpointId?: string;
+}
+
+export interface AiEditionChatRewindResult {
+	success: true;
+	document: unknown;
+	messages: AiEditionChatMessage[];
+	/** The user message content of the rewound turn, prefilled back into the composer. */
+	prompt: string;
 }
 
 export interface AiEditionChatSessionSummary {
@@ -207,6 +223,8 @@ export interface AiEditionChatBudget {
 	usedTokens: number;
 	budgetTokens: number;
 	ratio: number;
+	/** Ratio * 100, clamped to 0..100 — what the "% context" pill shows. */
+	fillPercent: number;
 }
 
 export interface AiEditionChatCompactResult {
@@ -525,6 +543,24 @@ export type NativeBridgeRequest =
 	| {
 			domain: "aiEdition";
 			action: "chat.compact";
+			payload: { projectId: string; sessionId: string };
+			requestId?: string;
+	  }
+	| {
+			domain: "aiEdition";
+			action: "chat.rewind";
+			payload: { projectId: string; sessionId: string; messageId: string };
+			requestId?: string;
+	  }
+	| {
+			domain: "aiEdition";
+			action: "chat.contextUsage";
+			payload: { projectId: string; sessionId: string };
+			requestId?: string;
+	  }
+	| {
+			domain: "aiEdition";
+			action: "chat.compactNow";
 			payload: { projectId: string; sessionId: string };
 			requestId?: string;
 	  };

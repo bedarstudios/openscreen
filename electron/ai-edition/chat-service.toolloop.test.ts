@@ -15,7 +15,7 @@ vi.mock("./deep-agent/service", () => ({
 	invokeOpenScreenAgent: vi.fn(),
 }));
 
-import { createSession, runChat, undoLastToolBatch } from "./chat-service";
+import { createSession, rewindToMessage, runChat } from "./chat-service";
 import { invokeOpenScreenAgent } from "./deep-agent/service";
 import type { LlmConfigStore } from "./llm-config-store";
 
@@ -163,27 +163,67 @@ describe("runChat tool loop", () => {
 		expect(result.toolCalls?.[0].summary).toMatch(/added skip/);
 	});
 
-	it("saves a pre-batch checkpoint that undoLastToolBatch restores", async () => {
+	it("rewinds to before the user message, restoring the document", async () => {
 		invokeMock.mockImplementationOnce(async (args) => {
 			args.sink.toolStart("addSkip", { startSec: 1, endSec: 2 });
 			args.sink.toolEnd("addSkip", true, "added skip 0:01.0 – 0:02.0");
 			return { text: "Done.", document: args.document, mutated: true };
 		});
 
-		const session = createSession("proj_loop_undo");
-		await runChat("proj_loop_undo", session.id, "cut", stubConfig(), fixtureDocument());
+		const session = createSession("proj_rewind");
+		const result = await runChat(
+			"proj_rewind",
+			session.id,
+			"cut the silence",
+			stubConfig(),
+			fixtureDocument(),
+		);
+		expect(result.success).toBe(true);
+		const userMessage = result.assistantMessage; // ignored; we want the user message id
+		void userMessage;
 
-		const undo = undoLastToolBatch("proj_loop_undo", session.id);
+		const sessionMessages = (await import("./chat-service")).selectSession(
+			"proj_rewind",
+			session.id,
+		);
+		expect(sessionMessages?.messages).toHaveLength(2);
+		const user = sessionMessages?.messages[0];
+		expect(user?.role).toBe("user");
+		expect(user?.checkpointId).toBe(user?.id);
+
+		const undo = rewindToMessage("proj_rewind", session.id, user!.id);
 		expect(undo.success).toBe(true);
+		if (!undo.success) return;
 		const restored = documentSchema.parse(undo.document);
-		expect(restored.timeline.clips).toHaveLength(1);
+		expect(restored.timeline.skipRanges).toHaveLength(0);
+		expect(undo.prompt).toBe("cut the silence");
 	});
 
-	it("undoLastToolBatch fails cleanly when nothing was edited", () => {
-		const s = createSession("proj_no_edits");
-		const undo = undoLastToolBatch("proj_no_edits", s.id);
-		expect(undo.success).toBe(false);
-		expect(undo.error).toMatch(/Nothing to undo/);
+	it("rewindToMessage refuses when the target has no checkpoint", async () => {
+		const { createSession, selectSession, runChat } = await import("./chat-service");
+		const session = createSession("proj_rewind_no_cp");
+		await runChat(
+			"proj_rewind_no_cp",
+			session.id,
+			"hi",
+			stubConfig(),
+			// text-only: no document → no checkpoint
+		);
+		const userId = selectSession("proj_rewind_no_cp", session.id)?.messages[0].id;
+		const result = rewindToMessage("proj_rewind_no_cp", session.id, userId!);
+		expect(result.success).toBe(false);
+	});
+
+	it("rewindToMessage rejects targeting an assistant message", async () => {
+		const { createSession, listSessions, selectSession, runChat } = await import("./chat-service");
+		const session = createSession("proj_rewind_aimessage");
+		await runChat("proj_rewind_aimessage", session.id, "hi", stubConfig(), fixtureDocument());
+		const assistant = selectSession("proj_rewind_aimessage", session.id)?.messages.find(
+			(m) => m.role === "assistant",
+		);
+		const result = rewindToMessage("proj_rewind_aimessage", session.id, assistant!.id);
+		expect(result.success).toBe(false);
+		void listSessions;
 	});
 
 	it("runs text-only when no document snapshot is provided", async () => {

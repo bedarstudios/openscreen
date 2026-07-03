@@ -54,6 +54,26 @@ export interface NativeBridgeContext {
 		projectId: string,
 		sessionId: string,
 	) => import("../../src/native/contracts").AiEditionChatResult;
+	rewindToMessage: (
+		projectId: string,
+		sessionId: string,
+		messageId: string,
+	) =>
+		| {
+				success: true;
+				prompt: string;
+				document: unknown;
+				messages: import("../../src/native/contracts").AiEditionChatMessage[];
+		  }
+		| { success: false; error: string };
+	compactNow: (
+		projectId: string,
+		sessionId: string,
+	) => Promise<import("../../src/native/contracts").AiEditionChatCompactResult | null>;
+	getContextUsage: (
+		projectId: string,
+		sessionId: string,
+	) => import("../../src/native/contracts").AiEditionChatBudget | null;
 	runAiEditionChatDefault: (
 		projectId: string,
 		message: string,
@@ -190,6 +210,9 @@ export function registerNativeBridgeHandlers(context: NativeBridgeContext) {
 		runChat: context.runAiEditionChat,
 		runChatDefault: context.runAiEditionChatDefault,
 		undoLastToolBatch: context.undoAiEditionToolBatch,
+		rewindToMessage: context.rewindToMessage,
+		compactNow: context.compactNow,
+		getContextUsage: context.getContextUsage,
 		getDefaultChatHistory: context.getAiEditionChatHistoryDefault,
 		clearDefaultChatHistory: context.clearAiEditionChatHistoryDefault,
 		listSessions: context.listAiEditionChatSessions,
@@ -477,6 +500,31 @@ export function registerNativeBridgeHandlers(context: NativeBridgeContext) {
 							return createSuccessResponse(
 								requestId,
 								await aiEditionService.chatCompact(
+									request.payload.projectId,
+									request.payload.sessionId,
+								),
+							);
+						case "chat.rewind":
+							return createSuccessResponse(
+								requestId,
+								aiEditionService.chatRewindToMessage(
+									request.payload.projectId,
+									request.payload.sessionId,
+									request.payload.messageId,
+								),
+							);
+						case "chat.contextUsage":
+							return createSuccessResponse(
+								requestId,
+								aiEditionService.chatContextUsage(
+									request.payload.projectId,
+									request.payload.sessionId,
+								),
+							);
+						case "chat.compactNow":
+							return createSuccessResponse(
+								requestId,
+								await aiEditionService.chatCompactNow(
 									request.payload.projectId,
 									request.payload.sessionId,
 								),
