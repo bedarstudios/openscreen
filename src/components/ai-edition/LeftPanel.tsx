@@ -1135,7 +1135,7 @@ function ChatStripPanel() {
 
 	return (
 		<aside className={styles.panel}>
-			<div style={{ flex: "0 0 auto", minHeight: 0 }}>
+			<div className={styles.panelHeader}>
 				<div className={styles.chatStrip}>
 					<div className={styles.chatStripRow}>
 						<span
