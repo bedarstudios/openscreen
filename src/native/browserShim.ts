@@ -47,38 +47,65 @@ function createShimElectronAPI() {
 }
 
 function createShimBridgeClient() {
-	const storageKey = "browser-shim-document";
-	const loadFromStorage = (): unknown | null => {
-		try {
-			const raw = localStorage.getItem(storageKey);
-			return raw ? JSON.parse(raw) : null;
-		} catch {
-			return null;
-		}
+	// ponytail: keyed by project id, matching the real DocumentService (one
+	// file per project on disk). The previous shim kept a single global
+	// `currentDoc` that `get(projectId)` ignored entirely — after a reload,
+	// NewEditorShell's auto-load effect would call `listProjects()` (which
+	// *did* remember every created project), pick the most recent one, then
+	// `get()` that id and get back whatever `currentDoc` happened to be
+	// (often null, if `save()` hadn't fired yet), throwing "Failed to load
+	// project" on every reload. Same root cause broke addAsset/removeAsset:
+	// they ignored `projectId` and read/returned the same possibly-null
+	// `currentDoc`, which crashed downstream Zod parsing.
+	type ShimDocument = {
+		project: {
+			id: string;
+			title: string;
+			createdAt: string;
+			updatedAt: string;
+			primaryAssetId?: string;
+		};
+		assets: Array<{ id: string; kind: "video"; label: string; originalPath: string }>;
+		[key: string]: unknown;
 	};
-	const saveToStorage = (doc: unknown) => {
+	const projectsStorageKey = "browser-shim-projects-v2";
+	let documentsByProject: Record<string, ShimDocument> = {};
+	let projectOrder: string[] = [];
+	(() => {
 		try {
-			localStorage.setItem(storageKey, JSON.stringify(doc));
+			const raw = localStorage.getItem(projectsStorageKey);
+			if (!raw) return;
+			const parsed = JSON.parse(raw) as {
+				documents: Record<string, ShimDocument>;
+				order: string[];
+			};
+			documentsByProject = parsed.documents ?? {};
+			projectOrder = parsed.order ?? [];
+		} catch {
+			// ponytail: corrupt/unavailable localStorage — start fresh rather
+			// than crash the whole app on load.
+		}
+	})();
+	const saveProjectsState = () => {
+		try {
+			localStorage.setItem(
+				projectsStorageKey,
+				JSON.stringify({ documents: documentsByProject, order: projectOrder }),
+			);
 		} catch {
 			// ponytail: localStorage may be full or unavailable; silently skip
 		}
 	};
-	const list: Array<{ id: string; title: string; updatedAt: string; assetCount: number }> = (() => {
-		try {
-			const raw = localStorage.getItem("browser-shim-projects");
-			return raw ? JSON.parse(raw) : [];
-		} catch {
-			return [];
-		}
-	})();
-	const saveList = () => {
-		try {
-			localStorage.setItem("browser-shim-projects", JSON.stringify(list));
-		} catch {
-			// ponytail: same as saveToStorage
-		}
-	};
-	let currentDoc: unknown = loadFromStorage();
+	const listProjectSummaries = () =>
+		projectOrder
+			.map((id) => documentsByProject[id])
+			.filter((doc): doc is ShimDocument => Boolean(doc))
+			.map((doc) => ({
+				id: doc.project.id,
+				title: doc.project.title,
+				updatedAt: doc.project.updatedAt,
+				assetCount: doc.assets.length,
+			}));
 
 	// ponytail: stateful LLM config/credentials so the "connect a provider"
 	// flow is actually testable in browser-mode preview — the real backend
@@ -167,10 +194,15 @@ function createShimBridgeClient() {
 
 	return {
 		aiEdition: {
-			listProjects: () => Promise.resolve(list),
-			get: () => Promise.resolve({ success: true, document: currentDoc }),
+			listProjects: () => Promise.resolve(listProjectSummaries()),
+			get: (projectId: string) => {
+				const doc = documentsByProject[projectId];
+				return Promise.resolve(
+					doc ? { success: true, document: doc } : { success: false, error: "Project not found" },
+				);
+			},
 			create: (title?: string) => {
-				const doc = {
+				const doc: ShimDocument = {
 					schemaVersion: 3,
 					project: {
 						id: `proj_${Math.random().toString(36).slice(2, 10)}`,
@@ -197,24 +229,52 @@ function createShimBridgeClient() {
 					export: { preset: "final-balanced", lastJobId: null },
 					history: { revisions: [] },
 				};
-				list.unshift({
-					id: doc.project.id,
-					title: doc.project.title,
-					updatedAt: doc.project.updatedAt,
-					assetCount: 0,
-				});
-				saveList();
+				documentsByProject[doc.project.id] = doc;
+				projectOrder.unshift(doc.project.id);
+				saveProjectsState();
 				return Promise.resolve({ success: true, document: doc });
 			},
-			save: (doc: unknown) => {
-				currentDoc = doc;
-				saveToStorage(doc);
+			save: (doc: ShimDocument) => {
+				const id = doc?.project?.id;
+				if (!id) return Promise.resolve({ success: false, error: "Document has no project id" });
+				documentsByProject[id] = doc;
+				if (!projectOrder.includes(id)) projectOrder.unshift(id);
+				saveProjectsState();
 				return Promise.resolve({ success: true, document: doc });
 			},
-			delete: () => Promise.resolve({ success: true }),
-			addAsset: () =>
-				Promise.resolve({ success: true, assetId: "asset_shim", document: currentDoc }),
-			removeAsset: () => Promise.resolve({ success: true, assetId: "", document: currentDoc }),
+			delete: (projectId: string) => {
+				delete documentsByProject[projectId];
+				projectOrder = projectOrder.filter((id) => id !== projectId);
+				saveProjectsState();
+				return Promise.resolve({ success: true });
+			},
+			addAsset: (projectId: string, path: string, label?: string) => {
+				const doc = documentsByProject[projectId];
+				if (!doc) return Promise.resolve({ assetId: "", document: null });
+				const assetId = `asset_${Math.random().toString(36).slice(2, 10)}`;
+				const asset = {
+					id: assetId,
+					kind: "video" as const,
+					label: label || path.split(/[\\/]/).pop() || "Recording",
+					originalPath: path,
+				};
+				const next: ShimDocument = {
+					...doc,
+					assets: [...doc.assets, asset],
+					project: { ...doc.project, primaryAssetId: doc.project.primaryAssetId ?? assetId },
+				};
+				documentsByProject[projectId] = next;
+				saveProjectsState();
+				return Promise.resolve({ assetId, document: next });
+			},
+			removeAsset: (projectId: string, assetId: string) => {
+				const doc = documentsByProject[projectId];
+				if (!doc) return Promise.resolve({ assetId, document: null });
+				const next: ShimDocument = { ...doc, assets: doc.assets.filter((a) => a.id !== assetId) };
+				documentsByProject[projectId] = next;
+				saveProjectsState();
+				return Promise.resolve({ assetId, document: next });
+			},
 			llmGetSnapshot: () => Promise.resolve(buildLlmSnapshot()),
 			llmSetConfig: (config: ShimLlmConfig) => {
 				activeConfig = config;
@@ -239,64 +299,91 @@ function createShimBridgeClient() {
 				saveLlmState();
 				return Promise.resolve({ success: true, snapshot: buildLlmSnapshot() });
 			},
+			// ponytail: OAuth/PAT device flows need a real network round-trip to
+			// the provider — nothing meaningful to fake here. Reject with a clear
+			// message instead of silently returning undefined (which crashed
+			// callers expecting a challenge object).
+			llmBeginDeviceAuth: () =>
+				Promise.reject(new Error("Device login isn't available in the browser preview.")),
+			llmCompleteDeviceAuth: () =>
+				Promise.reject(new Error("Device login isn't available in the browser preview.")),
 			llmListProviderModels: (providerId: string) =>
 				Promise.resolve({
 					models: [`${providerId}-demo-model-1`, `${providerId}-demo-model-2`],
 				}),
-			chatRun: (projectId: string, sessionId: string) => {
+			chatRun: (projectId: string, sessionId: string, message?: string) => {
 				const sessions = getSessions(projectId);
 				let s = sessions.get(sessionId);
 				if (!s) {
-					const id = `sess_${Date.now()}`;
 					s = {
-						id,
+						id: sessionId,
 						projectId,
 						title: "Conversation 1",
 						createdAt: new Date().toISOString(),
 						messages: [],
 					};
-					sessions.set(id, s);
+					sessions.set(sessionId, s);
 				}
-				return Promise.resolve({
-					success: true,
-					assistantMessage: {
-						id: `msg_${Date.now()}`,
-						role: "assistant",
-						content:
-							"[browser-shim] AI features need real LLM deps. Configure a provider in Settings, install the LangChain packages, then chat will work for real.",
+				// ponytail: actually persist the exchange into the session. Without
+				// this, the useEffect that refetches history on activeSessionId
+				// change (chatSelectSession) would clobber the caller's optimistic
+				// `setMessages` with an empty list — same class of bug the real
+				// chat-service avoids by persisting before returning.
+				if (message) {
+					s.messages.push({
+						id: `msg_${Date.now()}_u`,
+						role: "user",
+						content: message,
 						createdAt: new Date().toISOString(),
-					},
-				});
+					});
+				}
+				const assistantMessage = {
+					id: `msg_${Date.now()}_a`,
+					role: "assistant" as const,
+					content:
+						"[browser-shim] AI features need real LLM deps. Configure a provider in Settings, install the LangChain packages, then chat will work for real.",
+					createdAt: new Date().toISOString(),
+				};
+				s.messages.push(assistantMessage);
+				return Promise.resolve({ success: true, assistantMessage });
 			},
 			chatUndoLastBatch: () =>
 				Promise.resolve({
 					success: false,
 					error: "[browser-shim] No agent tool batches to undo in browser mode.",
 				}),
-			chatRunDefault: (projectId: string) => {
+			chatRunDefault: (projectId: string, message?: string) => {
 				// ponytail: legacy single-session consumers — pick the most
 				// recent session or auto-create one.
 				const sessions = getSessions(projectId);
-				if (sessions.size === 0) {
-					const id = `sess_${Date.now()}`;
-					sessions.set(id, {
-						id,
+				let s = [...sessions.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt))[0];
+				if (!s) {
+					s = {
+						id: `sess_${Date.now()}`,
 						projectId,
 						title: "Conversation 1",
 						createdAt: new Date().toISOString(),
 						messages: [],
+					};
+					sessions.set(s.id, s);
+				}
+				if (message) {
+					s.messages.push({
+						id: `msg_${Date.now()}_u`,
+						role: "user",
+						content: message,
+						createdAt: new Date().toISOString(),
 					});
 				}
-				return Promise.resolve({
-					success: true,
-					assistantMessage: {
-						id: `msg_${Date.now()}`,
-						role: "assistant",
-						content:
-							"[browser-shim] AI features need real LLM deps. Configure a provider in Settings, install the LangChain packages, then chat will work for real.",
-						createdAt: new Date().toISOString(),
-					},
-				});
+				const assistantMessage = {
+					id: `msg_${Date.now()}_a`,
+					role: "assistant" as const,
+					content:
+						"[browser-shim] AI features need real LLM deps. Configure a provider in Settings, install the LangChain packages, then chat will work for real.",
+					createdAt: new Date().toISOString(),
+				};
+				s.messages.push(assistantMessage);
+				return Promise.resolve({ success: true, assistantMessage });
 			},
 			chatHistory: (projectId: string) => {
 				const m = sessionsByProject.get(projectId);
