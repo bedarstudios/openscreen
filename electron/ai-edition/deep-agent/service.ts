@@ -60,20 +60,21 @@ const SYSTEM_PROMPT = [
 	"Help them cut silences, tighten pacing, add captions, and rewrite titles.",
 	"Be concise, action-oriented, and reference the timeline or transcript by time when relevant.",
 	"You can call the tools below against the live document snapshot; the runtime executes each edit and feeds the result back into the loop.",
+	"The AxcutDocument is the single source of truth. The timeline, the transcript editor, and the chat panel are all direct editors of the same document — when the user places a clip on the timeline, the document updates immediately, and when the timeline is empty, the document has no clips. Your edits operate on the live document, so preserve the user's placed clips: for 'remove silences' or 'cut pauses' requests, prefer addSkip (one cut per silent range) or setClipRange (trim a specific clip). Do not call replaceTimeline unless the user explicitly asks you to rebuild the timeline from scratch (e.g. 'start over with the kept intervals from the transcript').",
 ].join(" ");
 
 const TOOL_DESCRIPTIONS: Record<string, string> = {
 	getCurrentDocument:
-		"Read a compact snapshot of the current project: assets (with durations), timeline clips, skip ranges, and counts of annotations/zoom regions. Call this before editing if the snapshot in the system prompt may be stale.",
+		"Read a compact snapshot of the current project: assets (with durations), timeline clips, skip ranges, and counts of annotations/zoom ranges. Call this before editing if the snapshot in the system prompt may be stale. The AxcutDocument is the single source of truth — your edits should preserve the user's placed clips and any timeline state they have already set up.",
 	getTranscript:
 		"Read the transcript segments (speech and silence, with start/end seconds and text) for an asset. Omit assetId to read the primary asset's transcript.",
 	addSkip:
-		"Add a skip range (a cut — this source-time span will not be played or exported). Times are in seconds of the asset's source time.",
+		"Add a skip range (a cut — this source-time span will not be played or exported). Times are in seconds of the asset's source time. This is the preferred way to remove silences; it preserves the user's placed clips and only adds a cut.",
 	setSkipRange: "Move or resize an existing skip range by id. Times are source-time seconds.",
 	setClipRange:
-		"Trim a clip: set its source in/out points (seconds). All clips are re-laid back-to-back afterwards, so downstream clips shift automatically.",
+		"Trim a clip: set its source in/out points (seconds). All clips are re-laid back-to-back afterwards, so downstream clips shift automatically. Use this to shorten or extend a user-placed clip.",
 	replaceTimeline:
-		"Replace the whole timeline with the given kept intervals of the primary asset's source time. Everything outside the intervals becomes a skip. Use for bulk edits like 'cut all silences'.",
+		"Replace the whole timeline with the given kept intervals of the primary asset's source time. Everything outside the intervals becomes a skip. DO NOT use this for 'cut silences' or 'remove pauses' — the user has likely placed clips on the timeline that you'd be discarding. Use this only when the user explicitly asks you to rebuild the timeline from scratch (e.g. 'start over with the kept intervals from the transcript' or 'replace everything with these intervals').",
 };
 
 // ponytail: mutable document holder so a write-tool that updates the snapshot
