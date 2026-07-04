@@ -179,7 +179,14 @@ export function applyTimelineOperation(
 			const lo = Math.max(0, Math.min(op.startSec, op.endSec));
 			const hi = Math.max(lo, Math.max(op.startSec, op.endSec));
 			const existing = document.timeline.skipRanges.filter((s) => s.assetId === assetId);
-			const merged = normalizeIntervals(primaryAssetDuration(document), [
+			// ponytail: bound by the skip-range asset's duration, not the
+			// primary asset's. Recording projects can have a short primary
+			// asset (snippet) while the clip uses a long video — using
+			// primaryAssetDuration here would truncate the skip range and
+			// only trim a few words instead of the user's full selection.
+			const asset = document.assets.find((a) => a.id === assetId);
+			const duration = asset?.durationSec ?? Infinity;
+			const merged = normalizeIntervals(duration, [
 				{ startSec: lo, endSec: hi },
 				...existing.map((s) => ({ startSec: s.startSec, endSec: s.endSec })),
 			]);
