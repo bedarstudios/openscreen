@@ -2165,6 +2165,7 @@ export function registerIpcHandlers(
 				path: bundledScreenPath,
 				session,
 				bundleDir,
+				videoFileUrl: pathToFileURL(bundledScreenPath).toString(),
 				message: "Native macOS recording session stored successfully",
 			};
 		} catch (error) {
@@ -2258,6 +2259,7 @@ export function registerIpcHandlers(
 					path: bundledScreenPath,
 					session,
 					bundleDir,
+					videoFileUrl: pathToFileURL(bundledScreenPath).toString(),
 					message: "Native macOS webcam recording attached successfully",
 				};
 			} catch (error) {

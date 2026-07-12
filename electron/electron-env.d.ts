@@ -157,6 +157,8 @@ interface Window {
 			message?: string;
 			discarded?: boolean;
 			error?: string;
+			bundleDir?: string;
+			videoFileUrl?: string;
 		}>;
 		attachNativeMacWebcamRecording: (payload: {
 			screenVideoPath: string;
@@ -169,6 +171,8 @@ interface Window {
 			session?: import("../src/lib/recordingSession").RecordingSession;
 			message?: string;
 			error?: string;
+			bundleDir?: string;
+			videoFileUrl?: string;
 		}>;
 		discardCursorTelemetry: (recordingId: number) => Promise<void>;
 		getCursorTelemetry: (videoPath?: string) => Promise<{
