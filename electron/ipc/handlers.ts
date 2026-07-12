@@ -42,6 +42,7 @@ import { createCursorRecordingSession } from "../native-bridge/cursor/recording/
 import { requestMacCursorAccessibilityAccess } from "../native-bridge/cursor/recording/macNativeCursorRecordingSession";
 import type { CursorRecordingSession } from "../native-bridge/cursor/recording/session";
 import { patchWebmDurationOnDisk } from "../recording/webm-duration";
+import { createRecordingBundle } from "../showhow/bundle";
 import { registerNativeBridgeHandlers } from "./nativeBridge";
 import { RecordingStreamRegistry, registerRecordingStreamHandlers } from "./recordingStream";
 
@@ -2130,8 +2131,23 @@ export function registerIpcHandlers(
 				await writePendingCursorTelemetry(screenVideoPath);
 			}
 
+			// Showhow: relocate this recording into its agent-ready bundle folder.
+			// Best-effort -- a bundling failure must never lose the recording.
+			let bundledScreenPath = screenVideoPath;
+			let bundleDir: string | undefined;
+			try {
+				const bundle = await createRecordingBundle({
+					screenVideoPath,
+					createdAt: recordingId,
+				});
+				bundledScreenPath = bundle.screenVideoPath;
+				bundleDir = bundle.bundleDir;
+			} catch (error) {
+				console.error("Showhow bundle creation failed; keeping flat recording files:", error);
+			}
+
 			const session: RecordingSession = {
-				screenVideoPath,
+				screenVideoPath: bundledScreenPath,
 				createdAt: recordingId,
 				cursorCaptureMode,
 			};
@@ -2146,8 +2162,9 @@ export function registerIpcHandlers(
 
 			return {
 				success: true,
-				path: screenVideoPath,
+				path: bundledScreenPath,
 				session,
+				bundleDir,
 				message: "Native macOS recording session stored successfully",
 			};
 		} catch (error) {
@@ -2202,9 +2219,28 @@ export function registerIpcHandlers(
 						? payload.recordingId
 						: Date.now();
 				const cursorCaptureMode = normalizeCursorCaptureMode(payload.cursorCaptureMode);
+
+				// Showhow: relocate this recording into its agent-ready bundle folder.
+				// Best-effort -- a bundling failure must never lose the recording.
+				let bundledScreenPath = screenVideoPath;
+				let bundledWebcamPath: string | undefined = webcamVideoPath;
+				let bundleDir: string | undefined;
+				try {
+					const bundle = await createRecordingBundle({
+						screenVideoPath,
+						webcamVideoPath,
+						createdAt,
+					});
+					bundledScreenPath = bundle.screenVideoPath;
+					bundledWebcamPath = bundle.webcamVideoPath;
+					bundleDir = bundle.bundleDir;
+				} catch (error) {
+					console.error("Showhow bundle creation failed; keeping flat recording files:", error);
+				}
+
 				const session: RecordingSession = {
-					screenVideoPath,
-					webcamVideoPath,
+					screenVideoPath: bundledScreenPath,
+					webcamVideoPath: bundledWebcamPath,
 					createdAt,
 					...(cursorCaptureMode ? { cursorCaptureMode } : {}),
 				};
@@ -2219,8 +2255,9 @@ export function registerIpcHandlers(
 
 				return {
 					success: true,
-					path: screenVideoPath,
+					path: bundledScreenPath,
 					session,
+					bundleDir,
 					message: "Native macOS webcam recording attached successfully",
 				};
 			} catch (error) {
@@ -2291,18 +2328,41 @@ export function registerIpcHandlers(
 			await Promise.all(patches);
 		}
 
-		const session: RecordingSession = webcamVideoPath
+		await writePendingCursorTelemetry(screenVideoPath);
+
+		// Showhow: relocate this recording into its agent-ready bundle folder.
+		// Best-effort -- a bundling failure must never lose the recording.
+		let bundledScreenPath = screenVideoPath;
+		let bundledWebcamPath = webcamVideoPath;
+		let bundleDir: string | undefined;
+		try {
+			const bundle = await createRecordingBundle({
+				screenVideoPath,
+				webcamVideoPath,
+				createdAt,
+				durationMs: isValidDurationMs(payload.durationMs) ? payload.durationMs : undefined,
+			});
+			bundledScreenPath = bundle.screenVideoPath;
+			bundledWebcamPath = bundle.webcamVideoPath;
+			bundleDir = bundle.bundleDir;
+		} catch (error) {
+			console.error("Showhow bundle creation failed; keeping flat recording files:", error);
+		}
+
+		const session: RecordingSession = bundledWebcamPath
 			? {
-					screenVideoPath,
-					webcamVideoPath,
+					screenVideoPath: bundledScreenPath,
+					webcamVideoPath: bundledWebcamPath,
 					createdAt,
 					...(cursorCaptureMode ? { cursorCaptureMode } : {}),
 				}
-			: { screenVideoPath, createdAt, ...(cursorCaptureMode ? { cursorCaptureMode } : {}) };
+			: {
+					screenVideoPath: bundledScreenPath,
+					createdAt,
+					...(cursorCaptureMode ? { cursorCaptureMode } : {}),
+				};
 		setCurrentRecordingSessionState(session);
 		currentProjectPath = null;
-
-		await writePendingCursorTelemetry(screenVideoPath);
 
 		const sessionManifestPath = path.join(
 			RECORDINGS_DIR,
@@ -2312,8 +2372,10 @@ export function registerIpcHandlers(
 
 		return {
 			success: true,
-			path: screenVideoPath,
+			path: bundledScreenPath,
 			session,
+			bundleDir,
+			videoFileUrl: pathToFileURL(bundledScreenPath).toString(),
 			message: "Recording session stored successfully",
 		};
 	}

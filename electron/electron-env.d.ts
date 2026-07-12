@@ -86,6 +86,8 @@ interface Window {
 			session?: import("../src/lib/recordingSession").RecordingSession;
 			message?: string;
 			error?: string;
+			bundleDir?: string;
+			videoFileUrl?: string;
 		}>;
 		openRecordingStream: (fileName: string) => Promise<{ success: boolean; error?: string }>;
 		appendRecordingChunk: (
