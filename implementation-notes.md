@@ -51,3 +51,39 @@ code-reading verification only; the manual runtime check that would have
 caught this was still pending when the review ran). Re-opened as
 Task 3b/fix rather than reverting the approval, since the original diff is
 correct as far as it goes -- it's incomplete, not wrong.
+
+### 2026-07-12: Task 4 transcript hook-in follows the same three-path discovery
+
+**What changed:** Task 4's brief (written before the deviation above was
+discovered and fixed) assumed `storeRecordedSessionFiles` /
+`store-recorded-session` was the only save-completion path and told the
+implementer to hook `generateTranscriptForBundle` into `useScreenRecorder.ts`
+at its two `storeRecordedSession` call sites only. Per the corrected task
+instructions (informed by the deviation above, and by the same-commit fix
+that added `bundleDir`/`videoFileUrl` to all three IPC results), the
+fire-and-forget transcript call was wired into all three places a macOS
+recording save can succeed:
+
+1. The primary `storeRecordedSession` call site (browser-MediaRecorder path,
+   `useScreenRecorder.ts` ~line 391), guarded on `result.bundleDir &&
+   result.videoFileUrl`.
+2. The nested `storeRecordedSession` call inside `finalizeNativeWindowsRecording`
+   (used only when a webcam was recorded alongside native Windows capture),
+   guarded on `stored.bundleDir && stored.videoFileUrl`. The Windows-native
+   `stopNativeWindowsRecording` result itself is untouched and unhooked --
+   that result type has no `bundleDir`/`videoFileUrl` fields since native
+   Windows bundling is explicitly out of scope for V1 (macOS-only spec).
+3. `finalizeNativeMacRecording`'s final save state: tracked
+   `finalBundleDir`/`finalVideoFileUrl` starting from `stopNativeMacRecording`'s
+   result, overwritten by `attachNativeMacWebcamRecording`'s result when a
+   webcam was attached (since that call's result reflects the final bundle,
+   not the screen-only one), then fired once right before
+   `clearNativeRecordingState()`.
+
+**Why:** the native macOS path (default on macOS) never goes through
+`storeRecordedSession`, so hooking only those two call sites would mean the
+primary recording path -- and thus the vast majority of real usage -- never
+gets a transcript.
+
+**Task retroactively affected:** none -- Task 4 was corrected before
+implementation started, so no rework needed.

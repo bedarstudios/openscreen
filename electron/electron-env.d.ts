@@ -89,6 +89,7 @@ interface Window {
 			bundleDir?: string;
 			videoFileUrl?: string;
 		}>;
+		showhowWriteTranscript: (bundleDir: string, content: string) => Promise<{ success: boolean }>;
 		openRecordingStream: (fileName: string) => Promise<{ success: boolean; error?: string }>;
 		appendRecordingChunk: (
 			fileName: string,

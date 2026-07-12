@@ -42,7 +42,7 @@ import { createCursorRecordingSession } from "../native-bridge/cursor/recording/
 import { requestMacCursorAccessibilityAccess } from "../native-bridge/cursor/recording/macNativeCursorRecordingSession";
 import type { CursorRecordingSession } from "../native-bridge/cursor/recording/session";
 import { patchWebmDurationOnDisk } from "../recording/webm-duration";
-import { createRecordingBundle } from "../showhow/bundle";
+import { createRecordingBundle, SHOWHOW_RECORDINGS_ROOT } from "../showhow/bundle";
 import { registerNativeBridgeHandlers } from "./nativeBridge";
 import { RecordingStreamRegistry, registerRecordingStreamHandlers } from "./recordingStream";
 
@@ -2276,6 +2276,24 @@ export function registerIpcHandlers(
 	// Chunks append as they arrive so the renderer never buffers the full video (#616).
 	const recordingStreams = new RecordingStreamRegistry();
 	registerRecordingStreamHandlers(ipcMain, recordingStreams, resolveRecordingOutputPath);
+
+	ipcMain.handle("showhow:write-transcript", async (_, bundleDir: unknown, content: unknown) => {
+		if (typeof bundleDir !== "string" || typeof content !== "string") {
+			return { success: false };
+		}
+		const resolved = path.resolve(bundleDir);
+		if (!resolved.startsWith(`${SHOWHOW_RECORDINGS_ROOT}${path.sep}`)) {
+			console.error("showhow:write-transcript rejected path outside recordings root:", resolved);
+			return { success: false };
+		}
+		try {
+			await fs.writeFile(path.join(resolved, "transcript.txt"), content, "utf-8");
+			return { success: true };
+		} catch (error) {
+			console.error("showhow:write-transcript failed:", error);
+			return { success: false };
+		}
+	});
 
 	ipcMain.handle("store-recorded-session", async (_, payload: StoreRecordedSessionInput) => {
 		try {

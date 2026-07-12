@@ -13,6 +13,7 @@ import {
 } from "@/lib/nativeWindowsRecording";
 import type { CursorCaptureMode, RecordedVideoAssetInput } from "@/lib/recordingSession";
 import { requestCameraAccess } from "@/lib/requestCameraAccess";
+import { generateTranscriptForBundle } from "@/lib/showhow/generateTranscript";
 import { createRecorderHandle, type RecorderHandle } from "./recorderHandle";
 
 const TARGET_FRAME_RATE = 60;
@@ -395,6 +396,11 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					// store-recorded-session has flushed and closed the saved streams.
 					storeSucceeded = true;
 
+					if (result.bundleDir && result.videoFileUrl) {
+						// Fire-and-forget: transcript lands in the bundle when Whisper finishes.
+						void generateTranscriptForBundle(result.bundleDir, result.videoFileUrl);
+					}
+
 					if (result.session) {
 						await window.electronAPI.setCurrentRecordingSession(result.session);
 					} else if (result.path) {
@@ -502,6 +508,10 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 						if (stored.success && stored.session) {
 							storedSession = stored.session;
 						}
+						if (stored.bundleDir && stored.videoFileUrl) {
+							// Fire-and-forget: transcript lands in the bundle when Whisper finishes.
+							void generateTranscriptForBundle(stored.bundleDir, stored.videoFileUrl);
+						}
 					}
 				}
 
@@ -594,6 +604,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					return true;
 				}
 
+				// Track the final bundleDir/videoFileUrl for this recording: the screen-only
+				// result from stopNativeMacRecording, unless a webcam was attached below, in
+				// which case attachResult reflects the final saved bundle.
+				let finalBundleDir = result.bundleDir;
+				let finalVideoFileUrl = result.videoFileUrl;
+
 				if (webcamAsset && result.path) {
 					const attachResult = await window.electronAPI.attachNativeMacWebcamRecording({
 						screenVideoPath: result.path,
@@ -603,10 +619,17 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					});
 					if (attachResult.success) {
 						result.session = attachResult.session;
+						finalBundleDir = attachResult.bundleDir;
+						finalVideoFileUrl = attachResult.videoFileUrl;
 					} else {
 						console.error("Failed to attach native macOS webcam recording:", attachResult.error);
 						toast.error(attachResult.error ?? "Failed to store webcam recording");
 					}
+				}
+
+				if (finalBundleDir && finalVideoFileUrl) {
+					// Fire-and-forget: transcript lands in the bundle when Whisper finishes.
+					void generateTranscriptForBundle(finalBundleDir, finalVideoFileUrl);
 				}
 
 				clearNativeRecordingState();
