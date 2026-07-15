@@ -8,6 +8,8 @@ export type CursorCaptureMode = "editable-overlay" | "system";
 
 export interface RecordingSession extends ProjectMedia {
 	createdAt: number;
+	showhowBundleDir?: string;
+	showhowVideoFileUrl?: string;
 }
 
 export interface RecordedVideoAssetInput {
@@ -81,5 +83,33 @@ export function normalizeRecordingSession(candidate: unknown): RecordingSession 
 			typeof raw.createdAt === "number" && Number.isFinite(raw.createdAt)
 				? raw.createdAt
 				: Date.now(),
+		...(normalizePath(raw.showhowBundleDir)
+			? { showhowBundleDir: normalizePath(raw.showhowBundleDir) }
+			: {}),
+		...(normalizePath(raw.showhowVideoFileUrl)
+			? { showhowVideoFileUrl: normalizePath(raw.showhowVideoFileUrl) }
+			: {}),
 	};
+}
+
+/**
+ * Clears a completed Showhow transcript job only when the session still owns that job.
+ * Returning null prevents an old editor callback from replacing a newer session.
+ */
+export function completeShowhowTranscriptSession(
+	currentSession: RecordingSession,
+	bundleDir: string,
+	videoFileUrl: string,
+): RecordingSession | null {
+	if (
+		currentSession.showhowBundleDir !== bundleDir ||
+		currentSession.showhowVideoFileUrl !== videoFileUrl
+	) {
+		return null;
+	}
+
+	const completedSession = { ...currentSession };
+	delete completedSession.showhowBundleDir;
+	delete completedSession.showhowVideoFileUrl;
+	return completedSession;
 }

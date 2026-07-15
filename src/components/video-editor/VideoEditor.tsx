@@ -50,8 +50,13 @@ import {
 	VideoExporter,
 } from "@/lib/exporter";
 import { computeFrameStepTime } from "@/lib/frameStep";
-import type { CursorCaptureMode, ProjectMedia } from "@/lib/recordingSession";
+import {
+	type CursorCaptureMode,
+	completeShowhowTranscriptSession,
+	type ProjectMedia,
+} from "@/lib/recordingSession";
 import { isTextEditingTarget, matchesShortcut } from "@/lib/shortcuts";
+import { generateTranscriptForBundle } from "@/lib/showhow/generateTranscript";
 import {
 	getExportFolder,
 	getProjectFolder,
@@ -568,6 +573,25 @@ export default function VideoEditor() {
 				const currentSessionResult = await window.electronAPI.getCurrentRecordingSession();
 				if (currentSessionResult.success && currentSessionResult.session) {
 					const session = currentSessionResult.session;
+					if (session.showhowBundleDir && session.showhowVideoFileUrl) {
+						const bundleDir = session.showhowBundleDir;
+						const videoFileUrl = session.showhowVideoFileUrl;
+						void generateTranscriptForBundle(bundleDir, videoFileUrl).then(async () => {
+							const latestSessionResult = await window.electronAPI.getCurrentRecordingSession();
+							if (!latestSessionResult.success || !latestSessionResult.session) {
+								return;
+							}
+
+							const completedSession = completeShowhowTranscriptSession(
+								latestSessionResult.session,
+								bundleDir,
+								videoFileUrl,
+							);
+							if (completedSession) {
+								await window.electronAPI.setCurrentRecordingSession(completedSession);
+							}
+						});
+					}
 					const sourcePath = fromFileUrl(session.screenVideoPath);
 					const webcamSourcePath = session.webcamVideoPath
 						? fromFileUrl(session.webcamVideoPath)

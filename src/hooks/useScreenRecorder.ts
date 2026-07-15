@@ -581,7 +581,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			};
 
 			try {
-				const result = await window.electronAPI.stopNativeMacRecording(discard);
+				const result = await window.electronAPI.stopNativeMacRecording(discard, duration);
 				const webcamAsset = await webcamAssetPromise;
 				if (discard || result.discarded) {
 					clearNativeRecordingState();
@@ -594,6 +594,9 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					return true;
 				}
 
+				// Track the final bundleDir/videoFileUrl for this recording: the screen-only
+				// result from stopNativeMacRecording, unless a webcam was attached below, in
+				// which case attachResult reflects the final saved bundle.
 				if (webcamAsset && result.path) {
 					const attachResult = await window.electronAPI.attachNativeMacWebcamRecording({
 						screenVideoPath: result.path,

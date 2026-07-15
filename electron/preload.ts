@@ -81,6 +81,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	storeRecordedSession: (payload: StoreRecordedSessionInput) => {
 		return ipcRenderer.invoke("store-recorded-session", payload);
 	},
+	showhowWriteTranscript: (bundleDir: string, content: string) =>
+		ipcRenderer.invoke("showhow:write-transcript", bundleDir, content),
 	openRecordingStream: (fileName: string) => {
 		return ipcRenderer.invoke("open-recording-stream", fileName);
 	},
@@ -128,8 +130,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	resumeNativeMacRecording: () => {
 		return ipcRenderer.invoke("resume-native-mac-recording");
 	},
-	stopNativeMacRecording: (discard?: boolean) => {
-		return ipcRenderer.invoke("stop-native-mac-recording", discard);
+	stopNativeMacRecording: (discard?: boolean, durationMs?: number) => {
+		return ipcRenderer.invoke("stop-native-mac-recording", discard, durationMs);
 	},
 	attachNativeMacWebcamRecording: (payload: {
 		screenVideoPath: string;

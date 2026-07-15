@@ -1,17 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-	app,
-	BrowserWindow,
-	ipcMain,
-	Menu,
-	nativeImage,
-	session,
-	systemPreferences,
-	Tray,
-} from "electron";
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, session, Tray } from "electron";
 import { ShortcutBinding } from "../src/lib/shortcuts";
+import { createAppWindowReadinessGate } from "./appWindowReadiness";
 import { isDiagnosticModeEnabled, mainLogBuffer } from "./diagnostics/main-log-buffer";
 import {
 	loadAndRegisterGlobalShortcut,
@@ -103,7 +95,7 @@ function createWindow() {
 	mainWindow = createHudOverlayWindow();
 }
 
-function showMainWindow() {
+function showMainWindowNow() {
 	if (mainWindow && !mainWindow.isDestroyed()) {
 		if (mainWindow.isMinimized()) {
 			mainWindow.restore();
@@ -114,6 +106,12 @@ function showMainWindow() {
 	}
 
 	createWindow();
+}
+
+const appWindowReadiness = createAppWindowReadinessGate(showMainWindowNow);
+
+function showMainWindow() {
+	appWindowReadiness.request();
 }
 
 const stableInstanceLock = acquireStableInstanceLock();
@@ -548,15 +546,6 @@ appReady?.then(async () => {
 		{ useSystemPicker: false },
 	);
 
-	// Request mic permission now. Screen Recording is requested lazily from the
-	// source-picker action so its prompt isn't hidden behind the selector window.
-	if (process.platform === "darwin") {
-		const micStatus = systemPreferences.getMediaAccessStatus("microphone");
-		if (micStatus !== "granted") {
-			await systemPreferences.askForMediaAccess("microphone");
-		}
-	}
-
 	ipcMain.on("hud-overlay-close", () => {
 		app.quit();
 	});
@@ -608,5 +597,6 @@ appReady?.then(async () => {
 
 	await loadAndRegisterGlobalShortcut(showMainWindow);
 
-	createWindow();
+	appWindowReadiness.markReady();
+	showMainWindow();
 });

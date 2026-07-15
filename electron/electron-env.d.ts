@@ -86,7 +86,10 @@ interface Window {
 			session?: import("../src/lib/recordingSession").RecordingSession;
 			message?: string;
 			error?: string;
+			bundleDir?: string;
+			videoFileUrl?: string;
 		}>;
+		showhowWriteTranscript: (bundleDir: string, content: string) => Promise<{ success: boolean }>;
 		openRecordingStream: (fileName: string) => Promise<{ success: boolean; error?: string }>;
 		appendRecordingChunk: (
 			fileName: string,
@@ -148,13 +151,18 @@ interface Window {
 			success: boolean;
 			error?: string;
 		}>;
-		stopNativeMacRecording: (discard?: boolean) => Promise<{
+		stopNativeMacRecording: (
+			discard?: boolean,
+			durationMs?: number,
+		) => Promise<{
 			success: boolean;
 			path?: string;
 			session?: import("../src/lib/recordingSession").RecordingSession;
 			message?: string;
 			discarded?: boolean;
 			error?: string;
+			bundleDir?: string;
+			videoFileUrl?: string;
 		}>;
 		attachNativeMacWebcamRecording: (payload: {
 			screenVideoPath: string;
@@ -167,6 +175,8 @@ interface Window {
 			session?: import("../src/lib/recordingSession").RecordingSession;
 			message?: string;
 			error?: string;
+			bundleDir?: string;
+			videoFileUrl?: string;
 		}>;
 		discardCursorTelemetry: (recordingId: number) => Promise<void>;
 		getCursorTelemetry: (videoPath?: string) => Promise<{
