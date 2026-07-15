@@ -8,6 +8,8 @@ export type CursorCaptureMode = "editable-overlay" | "system";
 
 export interface RecordingSession extends ProjectMedia {
 	createdAt: number;
+	showhowBundleDir?: string;
+	showhowVideoFileUrl?: string;
 }
 
 export interface RecordedVideoAssetInput {
@@ -81,5 +83,11 @@ export function normalizeRecordingSession(candidate: unknown): RecordingSession 
 			typeof raw.createdAt === "number" && Number.isFinite(raw.createdAt)
 				? raw.createdAt
 				: Date.now(),
+		...(normalizePath(raw.showhowBundleDir)
+			? { showhowBundleDir: normalizePath(raw.showhowBundleDir) }
+			: {}),
+		...(normalizePath(raw.showhowVideoFileUrl)
+			? { showhowVideoFileUrl: normalizePath(raw.showhowVideoFileUrl) }
+			: {}),
 	};
 }

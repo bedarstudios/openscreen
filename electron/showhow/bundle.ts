@@ -11,10 +11,10 @@ export interface ShowhowMeta {
 	source: "desktop";
 	createdAt: number;
 	durationMs?: number;
-	video: "video.webm";
+	video: "video.webm" | "video.mp4";
 	webcam?: "webcam.webm";
 	/** Kept at the editor's `${videoPath}.cursor.json` convention -- see handlers.ts telemetry loading. */
-	cursorTelemetry?: "video.webm.cursor.json";
+	cursorTelemetry?: "video.webm.cursor.json" | "video.mp4.cursor.json";
 	transcript: "transcript.txt";
 	/** Filled by the Phase 2 doc engine. */
 	steps: null;
@@ -25,6 +25,7 @@ export interface BuildMetaInput {
 	durationMs?: number;
 	hasWebcam: boolean;
 	hasCursorTelemetry: boolean;
+	videoFileName?: "video.webm" | "video.mp4";
 }
 
 export interface CreateBundleInput {
@@ -52,15 +53,18 @@ export function bundleDirName(createdAt: number): string {
 export function buildMeta(input: BuildMetaInput): ShowhowMeta {
 	const d = new Date(input.createdAt);
 	const title = `Recording ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+	const videoFileName = input.videoFileName ?? "video.webm";
 	return {
 		schemaVersion: 1,
 		title,
 		source: "desktop",
 		createdAt: input.createdAt,
 		...(input.durationMs !== undefined ? { durationMs: input.durationMs } : {}),
-		video: "video.webm",
+		video: videoFileName,
 		...(input.hasWebcam ? { webcam: "webcam.webm" as const } : {}),
-		...(input.hasCursorTelemetry ? { cursorTelemetry: "video.webm.cursor.json" as const } : {}),
+		...(input.hasCursorTelemetry
+			? { cursorTelemetry: `${videoFileName}.cursor.json` as ShowhowMeta["cursorTelemetry"] }
+			: {}),
 		transcript: "transcript.txt",
 		steps: null,
 	};
@@ -91,7 +95,9 @@ export async function createRecordingBundle(input: CreateBundleInput): Promise<C
 	const bundleDir = path.join(root, bundleDirName(input.createdAt));
 	await fs.mkdir(path.join(bundleDir, "screenshots"), { recursive: true });
 
-	const screenDest = path.join(bundleDir, "video.webm");
+	const videoFileName =
+		path.extname(input.screenVideoPath).toLowerCase() === ".mp4" ? "video.mp4" : "video.webm";
+	const screenDest = path.join(bundleDir, videoFileName);
 	await moveFile(input.screenVideoPath, screenDest);
 
 	const cursorSrc = `${input.screenVideoPath}.cursor.json`;
@@ -111,6 +117,7 @@ export async function createRecordingBundle(input: CreateBundleInput): Promise<C
 		durationMs: input.durationMs,
 		hasWebcam: webcamDest !== undefined,
 		hasCursorTelemetry,
+		videoFileName,
 	});
 	await fs.writeFile(path.join(bundleDir, "meta.json"), JSON.stringify(meta, null, 2), "utf-8");
 

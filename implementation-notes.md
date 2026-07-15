@@ -87,3 +87,38 @@ gets a transcript.
 
 **Task retroactively affected:** none -- Task 4 was corrected before
 implementation started, so no rework needed.
+
+### 2026-07-15: Live acceptance exposed renderer-lifetime and container mismatches
+
+**What changed:** A real native macOS recording showed that ScreenCaptureKit writes MP4,
+while the bundle module renamed every video to `video.webm`. It also showed that starting
+Whisper fire-and-forget in the recorder renderer does not survive `switchToEditor()`, which
+destroys that renderer before transcription completes.
+
+**What was done instead:** Preserve the source container as `video.mp4` or `video.webm`,
+including the matching cursor telemetry name. Persist the pending Showhow transcript job on
+`RecordingSession`; the editor renderer claims it after the window transition and clears the
+pending fields only after the transcript write completes.
+
+### 2026-07-15: Startup activation raced IPC registration
+
+**What changed:** Live automation reproduced a HUD window whose renderer called IPC before
+the handlers existed. Startup awaited proactive microphone permission, while a second-instance
+activation could create the HUD during that wait.
+
+**What was done instead:** Gate window activation until startup registration is complete and
+request microphone access only when the user enables microphone capture. Regression coverage
+verifies that an early activation is deferred until readiness.
+
+## Phase 1 acceptance -- 2026-07-15
+
+- Recorded 45 seconds of the full display through native ScreenCaptureKit with system audio.
+- Played a deterministic macOS text-to-speech phrase containing "green lighthouse",
+  "seven forty two", "local speech transcription", and "agent ready folder".
+- Verified the recording opened in the editor with a 45-second duration.
+- Verified `~/Showhow/Recordings/2026-07-15_100533-recording/` contains `video.mp4`,
+  `video.mp4.cursor.json`, `transcript.txt`, `meta.json`, and `screenshots/`.
+- Verified `transcript.txt` contains timestamped recognition of the deterministic phrase.
+- Verified `meta.json` identifies `video.mp4` and `video.mp4.cursor.json` accurately.
+- Verification: 45 test files / 328 tests passed; `tsc --noEmit` passed; Biome checked
+  346 files with no errors.

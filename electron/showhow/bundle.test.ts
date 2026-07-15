@@ -94,4 +94,21 @@ describe("createRecordingBundle", () => {
 		const meta = JSON.parse(await readFile(path.join(result.bundleDir, "meta.json"), "utf-8"));
 		expect(meta.cursorTelemetry).toBeUndefined();
 	});
+
+	it("preserves an MP4 screen recording's container extension", async () => {
+		const work = await mkdtemp(path.join(os.tmpdir(), "showhow-bundle-"));
+		const root = path.join(work, "Recordings");
+		const screenVideoPath = path.join(work, "native-recording.mp4");
+		await writeFile(screenVideoPath, "fake-mp4");
+
+		const result = await createRecordingBundle({
+			screenVideoPath,
+			createdAt: Date.now(),
+			recordingsRoot: root,
+		});
+
+		expect(path.basename(result.screenVideoPath)).toBe("video.mp4");
+		const meta = JSON.parse(await readFile(path.join(result.bundleDir, "meta.json"), "utf-8"));
+		expect(meta.video).toBe("video.mp4");
+	});
 });

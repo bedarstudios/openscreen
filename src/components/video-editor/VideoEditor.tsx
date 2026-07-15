@@ -52,6 +52,7 @@ import {
 import { computeFrameStepTime } from "@/lib/frameStep";
 import type { CursorCaptureMode, ProjectMedia } from "@/lib/recordingSession";
 import { isTextEditingTarget, matchesShortcut } from "@/lib/shortcuts";
+import { generateTranscriptForBundle } from "@/lib/showhow/generateTranscript";
 import {
 	getExportFolder,
 	getProjectFolder,
@@ -568,6 +569,17 @@ export default function VideoEditor() {
 				const currentSessionResult = await window.electronAPI.getCurrentRecordingSession();
 				if (currentSessionResult.success && currentSessionResult.session) {
 					const session = currentSessionResult.session;
+					if (session.showhowBundleDir && session.showhowVideoFileUrl) {
+						void generateTranscriptForBundle(
+							session.showhowBundleDir,
+							session.showhowVideoFileUrl,
+						).then(async () => {
+							const completedSession = { ...session };
+							delete completedSession.showhowBundleDir;
+							delete completedSession.showhowVideoFileUrl;
+							await window.electronAPI.setCurrentRecordingSession(completedSession);
+						});
+					}
 					const sourcePath = fromFileUrl(session.screenVideoPath);
 					const webcamSourcePath = session.webcamVideoPath
 						? fromFileUrl(session.webcamVideoPath)

@@ -2150,6 +2150,12 @@ export function registerIpcHandlers(
 				screenVideoPath: bundledScreenPath,
 				createdAt: recordingId,
 				cursorCaptureMode,
+				...(bundleDir
+					? {
+							showhowBundleDir: bundleDir,
+							showhowVideoFileUrl: pathToFileURL(bundledScreenPath).toString(),
+						}
+					: {}),
 			};
 			setCurrentRecordingSessionState(session);
 			currentProjectPath = null;
@@ -2244,6 +2250,12 @@ export function registerIpcHandlers(
 					webcamVideoPath: bundledWebcamPath,
 					createdAt,
 					...(cursorCaptureMode ? { cursorCaptureMode } : {}),
+					...(bundleDir
+						? {
+								showhowBundleDir: bundleDir,
+								showhowVideoFileUrl: pathToFileURL(bundledScreenPath).toString(),
+							}
+						: {}),
 				};
 				setCurrentRecordingSessionState(session);
 				currentProjectPath = null;
@@ -2375,11 +2387,23 @@ export function registerIpcHandlers(
 					webcamVideoPath: bundledWebcamPath,
 					createdAt,
 					...(cursorCaptureMode ? { cursorCaptureMode } : {}),
+					...(bundleDir
+						? {
+								showhowBundleDir: bundleDir,
+								showhowVideoFileUrl: pathToFileURL(bundledScreenPath).toString(),
+							}
+						: {}),
 				}
 			: {
 					screenVideoPath: bundledScreenPath,
 					createdAt,
 					...(cursorCaptureMode ? { cursorCaptureMode } : {}),
+					...(bundleDir
+						? {
+								showhowBundleDir: bundleDir,
+								showhowVideoFileUrl: pathToFileURL(bundledScreenPath).toString(),
+							}
+						: {}),
 				};
 		setCurrentRecordingSessionState(session);
 		currentProjectPath = null;
