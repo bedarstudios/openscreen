@@ -581,7 +581,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			};
 
 			try {
-				const result = await window.electronAPI.stopNativeMacRecording(discard);
+				const result = await window.electronAPI.stopNativeMacRecording(discard, duration);
 				const webcamAsset = await webcamAssetPromise;
 				if (discard || result.discarded) {
 					clearNativeRecordingState();

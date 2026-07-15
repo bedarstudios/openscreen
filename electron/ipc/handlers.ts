@@ -2087,7 +2087,7 @@ export function registerIpcHandlers(
 		}
 	});
 
-	ipcMain.handle("stop-native-mac-recording", async (_, discard?: boolean) => {
+	ipcMain.handle("stop-native-mac-recording", async (_, discard?: boolean, durationMs?: number) => {
 		if (process.platform !== "darwin") {
 			return { success: false, error: "Native macOS capture requires macOS." };
 		}
@@ -2139,6 +2139,7 @@ export function registerIpcHandlers(
 				const bundle = await createRecordingBundle({
 					screenVideoPath,
 					createdAt: recordingId,
+					durationMs: isValidDurationMs(durationMs) ? durationMs : undefined,
 				});
 				bundledScreenPath = bundle.screenVideoPath;
 				bundleDir = bundle.bundleDir;

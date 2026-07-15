@@ -130,8 +130,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	resumeNativeMacRecording: () => {
 		return ipcRenderer.invoke("resume-native-mac-recording");
 	},
-	stopNativeMacRecording: (discard?: boolean) => {
-		return ipcRenderer.invoke("stop-native-mac-recording", discard);
+	stopNativeMacRecording: (discard?: boolean, durationMs?: number) => {
+		return ipcRenderer.invoke("stop-native-mac-recording", discard, durationMs);
 	},
 	attachNativeMacWebcamRecording: (payload: {
 		screenVideoPath: string;

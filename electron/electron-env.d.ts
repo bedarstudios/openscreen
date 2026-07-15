@@ -151,7 +151,10 @@ interface Window {
 			success: boolean;
 			error?: string;
 		}>;
-		stopNativeMacRecording: (discard?: boolean) => Promise<{
+		stopNativeMacRecording: (
+			discard?: boolean,
+			durationMs?: number,
+		) => Promise<{
 			success: boolean;
 			path?: string;
 			session?: import("../src/lib/recordingSession").RecordingSession;
