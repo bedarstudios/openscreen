@@ -1,0 +1,84 @@
+name: Review Glue
+on:
+  pull_request_review:
+    types: [submitted]
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  route:
+    if: >-
+      (github.event_name == 'pull_request_review' &&
+       contains(github.event.review.user.login, 'greptile')) ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       contains(github.event.comment.user.login, 'greptile'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse score and route
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.BEDAR_LOOP_PAT }}
+          script: |
+            const isReview = context.eventName === 'pull_request_review';
+            const body = isReview
+              ? (context.payload.review.body || '')
+              : (context.payload.comment.body || '');
+            const prNumber = isReview
+              ? context.payload.pull_request.number
+              : context.payload.issue.number;
+
+            const m = body.match(/Score:\s*([0-5])\s*\/\s*5/i);
+            if (!m) {
+              core.info(`No "Score: N/5" line on PR #${prNumber}; not a scored review, skipping.`);
+              return;
+            }
+            const score = Number(m[1]);
+            const critical = /\bCRITICAL\b/.test(body);
+            core.info(`PR #${prNumber}: score ${score}/5, critical=${critical}`);
+
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo, pull_number: prNumber });
+            const labels = pr.labels.map(l => l.name);
+
+            const add = (names) => github.rest.issues.addLabels({
+              ...context.repo, issue_number: prNumber, labels: names });
+            const remove = async (name) => {
+              if (!labels.includes(name)) return;
+              await github.rest.issues.removeLabel({
+                ...context.repo, issue_number: prNumber, name }).catch(() => {});
+            };
+            const comment = (text) => github.rest.issues.createComment({
+              ...context.repo, issue_number: prNumber, body: text });
+
+            // Pass: >= 4/5 and no CRITICAL. Findings stay logged for merge-time reading.
+            if (score >= 4 && !critical) {
+              await add(['review-passed']);
+              await remove('needs-fixes');
+              await remove('stale');
+              return;
+            }
+
+            // Cap: round-2 already failed once -> human.
+            if (labels.includes('round-2')) {
+              await add(['needs-human']);
+              await remove('needs-fixes');
+              await comment(
+                `Round cap reached (2 review rounds). Latest score: ${score}/5` +
+                (critical ? ' with CRITICAL finding(s).' : '.') +
+                ' Handing off for a human decision.');
+              return;
+            }
+
+            // Fix round: dispatch Copilot, advance the round label.
+            await add(['needs-fixes', 'round-2']);
+            await remove('round-1');
+            await remove('review-passed');
+            await comment(
+              '@copilot address the review findings above. Fix only what the ' +
+              'findings name; reply to each finding with what changed or a ' +
+              'reasoned pushback. See .github/copilot-instructions.md.');
