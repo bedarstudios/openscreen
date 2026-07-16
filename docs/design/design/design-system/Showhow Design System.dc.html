@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; }
+    @keyframes sh-spin { to { transform: rotate(360deg); } }
+    @keyframes sh-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  </style>
+</helmet>
+
+<div style="font-family:'Public Sans', system-ui, sans-serif; background:#FFFCF7; color:#2F2F2F; max-width:1440px; margin:0 auto; padding:64px 64px 100px;">
+
+  <!-- ============ HEADER ============ -->
+  <div style="display:flex; align-items:center; gap:14px; margin-bottom:10px;">
+    <div style="width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex:none; background:#8CB7A2;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#FFFCF7"><path d="M8 5v14l11-7z"></path></svg>
+    </div>
+    <div style="font-family:'Instrument Serif', serif; font-size:30px; color:#2F2F2F;">Showhow</div>
+    <div style="font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color:rgba(47,47,47,0.55); border:1px solid rgba(47,47,47,0.18); border-radius:999px; padding:5px 12px; margin-left:2px;">Design System</div>
+  </div>
+  <p style="max-width:640px; font-size:14.5px; line-height:1.65; color:rgba(47,47,47,0.6); margin:0 0 40px;">A warm, quiet system for screen recordings turned into step-by-step docs. Cream paper, forest-green signal, one restrained serif for character. Calm surfaces first — color marks state, never decoration.</p>
+  <div style="height:1px; background:rgba(47,47,47,0.12); margin-bottom:44px;"></div>
+
+  <!-- ============ COLORS ============ -->
+  <div style="font-size:11px; letter-spacing:0.09em; text-transform:uppercase; color:rgba(47,47,47,0.5); margin-bottom:8px;">Foundations</div>
+  <div style="font-family:'Instrument Serif', serif; font-size:22px; margin-bottom:18px;">Color</div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:44px; margin-bottom:20px;">
+    <div>
+      <div style="font-size:12px; font-weight:600; color:rgba(47,47,47,0.65); margin-bottom:10px;">Light theme</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); gap:12px;">
+        <sc-for list="{{ lightSwatches }}" as="sw" hint-placeholder-count="11">
+          <div>
+            <div style="{{ sw.boxStyle }}">{{ sw.tag }}</div>
+            <div style="font-size:10px; color:rgba(47,47,47,0.7); margin-top:6px;">{{ sw.label }}</div>
+            <div style="font-family:ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size:9.5px; color:rgba(47,47,47,0.45);">{{ sw.hex }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background:#201F1C; border-radius:16px; padding:16px;">
+      <div style="font-size:12px; font-weight:600; color:rgba(245,241,232,0.7); margin-bottom:10px;">Dark theme</div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(92px, 1fr)); gap:12px;">
+        <sc-for list="{{ darkSwatches }}" as="sw" hint-placeholder-count="11">
+          <div>
+            <div style="{{ sw.boxStyle }}">{{ sw.tag }}</div>
+            <div style="font-size:10px; color:rgba(245,241,232,0.65); margin-top:6px;">{{ sw.label }}</div>
+            <div style="font-family:ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size:9.5px; color:rgba(245,241,232,0.4);">{{ sw.hex }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:24px; padding:14px 16px; background:#F9F5EC; border-radius:12px; margin-bottom:16px;">
+    <div style="font-size:12px; font-weight:600; color:rgba(47,47,47,0.65); flex:none;">Brand constants</div>
+    <sc-for list="{{ brandSwatches }}" as="sw" hint-placeholder-count="2">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="{{ sw.dotStyle }}"></div>
+        <div style="font-size:12px; color:#2F2F2F;">{{ sw.label }}</div>
+        <div style="font-family:ui-monospace, monospace; font-size:11px; color:rgba(47,47,47,0.45);">{{ sw.hex }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <p style="font-size:12.5px; line-height:1.6; color:rgba(47,47,47,0.55); margin:0 0 44px; max-width:720px;"><strong style="color:rgba(47,47,47,0.75);">Accent</strong> tags Browser recordings; <strong style="color:rgba(47,47,47,0.75);">Accent 2</strong> tags Desktop recordings — the only place the two compete. <strong style="color:rgba(47,47,47,0.75);">sh-signal</strong> marks anything live: the recording dot, the scrub bar, click highlights in screenshots. Never use accent color decoratively elsewhere.</p>
+
+  <!-- ============ TYPOGRAPHY ============ -->
+  <div style="font-family:'Instrument Serif', serif; font-size:22px; margin-bottom:18px;">Typography</div>
+  <div style="display:flex; flex-direction:column; gap:2px; margin-bottom:28px;">
+    <sc-for list="{{ typeScale }}" as="t" hint-placeholder-count="8">
+      <div style="display:flex; align-items:baseline; gap:20px; padding:12px 0; border-bottom:1px solid rgba(47,47,47,0.08);">
+        <div style="width:150px; flex:none; font-family:ui-monospace, monospace; font-size:11px; color:rgba(47,47,47,0.5);">{{ t.token }}</div>
+        <div style="{{ t.sampleStyle }}">{{ t.sample }}</div>
+      </div>
+    </sc-for>
+  </div>
+  <p style="font-size:12.5px; line-height:1.6; color:rgba(47,47,47,0.55); margin:0 0 44px; max-width:720px;"><strong style="color:rgba(47,47,47,0.75);">Instrument Serif</strong> — the wordmark and doc titles only; it's the one flourish in an otherwise plain system. <strong style="color:rgba(47,47,47,0.75);">Public Sans</strong> carries every label, button and paragraph. <strong style="color:rgba(47,47,47,0.75);">ui-monospace</strong> sets folder paths, timestamps and code screenshots.</p>
+
+  <!-- ============ SPACING / RADIUS ============ -->
+  <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:40px; margin-bottom:44px;">
+    <div>
+      <div style="font-family:'Instrument Serif', serif; font-size:22px; margin-bottom:16px;">Spacing</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <sc-for list="{{ spacingScale }}" as="sp" hint-placeholder-count="7">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:56px; flex:none; font-family:ui-monospace, monospace; font-size:11px; color:rgba(47,47,47,0.5);">{{ sp.token }}</div>
+            <div style="{{ sp.barStyle }}"></div>
+            <div style="font-size:11px; color:rgba(47,47,47,0.45); flex:none;">{{ sp.px }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'Instrument Serif', serif; font-size:22px; margin-bottom:16px;">Radius</div>
+      <div style="display:flex; gap:16px; flex-wrap:wrap;">
+        <sc-for list="{{ radiusScale }}" as="r" hint-placeholder-count="4">
+          <div style="text-align:center;">
+            <div style="{{ r.boxStyle }}"></div>
+            <div style="font-size:10px; color:rgba(47,47,47,0.55); margin-top:6px;">{{ r.token }}</div>
+            <div style="font-size:9.5px; color:rgba(47,47,47,0.4);">{{ r.px }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ ELEVATION / MOTION ============ -->
+  <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:40px; margin-bottom:48px;">
+    <div>
+      <div style="font-family:'Instrument Serif', serif; font-size:22px; margin-bottom:16px;">Elevation</div>
+      <div style="display:flex; gap:18px; flex-wrap:wrap;">
+        <sc-for list="{{ shadowScale }}" as="sh" hint-placeholder-count="3">
+          <div style="{{ sh.cardStyle }}"></div>
+        </sc-for>
+      </div>
+      <div style="display:flex; gap:18px; flex-wrap:wrap; margin-top:8px;">
+        <sc-for list="{{ shadowScale }}" as="sh" hint-placeholder-count="3">
+          <div style="width:120px; text-align:center;">
+            <div style="font-size:10px; color:rgba(47,47,47,0.55);">{{ sh.token }}</div>
+            <div style="font-size:9.5px; color:rgba(47,47,47,0.4);">{{ sh.usage }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'Instrument Serif', serif; font-size:22px; margin-bottom:16px;">Motion</div>
+      <div style="display:flex; align-items:center; gap:16px; margin-bottom:14px;">
+        <div style="width:26px; height:26px; border:3px solid rgba(47,47,47,0.14); border-top-color:#82B09A; border-radius:50%; animation:sh-spin 0.8s linear infinite;"></div>
+        <div style="width:9px; height:9px; border-radius:50%; background:#6BFF7E; box-shadow:0 0 0 3px rgba(20,47,24,0.12); animation:sh-pulse 2s ease-in-out infinite;"></div>
+        <div style="font-size:11.5px; color:rgba(47,47,47,0.55);">spinner · recording pulse</div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; font-size:11.5px; color:rgba(47,47,47,0.6); line-height:1.7;">
+        <div><strong style="color:rgba(47,47,47,0.8);">150ms ease</strong> — hover, press, toggle</div>
+        <div><strong style="color:rgba(47,47,47,0.8);">250ms ease</strong> — theme switch, toast in/out</div>
+        <div><strong style="color:rgba(47,47,47,0.8);">400ms ease</strong> — doc content fade-in</div>
+        <div><strong style="color:rgba(47,47,47,0.8);">800ms linear, loop</strong> — generating spinner</div>
+        <div><strong style="color:rgba(47,47,47,0.8);">2000ms ease-in-out, loop</strong> — "recorded" pulse dot</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ COMPONENTS ============ -->
+  <div style="font-family:'Instrument Serif', serif; font-size:22px; margin-bottom:18px;">Components</div>
+
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap;">
+    <button style="font-family:inherit; font-size:13.5px; font-weight:600; border:none; cursor:pointer; padding:11px 20px; border-radius:10px; background:#82B09A; color:#16281F;">Start Recording</button>
+    <button style="font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; padding:11px 20px; border-radius:10px; background:#F9F5EC; color:#2F2F2F; border:1px solid rgba(47,47,47,0.14);">Export PDF</button>
+    <button style="font-family:inherit; font-size:13.5px; font-weight:600; cursor:pointer; padding:11px 20px; border-radius:10px; background:transparent; color:#33564A; border:none;">Copy Path</button>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+    <span style="font-size:12px; font-weight:600; color:#33564A; background:#E7F1EC; padding:3px 10px; border-radius:999px;">Browser recording</span>
+    <span style="font-size:12px; font-weight:600; color:#1F3B22; background:#E1E8E0; padding:3px 10px; border-radius:999px;">Desktop recording</span>
+    <span style="display:inline-flex; align-items:center; gap:5px; background:#E7F1EC; color:#33564A; font-size:12px; font-variant-numeric:tabular-nums; padding:4px 10px; border-radius:999px;">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+      0:04
+    </span>
+  </div>
+
+  <div style="display:flex; gap:16px; margin-bottom:16px;">
+    <div style="flex:none; width:28px; display:flex; flex-direction:column; align-items:center;">
+      <div style="width:28px; height:28px; border-radius:50%; background:#82B09A; color:#FFFCF7; font-family:'Instrument Serif', serif; font-size:13px; display:flex; align-items:center; justify-content:center;">1</div>
+      <div style="width:2px; flex:1; background:rgba(47,47,47,0.14); margin:6px 0;"></div>
+    </div>
+    <div style="flex:1; font-size:14.5px; color:#2F2F2F; padding-top:4px;">Click "Add product" <span style="color:rgba(47,47,47,0.5); font-size:12.5px;">— numbered step, timestamp chip, one screenshot per action.</span></div>
+  </div>
+
+  <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:12px; background:#F9F5EC; margin-bottom:16px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(47,47,47,0.55)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"></path></svg>
+    <div style="flex:1; font-family:ui-monospace, monospace; font-size:12px; color:rgba(47,47,47,0.55);">~/Showhow/Recordings/2026-07-11_upload-product-shopify</div>
+  </div>
+
+  <div style="display:inline-block; background:#2A2823; color:#FFFCF7; font-size:13px; padding:10px 18px; border-radius:999px; box-shadow:0 16px 40px rgba(20,15,8,0.2); margin-bottom:20px;">Copied share link</div>
+
+  <div style="width:240px; display:flex; flex-direction:column; gap:20px; padding:18px 12px; background:#F7F2E8; border-radius:16px; border:1px solid rgba(47,47,47,0.1); margin-bottom:32px;">
+    <div style="display:flex; align-items:center; gap:9px; padding:0 6px;">
+      <div style="width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; flex:none; background:#8CB7A2;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="#FFFCF7"><path d="M8 5v14l11-7z"></path></svg>
+      </div>
+      <div style="font-family:'Instrument Serif', serif; font-size:16px; color:#2F2F2F;">Showhow</div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:4px;">
+      <div style="font-size:10px; letter-spacing:0.09em; text-transform:uppercase; color:rgba(47,47,47,0.5); padding:0 6px; margin-bottom:4px;">Library</div>
+      <div style="display:flex; align-items:center; gap:9px; padding:8px 6px; border-radius:10px; background:#E7F1EC;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#82B09A" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>
+        <div style="min-width:0; flex:1;">
+          <div style="font-size:12px; font-weight:600; color:#2F2F2F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Upload a new product</div>
+          <div style="font-size:10.5px; color:rgba(47,47,47,0.55); margin-top:1px;">Browser · 2:34</div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:9px; padding:8px 6px; border-radius:10px;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(47,47,47,0.55)" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path></svg>
+        <div style="min-width:0; flex:1;">
+          <div style="font-size:12px; font-weight:600; color:#2F2F2F; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Bug: editor crash</div>
+          <div style="font-size:10.5px; color:rgba(47,47,47,0.55); margin-top:1px;">Desktop · 1:12</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:9px; padding:8px 6px; border-radius:10px; color:#2F2F2F;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#2F2F2F" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      <div style="font-size:11.5px;">Light mode</div>
+    </div>
+  </div>
+  <p style="font-size:12.5px; line-height:1.6; color:rgba(47,47,47,0.55); margin:0 0 44px; max-width:720px;"><strong style="color:rgba(47,47,47,0.75);">Sidebar nav</strong> — active row gets an accent-100 fill only, no border or left accent bar. Row icon recolors to accent on select; label truncates, meta line stays muted. Theme toggle sits pinned to the bottom, same row style as library items.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:12px;">
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 20px; border-radius:16px; background:#F9F5EC;">
+      <div style="width:40px; height:40px; border-radius:50%; background:#E7F1EC; display:flex; align-items:center; justify-content:center;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#33564A" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"></rect><path d="M8 21h8M12 17v4"></path><circle cx="12" cy="10.5" r="3"></circle></svg>
+      </div>
+      <div style="font-family:'Instrument Serif', serif; font-size:17px; color:#2F2F2F;">No recordings yet</div>
+      <p style="margin:0; max-width:260px; font-size:12px; color:rgba(47,47,47,0.55); line-height:1.55;">Record a browser tab or your whole desktop, and it'll show up here.</p>
+      <div style="margin-top:2px; font-size:12px; font-weight:600; padding:8px 14px; border-radius:8px; background:#82B09A; color:#16281F;">Start Recording</div>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:36px 20px; border-radius:16px; background:#F9F5EC;">
+      <div style="width:40px; height:40px; border-radius:50%; background:#E1E8E0; display:flex; align-items:center; justify-content:center;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1F3B22" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v6M12 3l-3 3M12 3l3 3"></path><path d="M5 13a7 7 0 0 0 14 0"></path><path d="M19 13v3a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-3"></path></svg>
+      </div>
+      <div style="font-family:'Instrument Serif', serif; font-size:17px; color:#2F2F2F;">No workflow doc yet</div>
+      <p style="margin:0; max-width:260px; font-size:12px; color:rgba(47,47,47,0.55); line-height:1.55;">Turn this recording into a step-by-step doc with a screenshot per step.</p>
+      <div style="margin-top:2px; font-size:12px; font-weight:600; padding:8px 14px; border-radius:8px; background:#82B09A; color:#16281F;">Create Workflow Doc</div>
+    </div>
+  </div>
+  <p style="font-size:12.5px; line-height:1.6; color:rgba(47,47,47,0.55); margin:0 0 44px; max-width:720px;"><strong style="color:rgba(47,47,47,0.75);">Empty states</strong> — centered icon in an accent-100 circle (accent for library/recording, accent-2 for the doc step), one serif heading, one muted sentence naming what will appear, one primary button naming the action. Never more than this.</p>
+
+  <div style="height:1px; background:rgba(47,47,47,0.12); margin:44px 0 32px;"></div>
+
+  <!-- ============ VOICE + GUIDANCE ============ -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:40px;">
+    <div>
+      <div style="font-family:'Instrument Serif', serif; font-size:20px; margin-bottom:14px;">Voice</div>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; line-height:1.6; color:rgba(47,47,47,0.7);">
+        <div>Buttons name a verb and a noun — <em>Start Recording</em>, <em>Create Workflow Doc</em> — never a bare "OK."</div>
+        <div>Toasts confirm what happened, no "successfully" — <em>Copied folder path</em>, not "Successfully copied."</div>
+        <div>Empty states point to the next action — <em>"No recordings yet. Start one to see it here."</em></div>
+        <div>In-progress uses a present participle and an ellipsis — <em>"Generating your workflow doc…"</em></div>
+        <div>Title Case for buttons and nav; sentence case everywhere else.</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:'Instrument Serif', serif; font-size:20px; margin-bottom:14px;">Do / Don't</div>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px; line-height:1.6; color:rgba(47,47,47,0.7);">
+        <div>Do keep paper cream and ink near-black — never pure white or pure black.</div>
+        <div>Do pair the recording pulse with a text label; color alone never signals state.</div>
+        <div>Don't mix light and dark theme tokens in one view.</div>
+        <div>Don't use Accent 2 outside the Desktop source tag.</div>
+        <div>Don't mix sharp and round corners in the same surface.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const box = (bg, fg) => ({ boxStyle: `height:56px; border-radius:10px; background:${bg}; display:flex; align-items:flex-end; padding:6px; font-size:9px; color:${fg}; font-family:ui-monospace, monospace;` });
+
+    const lightData = [
+      ['--color-bg', '#FFFCF7', 'Canvas', '#2F2F2F'],
+      ['--sh-sidebar-bg', '#F7F2E8', 'Sidebar', '#2F2F2F'],
+      ['--sh-card-bg', '#F9F5EC', 'Card', '#2F2F2F'],
+      ['--color-text', '#2F2F2F', 'Text (ink)', '#FFFCF7'],
+      ['--color-accent', '#82B09A', 'Accent · Browser', '#16281F'],
+      ['--color-accent-100', '#E7F1EC', 'Accent surface', '#33564A'],
+      ['--color-accent-200', '#CFE4DA', 'Accent surface hover', '#33564A'],
+      ['--color-accent-700', '#33564A', 'Accent text', '#FFFCF7'],
+      ['--color-accent-2-100', '#E1E8E0', 'Accent 2 · Desktop', '#1F3B22'],
+      ['--color-accent-2-700', '#1F3B22', 'Accent 2 text', '#FFFCF7'],
+      ['--sh-on-accent', '#16281F', 'Text on accent fill', '#FFFCF7'],
+    ];
+    const darkData = [
+      ['--color-bg', '#201F1C', 'Canvas', '#F5F1E8'],
+      ['--sh-sidebar-bg', '#171613', 'Sidebar', '#F5F1E8'],
+      ['--sh-card-bg', '#2C2A26', 'Card', '#F5F1E8'],
+      ['--color-text', '#F5F1E8', 'Text (ink)', '#201F1C'],
+      ['--color-accent', '#6BFF7E', 'Accent · Browser', '#12261A'],
+      ['--color-accent-100', 'rgba(107,255,126,0.16)', 'Accent surface', '#9DFFA9'],
+      ['--color-accent-200', 'rgba(107,255,126,0.26)', 'Accent surface hover', '#9DFFA9'],
+      ['--color-accent-700', '#9DFFA9', 'Accent text', '#12261A'],
+      ['--color-accent-2-100', 'rgba(143,227,157,0.14)', 'Accent 2 · Desktop', '#8FE39D'],
+      ['--color-accent-2-700', '#8FE39D', 'Accent 2 text', '#12261A'],
+      ['--sh-on-accent', '#12261A', 'Text on accent fill', '#F5F1E8'],
+    ];
+
+    const mapSwatch = ([token, hex, label, fg]) => ({
+      label, hex, tag: token,
+      boxStyle: `height:56px; border-radius:10px; background:${hex}; display:flex; align-items:flex-end; padding:6px 8px; font-size:8.5px; color:${fg}; font-family:ui-monospace, monospace; letter-spacing:-0.2px;`,
+    });
+
+    const lightSwatches = lightData.map(mapSwatch);
+    const darkSwatches = darkData.map(mapSwatch);
+
+    const brandSwatches = [
+      { label: 'sh-forest (click marker)', hex: '#142F18', dotStyle: 'width:20px; height:20px; border-radius:6px; background:#142F18;' },
+      { label: 'sh-signal (live/record)', hex: '#6BFF7E', dotStyle: 'width:20px; height:20px; border-radius:50%; background:#6BFF7E;' },
+    ];
+
+    const typeScale = [
+      { token: 'heading-30 · serif', sample: 'Upload a new product to Shopify', sampleStyle: "font-family:'Instrument Serif', serif; font-size:30px; color:#2F2F2F;" },
+      { token: 'heading-22 · serif', sample: 'No recordings yet', sampleStyle: "font-family:'Instrument Serif', serif; font-size:22px; color:#2F2F2F;" },
+      { token: 'heading-16 · sans 600', sample: 'Products', sampleStyle: "font-family:'Public Sans', sans-serif; font-size:16px; font-weight:600; color:#2F2F2F;" },
+      { token: 'body-16', sample: 'Click "Add product"', sampleStyle: "font-family:'Public Sans', sans-serif; font-size:16px; color:#2F2F2F;" },
+      { token: 'body-14.5', sample: 'Browser recording · 2:34', sampleStyle: "font-family:'Public Sans', sans-serif; font-size:14.5px; color:rgba(47,47,47,0.65);" },
+      { token: 'label-13', sample: 'Copy Path', sampleStyle: "font-family:'Public Sans', sans-serif; font-size:13px; font-weight:600; color:#2F2F2F;" },
+      { token: 'label-12', sample: 'Instruction from voiceover', sampleStyle: "font-family:'Public Sans', sans-serif; font-size:12px; color:rgba(47,47,47,0.55);" },
+      { token: 'eyebrow-11', sample: 'LIBRARY', sampleStyle: "font-family:'Public Sans', sans-serif; font-size:11px; letter-spacing:0.09em; color:rgba(47,47,47,0.5);" },
+    ];
+
+    const spacingData = [[1,4],[2,8],[3,12],[4,16],[6,24],[8,32],[10,40]];
+    const spacingScale = spacingData.map(([t,px]) => ({
+      token: `space-${t}`, px: `${px}px`,
+      barStyle: `height:8px; width:${px * 3}px; background:#CFE4DA; border-radius:4px;`,
+    }));
+
+    const radiusData = [['radius-sm',8],['radius-md',12],['radius-lg',20],['radius-full',999]];
+    const radiusScale = radiusData.map(([t,px]) => ({
+      token: t, px: `${px}px`,
+      boxStyle: `width:64px; height:64px; background:#F9F5EC; border:1px solid rgba(47,47,47,0.14); border-radius:${Math.min(px,32)}px;`,
+    }));
+
+    const shadowScale = [
+      { token: 'shadow-sm', usage: 'screenshot cards', cardStyle: 'width:120px; height:64px; border-radius:10px; background:#F9F5EC; box-shadow:0 1px 2px rgba(47,35,20,0.1), 0 1px 1px rgba(47,35,20,0.05);' },
+      { token: 'shadow-md', usage: 'video player, hero cards', cardStyle: 'width:120px; height:64px; border-radius:10px; background:#F9F5EC; box-shadow:0 8px 24px rgba(30,22,10,0.14);' },
+      { token: 'shadow-lg', usage: 'toast, dialog', cardStyle: 'width:120px; height:64px; border-radius:10px; background:#F9F5EC; box-shadow:0 16px 40px rgba(20,15,8,0.2);' },
+    ];
+
+    return { lightSwatches, darkSwatches, brandSwatches, typeScale, spacingScale, radiusScale, shadowScale };
+  }
+}
+
+</script>
+</body>
+</html>

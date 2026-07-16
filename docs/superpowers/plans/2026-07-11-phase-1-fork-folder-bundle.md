@@ -8,7 +8,7 @@
 
 **Tech Stack:** Electron 33+, TypeScript, Vite, React 18, Vitest, Biome. Node pinned by `engines`: **22.22.1** (npm 10.9.4). macOS ScreenCaptureKit helper built via Swift (`npm run build:native:mac`).
 
-**Spec:** `Projects/web/showhow/app/docs/superpowers/specs/2026-07-11-showhow-desktop-design.md`
+**Spec:** `docs/superpowers/specs/2026-07-11-showhow-desktop-design.md`
 
 ## Feedback addressed
 

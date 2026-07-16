@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock -- Workflow Doc (throwaway)</title>
+<style>
+  :root{
+    --cream:#FFFCF7; --ink:#2F2F2F; --sage:#82B09A; --forest:#142F18; --signal:#6BFF7E;
+    /* light theme */
+    --bg:var(--cream); --text:var(--ink); --dim:#6E7A70;
+    --panel:#FFFFFF; --panel2:#F7F3E9; --line:#E7E1D2;
+    --btn-bg:var(--forest); --btn-text:var(--cream);
+    --chip-bg:#EAF2ED; --chip-text:#3D6B52;
+    --node:var(--forest); --node-ring:rgba(107,255,126,.35);
+    --shadow:0 1px 3px rgba(47,47,47,.06);
+    --mono:ui-monospace,Menlo,monospace;
+    --serif:Georgia,'Times New Roman',serif;
+  }
+  [data-theme="dark"]{
+    --bg:#0E2112; --text:var(--cream); --dim:#8FAE97;
+    --panel:#142F18; --panel2:#1A3820; --line:#265231;
+    --btn-bg:var(--signal); --btn-text:#0E2112;
+    --chip-bg:#1E4527; --chip-text:#A9E8B4;
+    --node:var(--signal); --node-ring:rgba(107,255,126,.2);
+    --shadow:none;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--text);font:14px/1.55 -apple-system,'Segoe UI',sans-serif;transition:background .25s,color .25s}
+  button{font:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--signal);outline-offset:2px;border-radius:4px}
+  .throwaway{position:fixed;bottom:10px;left:10px;font-size:11px;color:var(--dim);border:1px dashed var(--line);padding:3px 8px;border-radius:6px;background:var(--bg);z-index:99}
+
+  .app{display:grid;grid-template-columns:240px 1fr;height:100vh}
+  @media(max-width:760px){.app{grid-template-columns:1fr}.sidebar{display:none}}
+
+  /* ============ sidebar / library ============ */
+  .sidebar{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
+  .brand{display:flex;align-items:center;gap:9px;padding:18px 16px 14px;font-weight:700;font-size:15px;letter-spacing:.2px}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 3px var(--node-ring)}
+  .brand small{font-weight:400;color:var(--dim);font-size:11px;margin-top:2px}
+  .lib-label{padding:10px 16px 6px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--dim)}
+  .rec-item{display:block;width:calc(100% - 16px);margin:2px 8px;padding:10px 10px;border:1px solid transparent;border-radius:10px;background:none;color:var(--text);text-align:left}
+  .rec-item:hover{background:var(--panel2)}
+  .rec-item.active{background:var(--panel2);border-color:var(--line)}
+  .rec-item b{display:block;font-size:13px;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rec-item span{font-size:11.5px;color:var(--dim)}
+  .rec-item .src{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:5px;background:var(--chip-bg);color:var(--chip-text);font-size:10.5px}
+  .sidebar .foot{margin-top:auto;padding:14px 16px;border-top:1px solid var(--line)}
+  .theme-toggle{width:100%;border:1px solid var(--line);background:none;color:var(--dim);border-radius:8px;padding:7px;font-size:12.5px}
+  .theme-toggle:hover{color:var(--text);border-color:var(--sage)}
+
+  /* ============ main ============ */
+  .main{overflow-y:auto}
+  .stage{max-width:760px;margin:0 auto;padding:28px 32px 90px}
+
+  /* video player */
+  .player{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);box-shadow:var(--shadow);aspect-ratio:16/7.5;background:linear-gradient(140deg,#284d33,#12281a)}
+  .player .play{position:absolute;inset:0;margin:auto;width:58px;height:58px;border-radius:50%;background:var(--cream);border:none;display:flex;align-items:center;justify-content:center}
+  .player .play::after{content:"";margin-left:4px;border-left:16px solid var(--forest);border-top:10px solid transparent;border-bottom:10px solid transparent}
+  .player .play:hover{transform:scale(1.05)}
+  .scrub{position:absolute;left:14px;right:14px;bottom:12px;height:4px;border-radius:2px;background:rgba(255,252,247,.25)}
+  .scrub i{position:absolute;left:0;top:0;bottom:0;width:34%;border-radius:2px;background:var(--signal)}
+  .scrub b{position:absolute;left:34%;top:50%;transform:translate(-50%,-50%);width:11px;height:11px;border-radius:50%;background:var(--signal)}
+  .player .len{position:absolute;right:14px;bottom:22px;font-family:var(--mono);font-size:11px;color:var(--cream);opacity:.85}
+
+  /* title row */
+  .title-row{display:flex;align-items:flex-start;gap:14px;margin:18px 2px 6px}
+  .title-row h1{font-family:var(--serif);font-size:23px;font-weight:600;line-height:1.25;flex:1}
+  .title-row .actions{display:flex;gap:8px;flex-shrink:0;padding-top:2px}
+  .btn{border:1px solid var(--line);background:var(--panel);color:var(--text);border-radius:9px;padding:8px 14px;font-size:13px}
+  .btn:hover{border-color:var(--sage)}
+  .btn.primary{background:var(--btn-bg);color:var(--btn-text);border-color:transparent;font-weight:600}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .rec-meta{color:var(--dim);font-size:12.5px;margin:0 2px 22px}
+  .rec-meta .src{padding:1px 7px;border-radius:5px;background:var(--chip-bg);color:var(--chip-text);margin-right:6px}
+
+  /* folder path row */
+  .path-row{display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:30px}
+  .path-row svg{flex-shrink:0;opacity:.6}
+  .path-row code{flex:1;font-family:var(--mono);font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .path-row button{border:none;background:none;color:var(--chip-text);font-size:12.5px;font-weight:600;padding:2px 6px}
+  .path-row button:hover{text-decoration:underline}
+
+  /* ============ workflow doc ============ */
+  .doc-head{display:flex;align-items:baseline;gap:10px;border-top:1px solid var(--line);padding-top:24px;margin-bottom:22px}
+  .doc-head h2{font-family:var(--serif);font-size:17px;font-weight:600}
+  .doc-head span{font-size:12px;color:var(--dim)}
+
+  /* the timeline rail -- signature element */
+  .steps{position:relative;padding-left:30px}
+  .steps::before{content:"";position:absolute;left:9px;top:8px;bottom:8px;width:2px;background:var(--line)}
+  .step{position:relative;margin-bottom:34px}
+  .step:last-child{margin-bottom:0}
+  .step .node{position:absolute;left:-30px;top:2px;width:20px;height:20px;border-radius:50%;background:var(--bg);border:2px solid var(--node);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--node)}
+  .step .ts{display:inline-flex;align-items:center;gap:5px;border:none;background:var(--chip-bg);color:var(--chip-text);font-family:var(--mono);font-size:11.5px;padding:3px 10px;border-radius:20px;margin-bottom:9px}
+  .step .ts:hover{box-shadow:0 0 0 3px var(--node-ring)}
+  .step .ts::before{content:"\25B8"}
+  .instruction{font-size:15px;margin-bottom:10px}
+  .instruction .quote{color:var(--dim);font-style:italic}
+  .meta-row{display:flex;gap:8px;margin-top:9px;align-items:center}
+  .src-tag{font-size:11px;color:var(--dim)}
+  .redact-btn{font-size:11.5px;color:var(--dim);background:none;border:1px solid var(--line);padding:2px 9px;border-radius:6px}
+  .redact-btn:hover{color:var(--text);border-color:var(--sage)}
+
+  .shot{border:1px solid var(--line);border-radius:11px;overflow:hidden;position:relative;box-shadow:var(--shadow)}
+
+  /* fake light browser screenshot */
+  .fake-browser{background:#FDFDFB;color:#333}
+  .fake-browser .bar{height:26px;background:#EFEDE6;display:flex;align-items:center;gap:5px;padding:0 10px;border-bottom:1px solid #E2DFD5}
+  .fake-browser .bar i{width:9px;height:9px;border-radius:50%;background:#D5D2C6;display:block}
+  .fake-browser .url{flex:1;height:15px;background:#FFF;border-radius:8px;max-width:270px;display:flex;align-items:center;padding:0 8px;font-size:9px;color:#8a877c;font-style:normal;border:1px solid #E2DFD5}
+  .fake-page{padding:16px;display:grid;grid-template-columns:140px 1fr;gap:16px;min-height:158px}
+  .side{background:#F3F1EA;border-radius:6px;padding:10px;display:flex;flex-direction:column;gap:8px}
+  .side i{height:9px;border-radius:4px;background:#E0DDD2;display:block}
+  .side i.hl{background:#C9D9CF}
+  .content-col{display:flex;flex-direction:column;gap:10px}
+  .rowl{height:12px;border-radius:5px;background:#ECEAE1}
+  .rowl.short{width:55%}
+  .fbtn{width:128px;height:32px;border-radius:7px;background:#142F18;color:#EFFFF2;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .finput{height:34px;border-radius:7px;background:#FFF;border:1px solid #D8D5C9;display:flex;align-items:center;padding:0 12px;font-family:var(--mono);font-size:12px;color:#333}
+
+  /* click marker */
+  .marker{position:absolute;width:34px;height:34px;border-radius:50%;border:3px solid var(--signal);box-shadow:0 0 0 6px var(--node-ring);animation:pulse 1.8s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 6px var(--node-ring)}50%{box-shadow:0 0 0 12px transparent}}
+  @media(prefers-reduced-motion:reduce){.marker{animation:none}}
+
+  /* fake vscode screenshot (stays dark -- it's a screenshot) */
+  .fake-vscode{background:#101018;font-family:var(--mono);color:#9aa3b5}
+  .fake-vscode .titlebar{height:24px;background:#181826;display:flex;align-items:center;padding:0 10px;font-size:9px;color:#7c8496;border-bottom:1px solid #232336}
+  .vs-body{display:grid;grid-template-columns:40px 150px 1fr;min-height:168px}
+  .activity{background:#14141f;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:12px}
+  .activity i{width:17px;height:17px;border-radius:4px;background:#232336;display:block}
+  .explorer{background:#12121c;padding:10px 8px;font-size:10px;color:#7c8496;border-right:1px solid #232336}
+  .explorer div{padding:3px 6px;border-radius:4px;white-space:nowrap;overflow:hidden}
+  .explorer .sel{background:#26263c;color:#dfe3ec}
+  .code{padding:12px 14px;font-size:10.5px;line-height:1.7;overflow:hidden}
+  .code .kw{color:#c792ea}.code .err{background:rgba(255,107,107,.14);border-bottom:1px dotted #ff6b6b}
+  .vs-statusbar{height:20px;background:#1b1b2b;display:flex;align-items:center;gap:12px;padding:0 12px;font-size:9px;color:#7c8496}
+  .vs-statusbar .errcount{color:#ff6b6b}
+
+  /* pre-doc CTA state */
+  .empty-doc{border:1px dashed var(--line);border-radius:14px;padding:44px 24px;text-align:center}
+  .empty-doc h3{font-family:var(--serif);font-size:18px;font-weight:600;margin-bottom:6px}
+  .empty-doc p{color:var(--dim);max-width:400px;margin:0 auto 18px}
+  .generating{display:none;color:var(--dim);font-size:13px}
+  .generating .dot-anim::after{content:"";animation:dots 1.2s steps(4,end) infinite}
+  @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,80px);background:var(--panel);border:1px solid var(--sage);border-radius:10px;padding:10px 18px;font-size:13px;transition:.25s;z-index:30;box-shadow:var(--shadow)}
+  .toast.show{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<div class="throwaway">THROWAWAY MOCK -- fake data, no real app code</div>
+
+<div class="app">
+  <!-- ============ library sidebar ============ -->
+  <nav class="sidebar">
+    <div class="brand"><span class="dot"></span> showhow <small>desktop</small></div>
+    <div class="lib-label">Library</div>
+    <button class="rec-item active" id="item-shopify" onclick="showRec('shopify')">
+      <b>Upload a new product to Shopify</b>
+      <span><span class="src">Browser</span>2:34 &middot; today</span>
+    </button>
+    <button class="rec-item" id="item-bug" onclick="showRec('bug')">
+      <b>Bug: editor crash on merged steps</b>
+      <span><span class="src">Desktop</span>1:12 &middot; today</span>
+    </button>
+    <div class="foot"><button class="theme-toggle" onclick="toggleTheme()">Switch to dark mode</button></div>
+  </nav>
+
+  <!-- ============ main stage ============ -->
+  <div class="main">
+
+    <!-- ===== recording 1: browser ===== -->
+    <section class="stage" id="rec-shopify">
+      <div class="player">
+        <button class="play" aria-label="Play video" onclick="toast('Would play the recording')"></button>
+        <div class="scrub"><i></i><b></b></div><span class="len">2:34</span>
+      </div>
+      <div class="title-row">
+        <h1>Upload a new product to Shopify</h1>
+        <div class="actions"><button class="btn" onclick="toast('Would export the doc as HTML / PDF')">Export doc</button></div>
+      </div>
+      <p class="rec-meta"><span class="src">Browser</span>Recorded with the Chrome companion &middot; steps captured from the page itself</p>
+      <div class="path-row">
+        <svg width="15" height="13" viewBox="0 0 15 13" fill="none"><path d="M1 2.5C1 1.7 1.7 1 2.5 1h3l1.5 2h5.5c.8 0 1.5.7 1.5 1.5v6c0 .8-.7 1.5-1.5 1.5h-10C1.7 12 1 11.3 1 10.5v-8z" stroke="currentColor" stroke-width="1.2"/></svg>
+        <code>~/Showhow/recordings/2026-07-11-shopify-product-upload/</code>
+        <button onclick="toast('Path copied -- paste it to any agent')">Copy path</button>
+      </div>
+
+      <div class="doc-head"><h2>Workflow doc</h2><span>6 steps &middot; created just now</span></div>
+      <div class="steps">
+        <div class="step">
+          <span class="node">1</span>
+          <button class="ts" onclick="toast('Would jump video to 0:12')">0:12</button>
+          <p class="instruction">Click <b>&ldquo;Add product&rdquo;</b></p>
+          <div class="shot fake-browser">
+            <div class="bar"><i></i><i></i><i></i><i class="url">admin.shopify.com/store/bedar/products</i></div>
+            <div class="fake-page">
+              <div class="side"><i></i><i class="hl"></i><i></i><i></i><i></i></div>
+              <div class="content-col"><div class="rowl short"></div><div class="rowl"></div><div class="fbtn">Add product</div><div class="rowl"></div></div>
+            </div>
+            <div class="marker" style="left:225px;bottom:48px"></div>
+          </div>
+        </div>
+
+        <div class="step">
+          <span class="node">2</span>
+          <button class="ts" onclick="toast('Would jump video to 0:31')">0:31</button>
+          <p class="instruction">Type into <b>&ldquo;Title&rdquo;</b> <span class="quote" id="redact-label">(redacted)</span></p>
+          <div class="shot fake-browser">
+            <div class="bar"><i></i><i></i><i></i><i class="url">admin.shopify.com/store/bedar/products/new</i></div>
+            <div class="fake-page">
+              <div class="side"><i></i><i></i><i class="hl"></i><i></i></div>
+              <div class="content-col"><div class="rowl short"></div><div class="finput" id="redact-target">&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div><div class="rowl"></div><div class="rowl short"></div></div>
+            </div>
+            <div class="marker" style="left:250px;top:72px"></div>
+          </div>
+          <div class="meta-row"><button class="redact-btn" onclick="toggleRedact(this)">Reveal typed text</button></div>
+        </div>
+
+        <div class="step">
+          <span class="node">3</span>
+          <button class="ts" onclick="toast('Would jump video to 1:47')">1:47</button>
+          <p class="instruction">Click <b>&ldquo;Save&rdquo;</b></p>
+          <div class="shot fake-browser">
+            <div class="bar"><i></i><i></i><i></i><i class="url">admin.shopify.com/store/bedar/products/new</i></div>
+            <div class="fake-page">
+              <div class="side"><i></i><i></i><i></i><i class="hl"></i></div>
+              <div class="content-col"><div class="rowl"></div><div class="rowl short"></div><div class="fbtn" style="width:104px">Save</div></div>
+            </div>
+            <div class="marker" style="left:212px;bottom:36px"></div>
+          </div>
+        </div>
+      </div>
+      <p style="color:var(--dim);font-size:13px;text-align:center;margin-top:20px">&hellip; 3 more steps &hellip;</p>
+    </section>
+
+    <!-- ===== recording 2: desktop, pre-doc ===== -->
+    <section class="stage" id="rec-bug" style="display:none">
+      <div class="player" style="background:linear-gradient(140deg,#1d1d2e,#101018)">
+        <button class="play" aria-label="Play video" onclick="toast('Would play the recording')"></button>
+        <div class="scrub"><i style="width:12%"></i><b style="left:12%"></b></div><span class="len">1:12</span>
+      </div>
+      <div class="title-row">
+        <h1>Bug: editor crash on merged steps</h1>
+        <div class="actions"><button class="btn primary" id="create-btn" onclick="createDoc()">Create workflow doc</button></div>
+      </div>
+      <p class="rec-meta"><span class="src">Desktop</span>Screen recording with voiceover &middot; steps built from your clicks and what you said</p>
+      <div class="path-row">
+        <svg width="15" height="13" viewBox="0 0 15 13" fill="none"><path d="M1 2.5C1 1.7 1.7 1 2.5 1h3l1.5 2h5.5c.8 0 1.5.7 1.5 1.5v6c0 .8-.7 1.5-1.5 1.5h-10C1.7 12 1 11.3 1 10.5v-8z" stroke="currentColor" stroke-width="1.2"/></svg>
+        <code>~/Showhow/recordings/2026-07-11-editor-crash/</code>
+        <button onclick="toast('Path copied -- paste it to any agent')">Copy path</button>
+      </div>
+
+      <!-- pre-doc state -->
+      <div class="empty-doc" id="empty-doc">
+        <h3>No workflow doc yet</h3>
+        <p>Turn this recording into a step-by-step doc -- a screenshot of each click with the matching part of your voiceover under it.</p>
+        <span class="generating" id="generating">Building doc from 4 clicks and the transcript<span class="dot-anim"></span></span>
+      </div>
+
+      <!-- generated doc (hidden until created) -->
+      <div id="bug-doc" style="display:none">
+        <div class="doc-head"><h2>Workflow doc</h2><span>4 steps &middot; created just now</span></div>
+        <div class="steps">
+          <div class="step">
+            <span class="node">1</span>
+            <button class="ts" onclick="toast('Would jump video to 0:18')">0:18</button>
+            <p class="instruction"><span class="quote">&ldquo;So here's where it blows up -- title comes through as undefined when the step was auto-merged, and trim throws.&rdquo;</span></p>
+            <div class="shot fake-vscode">
+              <div class="titlebar">editor.tsx &mdash; showhow &mdash; Visual Studio Code</div>
+              <div class="vs-body">
+                <div class="activity"><i></i><i></i><i></i></div>
+                <div class="explorer"><div>entrypoints/</div><div class="sel">&nbsp;&nbsp;editor.tsx</div><div>&nbsp;&nbsp;popup/</div><div>utils/</div></div>
+                <div class="code"><span class="kw">function</span> StepTitle({ step }) {<br>&nbsp;&nbsp;<span class="kw">return</span> <span class="err">step.title.trim()</span><br>&nbsp;&nbsp;&nbsp;&nbsp;? &lt;h3&gt;{step.title}&lt;/h3&gt;<br>&nbsp;&nbsp;&nbsp;&nbsp;: <span class="kw">null</span>;<br>}</div>
+              </div>
+              <div class="vs-statusbar"><span class="errcount">&#9888; 1 error</span><span>Ln 42, Col 18</span></div>
+              <div class="marker" style="right:160px;top:66px"></div>
+            </div>
+            <div class="meta-row"><span class="src-tag">Instruction from voiceover</span></div>
+          </div>
+
+          <div class="step">
+            <span class="node">2</span>
+            <button class="ts" onclick="toast('Would jump video to 0:41')">0:41</button>
+            <p class="instruction"><span class="quote">&ldquo;And this is the exact error in the terminal every time I open a guide with a merged step.&rdquo;</span></p>
+            <div class="shot fake-vscode">
+              <div class="titlebar">Terminal &mdash; showhow</div>
+              <div class="code" style="min-height:112px;padding:14px">$ pnpm dev<br><span style="color:#7c8496">wxt building&hellip;</span><br><span class="err">TypeError: Cannot read properties of undefined (reading 'trim')</span><br>&nbsp;&nbsp;at StepTitle (editor.tsx:42:18)</div>
+              <div class="marker" style="left:110px;bottom:40px"></div>
+            </div>
+            <div class="meta-row"><span class="src-tag">Instruction from voiceover</span></div>
+          </div>
+        </div>
+        <p style="color:var(--dim);font-size:13px;text-align:center;margin-top:20px">&hellip; 2 more steps &hellip;</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="toast" id="toast">&hellip;</div>
+
+<script>
+function showRec(id){
+  document.getElementById('rec-shopify').style.display = id==='shopify'?'block':'none';
+  document.getElementById('rec-bug').style.display = id==='bug'?'block':'none';
+  document.getElementById('item-shopify').classList.toggle('active', id==='shopify');
+  document.getElementById('item-bug').classList.toggle('active', id==='bug');
+  document.querySelector('.main').scrollTop = 0;
+}
+function createDoc(){
+  const g=document.getElementById('generating');
+  g.style.display='inline';
+  document.getElementById('create-btn').disabled=true;
+  setTimeout(()=>{
+    document.getElementById('empty-doc').style.display='none';
+    document.getElementById('bug-doc').style.display='block';
+    document.getElementById('create-btn').style.display='none';
+    toast('Workflow doc created');
+  },1400);
+}
+function toggleRedact(btn){
+  const f=document.getElementById('redact-target'), l=document.getElementById('redact-label');
+  if(btn.dataset.on){ f.innerHTML='&bull;'.repeat(12); l.textContent='(redacted)'; btn.textContent='Reveal typed text'; delete btn.dataset.on; }
+  else { f.textContent='Blue Runner Sneakers'; l.textContent='"Blue Runner Sneakers"'; btn.textContent='Redact'; btn.dataset.on='1'; }
+}
+function toggleTheme(){
+  const r=document.documentElement, dark=r.getAttribute('data-theme')==='dark';
+  r.setAttribute('data-theme', dark?'light':'dark');
+  document.querySelector('.theme-toggle').textContent = dark?'Switch to dark mode':'Switch to light mode';
+}
+let tt;
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(tt); tt=setTimeout(()=>t.classList.remove('show'),1700);
+}
+</script>
+</body>
+</html>
