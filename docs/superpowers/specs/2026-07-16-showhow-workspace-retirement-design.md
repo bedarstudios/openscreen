@@ -46,7 +46,7 @@ The move must occur only after recording pre-move Git status and verifying that 
 
 Before relocating the extension checkout:
 
-- move `app/docs/superpowers/specs/2026-07-11-showhow-desktop-design.md` to `desktop/docs/superpowers/specs/`;
+- copy `app/docs/superpowers/specs/2026-07-11-showhow-desktop-design.md` to `desktop/docs/superpowers/specs/`, retaining the original inside the archived checkout so its Git state remains unchanged;
 - update the active Phase 1 plan so its `Spec` link resolves to the new in-repository path;
 - move `Projects/web/showhow/feature-backlog.md` into `desktop/docs/product/feature-backlog.md`;
 - move `Projects/web/showhow/assets/` into `desktop/docs/design/` while preserving its existing `design/` and `mocks/` contents.
