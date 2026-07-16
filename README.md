@@ -175,3 +175,9 @@ OpenScreen is community-driven. If you need help, want to report a bug, or just 
 
 This project is licensed under the [MIT License](./LICENSE). By using this software, you agree that the authors are not liable for any issues, damages, or claims arising from its use.
 
+## Showhow fork
+
+This repository is Bedarstudios' fork of OpenScreen, used to build Showhow: a desktop
+recorder that turns recordings into step-by-step workflow docs and agent-ready bundles.
+It is maintained independently of upstream; see `.github/copilot-instructions.md` for the
+automated review lane's conventions.
