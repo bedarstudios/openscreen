@@ -174,3 +174,4 @@ OpenScreen is community-driven. If you need help, want to report a bug, or just 
 ## License
 
 This project is licensed under the [MIT License](./LICENSE). By using this software, you agree that the authors are not liable for any issues, damages, or claims arising from its use.
+
