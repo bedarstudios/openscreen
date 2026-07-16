@@ -24,6 +24,7 @@
 
 ### Active desktop repository
 
+- Modify: `biome.json` — exclude generated design exports under `docs/design/**` from application-source linting.
 - Create: `docs/superpowers/specs/2026-07-11-showhow-desktop-design.md` — active desktop-pivot product specification copied from the retired checkout.
 - Modify: `docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md` — point its `Spec` field at the in-repository specification.
 - Create: `docs/product/feature-backlog.md` — active post-V1 backlog moved from the Showhow parent folder.
@@ -32,6 +33,7 @@
 
 ### Bedarstudios OS repository
 
+- Delete: `Projects/web/showhow/feature-backlog.md` — tracked source moved into the desktop repository.
 - Modify: `.gitignore` — remove the retired checkout path and ignore the exact local archive path.
 - Modify: `AGENTS.md` — describe only `desktop/` as the active Showhow build and record the archived extension location.
 - Modify: `context/current-priorities.md` — remove the dormant companion from active project structure and point at the migrated spec.
@@ -52,6 +54,7 @@
 ### Task 1: Migrate active Showhow material into the desktop repository
 
 **Files:**
+- Modify: `biome.json`
 - Create: `docs/superpowers/specs/2026-07-11-showhow-desktop-design.md`
 - Modify: `docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md:11`
 - Create: `docs/product/feature-backlog.md`
@@ -128,6 +131,9 @@ with:
 
 in `docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md`.
 
+Use `apply_patch` in `biome.json` to add `!docs/design/**` to `files.includes`. The copied
+JavaScript and JSON are generated design-document support files, not application source.
+
 - [ ] **Step 5: Verify the migrated material**
 
 Run:
@@ -149,7 +155,7 @@ Expected: `cmp` succeeds; all `test` commands succeed; `rg` produces no output; 
 Run:
 
 ```bash
-git add docs/superpowers/specs/2026-07-11-showhow-desktop-design.md \
+git add biome.json docs/superpowers/specs/2026-07-11-showhow-desktop-design.md \
   docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md \
   docs/product/feature-backlog.md docs/design
 git diff --cached --stat
@@ -163,6 +169,7 @@ Expected: the staged diff contains only the listed migration files; commit succe
 ### Task 2: Retarget live Bedarstudios OS references
 
 **Files:**
+- Delete: `/Users/mohamedb/dev/OS/Projects/web/showhow/feature-backlog.md`
 - Modify: `/Users/mohamedb/dev/OS/.gitignore`
 - Modify: `/Users/mohamedb/dev/OS/AGENTS.md`
 - Modify: `/Users/mohamedb/dev/OS/context/current-priorities.md`
@@ -277,12 +284,13 @@ git add .gitignore AGENTS.md context/current-priorities.md \
   Resources/AI/multi-model-loop/pr-triage-prompt.md \
   Resources/AI/multi-model-loop/review-agent-prompt.md \
   Resources/AI/multi-model-loop/LOOP.md \
-  Resources/AI/oms-mission-control-setup.md decisions/log.md
+  Resources/AI/oms-mission-control-setup.md decisions/log.md \
+  Projects/web/showhow/feature-backlog.md
 git diff --cached --name-only
 git commit -m "chore: retire legacy Showhow workspace"
 ```
 
-Expected: the cached name list is exactly the nine files above; unrelated pre-existing changes remain unstaged after the commit.
+Expected: the cached name list is exactly the ten files above; unrelated pre-existing changes remain unstaged after the commit.
 
 ---
 

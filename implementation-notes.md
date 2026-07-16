@@ -122,3 +122,23 @@ verifies that an early activation is deferred until readiness.
 - Verified `meta.json` identifies `video.mp4` and `video.mp4.cursor.json` accurately.
 - Verification: 45 test files / 328 tests passed; `tsc --noEmit` passed; Biome checked
   346 files with no errors.
+
+## Workspace retirement -- 2026-07-16
+
+### Generated design exports are documentation, not application source
+
+**What changed:** Moving the approved mock and design-system exports into `docs/design/`
+caused the pre-commit hook to lint their generated JavaScript and JSON. The exports contain
+bundled runtime patterns that intentionally violate the application Biome rules.
+
+**What was done instead:** Added the narrow `!docs/design/**` exclusion to
+`biome.json`'s file set. The exact failing `lint-staged` path then passed, and the full test
+suite remained green. The generated exports were preserved byte-for-byte rather than rewritten.
+
+### The parent feature backlog was OS-tracked
+
+**What changed:** The plan treated `Projects/web/showhow/feature-backlog.md` as parent-owned
+material but did not initially list its tracked deletion in the OS commit.
+
+**What was done instead:** Staged the deletion explicitly alongside the nine planned OS
+alignment files. Unrelated pre-existing OS changes remained unstaged.
