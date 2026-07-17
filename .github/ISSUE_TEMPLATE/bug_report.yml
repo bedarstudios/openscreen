@@ -1,5 +1,5 @@
-name: Bug Report
-description: Create a report to help us improve
+name: Showhow Bug Report
+description: Report a problem with Showhow Desktop
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -60,9 +60,16 @@ body:
         - Windows
         - macOS
         - Linux
-        - iOS
-        - Android
         - Other
+    validations:
+      required: false
+
+  - type: input
+    id: showhow-version
+    attributes:
+      label: Showhow version
+      description: The Showhow Desktop version where the problem occurred
+      placeholder: e.g., 1.6.0
     validations:
       required: false
 
@@ -85,38 +92,6 @@ body:
       required: false
 
   - type: dropdown
-    id: browser
-    attributes:
-      label: Browser
-      description: What browser are you using?
-      options:
-        - Chrome
-        - Firefox
-        - Safari
-        - Edge
-        - Other
-    validations:
-      required: false
-
-  - type: input
-    id: browser-version
-    attributes:
-      label: Browser Version
-      description: Please specify your browser version
-      placeholder: e.g., 120.0, 121.0.1
-    validations:
-      required: false
-
-  - type: input
-    id: browser-other
-    attributes:
-      label: Other Browser
-      description: If you selected "Other" for Browser, please specify your browser
-      placeholder: e.g., Brave, Vivaldi, Opera
-    validations:
-      required: false
-
-  - type: dropdown
     id: device-type
     attributes:
       label: Device Type
@@ -124,8 +99,6 @@ body:
       options:
         - Desktop
         - Laptop
-        - Tablet
-        - Mobile
         - Other
     validations:
       required: false

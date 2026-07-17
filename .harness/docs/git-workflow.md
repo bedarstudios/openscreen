@@ -1,4 +1,4 @@
-# Git Workflow for OpenScreen
+# Git Workflow for Showhow
 
 Conventions for the Mavis reins when working in this repo.
 
@@ -36,12 +36,12 @@ All five must be green before merge. Native helper code is NOT covered by CI —
 2. Implement + add tests in the same package.
 3. Run locally: `npm run lint && npx tsc --noEmit && npm run test`. For browser/e2e-touching changes, also run the relevant suite.
 4. Push and open the PR via `gh pr create`. Use `.github/pull_request_template.md`.
-5. Wait for the Mavis reviewer (`openscreen-reviewer`) PASS or address the requested changes.
+5. Wait for the Mavis reviewer (`showhow-reviewer`) PASS or address the requested changes.
 6. Merge once CI is green and review is PASS. PR titles must follow Conventional Commits (enforced by the `semantic-pr` job in `ci.yml`) — this keeps the auto-generated release notes clean.
 
 ## Release flow
 
-Two `workflow_dispatch` workflows cut a release. Trunk-based on `main`, but **release branches freeze the RC codebase between cut and promote** (see § Release branches below). Both require the `OPENSCREEN_RELEASE_TOKEN` secret — see `docs/secrets.md`.
+Two `workflow_dispatch` workflows cut a release. Trunk-based on `main`, but **release branches freeze the RC codebase between cut and promote** (see § Release branches below). Both require the `SHOWHOW_RELEASE_TOKEN` secret — see `docs/secrets.md`.
 
 ### Step 1: cut a release candidate
 
@@ -57,13 +57,13 @@ The workflow:
 2. Migrates every issue/PR in the rolling `Next Release` milestone into a fresh `vX.Y.Z` milestone. Each migrated item gets a hidden marker comment so re-running is idempotent.
 3. Commits `package.json` → `X.Y.Z-rc.N` on a fresh branch `release/vX.Y.Z-rc.N`. **The branch is NOT merged into `main`** — it stays frozen so the RC build only contains what was on `main` at the moment of cut.
 4. Pushes the tag `vX.Y.Z-rc.N` at the release branch tip. This triggers `build.yml`, which publishes a **GitHub pre-release** (badged as such, does not become "Latest"). macOS notarization is skipped on RC tags.
-5. Posts in `#rc-testing` on Discord with the download link.
+5. Posts the download link to Bedar Studios' configured release-candidate Discord channel.
 
 Tier 3 (homebrew/winget/nix/aur) does **not** run on pre-releases — they're already gated on `!prerelease`.
 
 ### Step 2: announce and QA
 
-Pin the pre-release link in `#rc-testing`. Get the maintainer team + a few early adopters to install and smoke-test.
+Share the pre-release link in Bedar Studios' configured release-candidate channel and have the maintainer team install and smoke-test it.
 
 **Between RC cut and promote**, the only thing that may happen on `release/vX.Y.Z-rc.N` is **cherry-picks of bugfixes** that address problems discovered in the RC. Features, refactors, and CI/docs changes are **not** applied to the release branch — they live on `main` and ship in the next release cycle.
 
@@ -81,9 +81,9 @@ The workflow:
 1. Validates the tag matches `^vX.Y.Z-(rc|beta|alpha)\.N$`.
 2. Closes the `vX.Y.Z` milestone (snapshotting it for the release notes).
 3. Checks out `release/vX.Y.Z-rc.N` (the frozen branch), strips `-rc.N` from `package.json`, and commits the bump there. The stable tag points at this tip — the released code is the exact RC + cherry-picks.
-4. Pushes the tag `vX.Y.Z` and triggers `build.yml` (full notarization). The `release: published` event fires Tier 3 (homebrew/winget/nix/aur) thanks to `OPENSCREEN_RELEASE_TOKEN`.
-5. Opens a **release-sync PR** (e.g. `release/v1.6.0-sync → main`) that brings `main` into line with the released snapshot. Rebase-merged via PAT (EtienneLescot is a ruleset bypass actor).
-6. Posts in `#announcements` on Discord with the release notes + a "Closed issues in this release" list pulled from the milestone.
+4. Pushes the tag `vX.Y.Z` and triggers `build.yml` (full notarization). The `release: published` event fires Tier 3 (homebrew/winget/nix/aur) thanks to `SHOWHOW_RELEASE_TOKEN`.
+5. Opens a **release-sync PR** (e.g. `release/v1.6.0-sync → main`) that brings `main` into line with the released snapshot. A designated Bedar Studios ruleset-bypass maintainer rebase-merges it via PAT.
+6. Posts to Bedar Studios' configured release-announcement Discord channel with the release notes + a "Closed issues in this release" list pulled from the milestone.
 
 The release branch itself **stays around** indefinitely — it is the frozen history of the release, useful for backports and forensics. Deletion happens only when a future major cuts over and supersedes it.
 
@@ -111,14 +111,14 @@ This exists because of the v1.6.0 incident (2026-07-05): the original `promote.y
 If the dispatch UI is unavailable, the workflow still works from a shell:
 
 ```bash
-# Cut RC (skips milestone migration and Discord announce)
+# Cut RC (skips milestone migration and the configured Discord announcement)
 git checkout -b release/v1.5.0-rc.1 main
 sed -i -E 's|("version"[[:space:]]*:[[:space:]]*")[^"]*(")|\11.5.0-rc.1\2|' package.json
 git add package.json && git commit -m "chore(release): bump to 1.5.0-rc.1 [skip ci]"
 git push origin release/v1.5.0-rc.1
 git push origin v1.5.0-rc.1
 
-# Promote (skips milestone close and Discord announce)
+# Promote (skips milestone close and the configured Discord announcement)
 git checkout release/v1.5.0-rc.1
 sed -i -E 's|("version"[[:space:]]*:[[:space:]]*")[^"]*(")|\11.5.0\2|' package.json
 git commit -am "chore(release): bump to 1.5.0 [skip ci]"
@@ -144,4 +144,4 @@ No new workflow code is needed; the tag-pushed trigger is branch-agnostic.
 - **Daily state**: issues/PRs accumulate in the rolling `Next Release` milestone. `merged-pr-bookkeeping.yml` adds them automatically on PR merge; maintainers can also drag issues in by hand.
 - **At RC cut**: `prerelease.yml` snapshots `Next Release` into a versioned `vX.Y.Z` milestone. The rolling milestone is left open and empty for new work.
 - **Between RC cut and promote**: any PR that merges during the RC window lands back in the empty `Next Release`. It is **not** retroactively added to `vX.Y.Z`. If a critical fix lands, cut `vX.Y.Z-rc.(N+1)` instead of promoting.
-- **At promote**: `promote.yml` closes the `vX.Y.Z` milestone and uses its closed issues to populate the Discord release announcement.
+- **At promote**: `promote.yml` closes the `vX.Y.Z` milestone and uses its closed issues to populate Bedar Studios' configured Discord release announcement.

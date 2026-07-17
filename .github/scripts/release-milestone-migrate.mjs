@@ -2,6 +2,7 @@ import { info, warning } from "@actions/core";
 import { getOctokit } from "@actions/github";
 
 const ROLLING_NAME = "Next Release";
+// Keep the established marker so release migration remains idempotent for mirrored issue history.
 const MARKER_PREFIX = "<!-- openscreen-rc-migrated:";
 
 const token = (process.env.TOKEN || "").trim();

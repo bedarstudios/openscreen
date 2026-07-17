@@ -22,7 +22,8 @@
 
 ## Repo-specific
 
-- This repo is a fork of OpenScreen, but it is our codebase -- no upstream merges
-  are planned. Do not open PRs against `getopenscreen/openscreen`, and do not
-  restore the upstream release/Discord workflows that were deliberately removed.
-- Always target `bedarstudios/openscreen` `main` as the PR base.
+- This is the standalone Showhow Desktop repository. Treat the source ancestor as attribution and
+  compatibility context, not as an operational parent; follow `UPSTREAM.md` for focused imports.
+- Always target `bedarstudios/showhow-desktop` `main` as the PR base.
+- Preserve the Bedar Studios review-glue workflows and their label ownership. Do not replace them
+  with source-project community automation.

@@ -8,6 +8,14 @@
 		{
 			"file": "docs/superpowers/specs/2026-07-16-showhow-standalone-repository-design.md",
 			"reason": "Approved migration design and compatibility policy"
+		},
+		{
+			"file": ".harness/memory/MEMORY.md",
+			"reason": "Append-only historical harness memory"
+		},
+		{
+			"file": ".github/scripts/release-milestone-migrate.mjs",
+			"reason": "Persistent release migration marker compatibility"
 		}
 	]
 }

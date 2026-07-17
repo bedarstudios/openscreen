@@ -1,5 +1,6 @@
 ## Summary
 <!-- Briefly describe the change. -->
+<!-- PR titles must use a Conventional Commit type such as feat:, fix:, or docs:. -->
 
 ## Related issue
 <!-- Use "Fixes #123", "Closes #123", or "Resolves #123" only when this PR fully resolves the issue. -->
@@ -34,3 +35,6 @@ Fixes #
 
 ## Testing
 <!-- Describe how this was tested. Include commands, steps, or environment setup. -->
+
+## Showhow compatibility
+<!-- Note any effect on Showhow project writes, legacy project reads, native helpers, or releases. -->
