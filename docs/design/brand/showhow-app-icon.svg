@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title description">
+	<title id="title">Showhow application icon</title>
+	<description id="description">A recording corner flowing through three folded steps into forward motion.</description>
+	<rect x="32" y="32" width="960" height="960" rx="224" fill="#FFFCF7"/>
+	<path d="M216 616V472c0-53 43-96 96-96h48" fill="none" stroke="#142F18" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+	<path d="M408 568l72-72" fill="none" stroke="#2F2F2F" stroke-width="48" stroke-linecap="round"/>
+	<path d="M584 424l72-72" fill="none" stroke="#6BFF7E" stroke-width="48" stroke-linecap="round"/>
+	<rect x="288" y="520" width="144" height="144" rx="32" fill="#82B09A"/>
+	<path d="M384 520h48v48z" fill="#142F18"/>
+	<rect x="464" y="376" width="144" height="144" rx="32" fill="#2F2F2F"/>
+	<path d="M560 376h48v48z" fill="#82B09A"/>
+	<rect x="640" y="232" width="144" height="144" rx="32" fill="#6BFF7E"/>
+	<path d="M736 232h48v48z" fill="#142F18"/>
+	<path d="M784 304h40c35 0 64 29 64 64v72" fill="none" stroke="#142F18" stroke-width="64" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
