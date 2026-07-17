@@ -27,10 +27,9 @@ discovery.
 - `git diff --check`: passed.
 - `nix flake check --no-build`: not run because Nix is not installed on this macOS host.
 
-`npm run build-vite` built the renderer successfully, then failed during the Electron bundle because
-Vite could not resolve `@/shared/productIdentity` imported by `src/lib/projectFilePolicy.ts`. This
-runtime alias issue predates and is independent of the package identity changes. Per root direction,
-Task 4 did not modify runtime code; root will land and diagnose the prerequisite fix before review.
+The initial `npm run build-vite` run built the renderer successfully, then exposed an independent
+Electron alias issue. Root fixed that prerequisite separately in `57cc79c`; the post-fix Task 4
+verification sequence reruns the complete build below.
 
 ## Configuration matrix
 
@@ -55,13 +54,25 @@ settings repository URLs, test fixtures, and native diagnostic tooling. This tas
 allowlist classifications only for its package identity policy test and the four explicit
 Showhow-first legacy input fallbacks; it did not hide active package identity.
 
-## Commit
+## Commit sequence
 
-Pending at report creation; commit subject: `build: package Showhow under its standalone identity`.
+- `54fbfb4`: `build: package Showhow under its standalone identity`
+- `57cc79c`: separately owned prerequisite alias fix; not part of Task 4's package changes
+- Task 4 review follow-up: `fix: tighten Showhow release identity guards` (this report's commit;
+  exact SHA recorded in the task handoff)
+
+## Review follow-up
+
+- RED: the exact workflow installer-name assertion failed because the Create DMG step still emitted
+  `Showhow-Mac-${ARCH}-${VERSION}.dmg`.
+- GREEN: the workflow now emits
+  `showhow-desktop-Mac-${ARCH}-${VERSION}-Installer.dmg`, matching builder and manual script intent.
+- Guard hardening: the package test now asserts the exact only permitted legacy occurrence sets in
+  the allowlisted workflow, helper build, and preview files, including Showhow-before-legacy order.
+- Mutation evidence: adding one extra `openscreen` occurrence to the allowlisted helper file made
+  the focused test fail on the exact occurrence set; removing the probe restored green.
 
 ## Concerns
 
 - Nix evaluation still needs a Nix-capable host.
-- The separately owned Electron Vite alias blocker must be fixed and `npm run build-vite` rerun
-  before Task 4 review can call the complete build gate green.
 - No GitHub mutation, push, release, installer build, signing, or notarization was performed.

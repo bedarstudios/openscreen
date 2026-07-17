@@ -104,8 +104,21 @@ describe("standalone package identity", () => {
 			expect(workflow).toContain(`name: ${artifact}`);
 		}
 		expect(workflow).toContain("SHOWHOW_MAC_HELPER_ARCHS: ${{ matrix.arch }}");
+		expect(workflow).toContain('DMG_NAME="showhow-desktop-Mac-${ARCH}-${VERSION}-Installer.dmg"');
 		expect(workflow).not.toMatch(/name:\s*openscreen-/i);
 		expect(workflow).toContain("secrets.SHOWHOW_RELEASE_TOKEN || secrets.OPENSCREEN_RELEASE_TOKEN");
+		expect(workflow.match(/openscreen/gi)).toEqual(["OPENSCREEN"]);
+		expect(workflow.match(/OPENSCREEN_[A-Z_]+/g)).toEqual(["OPENSCREEN_RELEASE_TOKEN"]);
+	});
+
+	test("limits the helper build allowlist to one Showhow-first legacy variable fallback", () => {
+		const source = read("scripts/build-macos-screencapturekit-helper.mjs");
+		const current = "process.env.SHOWHOW_MAC_HELPER_ARCHS ??";
+		const legacy = "process.env.OPENSCREEN_MAC_HELPER_ARCHS ??";
+		expect(source.indexOf(current)).toBeGreaterThan(-1);
+		expect(source.indexOf(legacy)).toBeGreaterThan(source.indexOf(current));
+		expect(source.match(/OPENSCREEN_MAC_HELPER_ARCHS/g)).toHaveLength(2);
+		expect(source.match(/openscreen/gi)).toEqual(["OPENSCREEN", "OPENSCREEN"]);
 	});
 
 	test("uses Showhow-first preview names with read-only legacy fallbacks", () => {
@@ -113,9 +126,25 @@ describe("standalone package identity", () => {
 		expect(fs.existsSync(path.join(ROOT, "scripts/capture-openscreen-preview.mjs"))).toBe(false);
 		const source = read("scripts/capture-showhow-preview.mjs");
 		for (const variable of ["OUTPUT_DIR", "FRAME_COUNT", "FPS", "SKIP_BUILD"]) {
-			expect(source).toContain(`SHOWHOW_PREVIEW_${variable}`);
+			const current = `SHOWHOW_PREVIEW_${variable}`;
+			const legacy = `OPENSCREEN_PREVIEW_${variable}`;
+			expect(source.indexOf(current)).toBeGreaterThan(-1);
+			expect(source.indexOf(legacy)).toBeGreaterThan(source.indexOf(current));
 		}
-		expect(source).toContain("OPENSCREEN_PREVIEW_OUTPUT_DIR");
+		expect(source.match(/OPENSCREEN_PREVIEW_[A-Z_]+/g)).toEqual([
+			"OPENSCREEN_PREVIEW_OUTPUT_DIR",
+			"OPENSCREEN_PREVIEW_FRAME_COUNT",
+			"OPENSCREEN_PREVIEW_FPS",
+			"OPENSCREEN_PREVIEW_SKIP_BUILD",
+		]);
+		expect(source.match(/openscreen/gi)).toEqual([
+			"OPENSCREEN",
+			"OPENSCREEN",
+			"OPENSCREEN",
+			"openscreen",
+			"OPENSCREEN",
+		]);
+		expect(source).toContain('entry.name.startsWith("openscreen-cursor-native-")');
 		expect(source).toContain("showhow-real-preview-");
 		expect(source).toContain("showhow-preview-fixture.webm");
 		expect(source).toContain("showhow-preview.webm");

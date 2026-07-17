@@ -167,7 +167,7 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
           ARCH="${{ matrix.arch }}"
-          DMG_NAME="Showhow-Mac-${ARCH}-${VERSION}.dmg"
+          DMG_NAME="showhow-desktop-Mac-${ARCH}-${VERSION}-Installer.dmg"
           RELEASE_DIR="release/${VERSION}"
           DMG_OUTPUT="${RELEASE_DIR}/${DMG_NAME}"
           STAGING="${RELEASE_DIR}/dmg-staging"
