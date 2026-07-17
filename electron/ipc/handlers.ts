@@ -41,6 +41,7 @@ import { RECORDINGS_DIR } from "../main";
 import { createCursorRecordingSession } from "../native-bridge/cursor/recording/factory";
 import { requestMacCursorAccessibilityAccess } from "../native-bridge/cursor/recording/macNativeCursorRecordingSession";
 import type { CursorRecordingSession } from "../native-bridge/cursor/recording/session";
+import { HELPER_IDENTITIES, orderedHelperCandidates } from "../native-bridge/helperIdentity";
 import {
 	getDefaultProjectFileName,
 	getWritableExistingProjectPath,
@@ -629,22 +630,14 @@ function resolvePackagedResourcePath(...segments: string[]) {
 }
 
 function getNativeWindowsCaptureHelperCandidates() {
-	const envPath = process.env.OPENSCREEN_WGC_CAPTURE_EXE?.trim();
+	const identity = HELPER_IDENTITIES.windowsCapture;
 	const archTag = process.arch === "arm64" ? "win32-arm64" : "win32-x64";
-	return [
-		envPath,
-		resolveUnpackedAppPath(
-			"electron",
-			"native",
-			"wgc-capture",
-			"build",
-			"Release",
-			"wgc-capture.exe",
-		),
-		resolveUnpackedAppPath("electron", "native", "wgc-capture", "build", "wgc-capture.exe"),
-		resolveUnpackedAppPath("electron", "native", "bin", archTag, "wgc-capture.exe"),
-		resolvePackagedResourcePath("electron", "native", "bin", archTag, "wgc-capture.exe"),
-	].filter((candidate): candidate is string => Boolean(candidate));
+	return orderedHelperCandidates(identity, process.env, (name) => [
+		resolveUnpackedAppPath("electron", "native", "wgc-capture", "build", "Release", name),
+		resolveUnpackedAppPath("electron", "native", "wgc-capture", "build", name),
+		resolveUnpackedAppPath("electron", "native", "bin", archTag, name),
+		resolvePackagedResourcePath("electron", "native", "bin", archTag, name),
+	]);
 }
 
 async function findNativeWindowsCaptureHelperPath() {
@@ -665,15 +658,13 @@ async function findNativeWindowsCaptureHelperPath() {
 }
 
 function getNativeMacCaptureHelperCandidates() {
-	const envPath = process.env.OPENSCREEN_SCK_CAPTURE_EXE?.trim();
+	const identity = HELPER_IDENTITIES.macCapture;
 	const archTag = process.arch === "arm64" ? "darwin-arm64" : "darwin-x64";
-	const helperName = "openscreen-screencapturekit-helper";
-	return [
-		envPath,
-		resolveUnpackedAppPath("electron", "native", "screencapturekit", "build", helperName),
-		resolveUnpackedAppPath("electron", "native", "bin", archTag, helperName),
-		resolvePackagedResourcePath("electron", "native", "bin", archTag, helperName),
-	].filter((candidate): candidate is string => Boolean(candidate));
+	return orderedHelperCandidates(identity, process.env, (name) => [
+		resolveUnpackedAppPath("electron", "native", "screencapturekit", "build", name),
+		resolveUnpackedAppPath("electron", "native", "bin", archTag, name),
+		resolvePackagedResourcePath("electron", "native", "bin", archTag, name),
+	]);
 }
 
 async function findNativeMacCaptureHelperPath() {

@@ -9,6 +9,7 @@ import type {
 	CursorRecordingSample,
 	NativeCursorAsset,
 } from "../../../../src/native/contracts";
+import { HELPER_IDENTITIES, orderedHelperCandidates } from "../../helperIdentity";
 import type { CursorRecordingSession } from "./session";
 import type {
 	WindowsCursorEvent,
@@ -16,7 +17,7 @@ import type {
 } from "./windowsNativeRecordingSession.types";
 
 function getCursorSamplerCandidates(): string[] {
-	const envPath = process.env.OPENSCREEN_CURSOR_SAMPLER_EXE?.trim();
+	const identity = HELPER_IDENTITIES.windowsCursor;
 	const archTag = process.arch === "arm64" ? "win32-arm64" : "win32-x64";
 	const resolve = (...segs: string[]) => {
 		const p = join(app.getAppPath(), ...segs);
@@ -25,12 +26,11 @@ function getCursorSamplerCandidates(): string[] {
 	const resolvePackaged = (...segs: string[]) => {
 		return app.isPackaged ? join(process.resourcesPath, ...segs) : null;
 	};
-	return [
-		envPath,
-		resolve("electron", "native", "wgc-capture", "build", "cursor-sampler.exe"),
-		resolve("electron", "native", "bin", archTag, "cursor-sampler.exe"),
-		resolvePackaged("electron", "native", "bin", archTag, "cursor-sampler.exe"),
-	].filter((c): c is string => Boolean(c));
+	return orderedHelperCandidates(identity, process.env, (name) => [
+		resolve("electron", "native", "wgc-capture", "build", name),
+		resolve("electron", "native", "bin", archTag, name),
+		resolvePackaged("electron", "native", "bin", archTag, name),
+	]);
 }
 
 function findCursorSamplerPath(): string | null {

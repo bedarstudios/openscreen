@@ -7,9 +7,25 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
-const HELPER_PATH =
-	process.env.OPENSCREEN_WGC_CAPTURE_EXE ??
-	path.join(ROOT, "electron", "native", "bin", "win32-x64", "wgc-capture.exe");
+
+if (process.platform !== "win32") {
+	console.log("Skipping WGC helper smoke test: Windows-only.");
+	process.exit(0);
+}
+
+const HELPER_CANDIDATES = [
+	process.env.SHOWHOW_WGC_CAPTURE_EXE?.trim(),
+	process.env.OPENSCREEN_WGC_CAPTURE_EXE?.trim(),
+	path.join(ROOT, "electron", "native", "bin", "win32-x64", "showhow-wgc-capture.exe"),
+	path.join(ROOT, "electron", "native", "bin", "win32-x64", "wgc-capture.exe"),
+].filter(Boolean);
+const HELPER_PATH = HELPER_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+
+if (!HELPER_PATH) {
+	throw new Error(
+		`WGC helper not found. Checked:\n${HELPER_CANDIDATES.map((candidate) => `  ${candidate}`).join("\n")}\nRun npm run build:native:win first.`,
+	);
+}
 
 const DURATION_MS = Number(process.env.OPENSCREEN_WGC_TEST_DURATION_MS ?? 5000);
 const WITH_SYSTEM_AUDIO =
@@ -217,18 +233,9 @@ function measureFirstFrameLuma(outputPath) {
 	return { average: sum / data.length, max };
 }
 
-if (process.platform !== "win32") {
-	console.log("Skipping WGC helper smoke test: Windows-only.");
-	process.exit(0);
-}
-
-if (!fs.existsSync(HELPER_PATH)) {
-	throw new Error(`WGC helper not found at ${HELPER_PATH}. Run npm run build:native:win first.`);
-}
-
 const outputPath = path.join(
 	os.tmpdir(),
-	`openscreen-wgc-helper-${WITH_WEBCAM ? "webcam" : WITH_WINDOW ? "window" : WITH_SYSTEM_AUDIO || WITH_MICROPHONE ? "audio" : "video"}-${process.pid}-${Date.now()}-${randomUUID()}.mp4`,
+	`showhow-wgc-helper-${WITH_WEBCAM ? "webcam" : WITH_WINDOW ? "window" : WITH_SYSTEM_AUDIO || WITH_MICROPHONE ? "audio" : "video"}-${process.pid}-${Date.now()}-${randomUUID()}.mp4`,
 );
 const webcamOutputPath = WITH_WEBCAM ? outputPath.replace(/\.mp4$/i, "-webcam.mp4") : null;
 
