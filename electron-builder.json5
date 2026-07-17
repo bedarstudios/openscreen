@@ -1,13 +1,13 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.etiennelescot.openscreen",
+  "appId": "com.bedarstudios.showhow",
   "asar": true,
   // .node binaries can't be dlopen'd from inside an asar — must live unpacked.
   "asarUnpack": [
     "**/*.node"
   ],
-  "productName": "Openscreen",
+  "productName": "Showhow",
   // Fetch the auto-caption model + ORT wasm into caption-assets/ before packaging (idempotent).
   "beforePack": "scripts/before-pack.cjs",
   "npmRebuild": true,
@@ -58,7 +58,7 @@
       }
     ],
     "icon": "icons/icons/mac/icon.icns",
-    "artifactName": "${productName}-Mac-${arch}-${version}-Installer.${ext}",
+    "artifactName": "showhow-desktop-Mac-${arch}-${version}-Installer.${ext}",
     "extraResources": [
       {
         "from": "electron/native/bin",
@@ -67,10 +67,10 @@
       }
     ],
     "extendInfo": {
-      "NSAudioCaptureUsageDescription": "OpenScreen needs audio capture permission to record system audio.",
-      "NSMicrophoneUsageDescription": "OpenScreen needs microphone access to record voice audio.",
-      "NSCameraUsageDescription": "OpenScreen needs camera access to record webcam video.",
-      "NSScreenCaptureUsageDescription": "OpenScreen needs screen recording permission to detect and capture windows.",
+      "NSAudioCaptureUsageDescription": "Showhow needs audio capture permission to record system audio.",
+      "NSMicrophoneUsageDescription": "Showhow needs microphone access to record voice audio.",
+      "NSCameraUsageDescription": "Showhow needs camera access to record webcam video.",
+      "NSScreenCaptureUsageDescription": "Showhow needs screen recording permission to detect and capture windows.",
       "NSCameraUseContinuityCameraDeviceType": true
     }
   },
@@ -81,8 +81,8 @@
       "pacman"
     ],
     "icon": "icons/icons/png",
-    "artifactName": "${productName}-Linux-${version}.${ext}",
-    "maintainer": "Etienne Lescot <etiennelescot@gmail.com>",
+    "artifactName": "showhow-desktop-Linux-${version}.${ext}",
+    "maintainer": "Bedar Studios",
     "category": "AudioVideo"
   },
   "win": {
@@ -90,7 +90,7 @@
       "nsis"
     ],
     "icon": "icons/icons/win/icon.ico",
-    "artifactName": "${productName}.Setup.${version}.${ext}",
+    "artifactName": "showhow-desktop.Setup.${version}.${ext}",
     "extraResources": [
       {
         "from": "electron/native/bin",

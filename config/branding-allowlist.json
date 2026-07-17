@@ -60,6 +60,22 @@
 		{
 			"file": ".github/scripts/release-milestone-migrate.mjs",
 			"reason": "Persistent release migration marker compatibility"
+		},
+		{
+			"file": ".github/scripts/package-identity.test.mjs",
+			"reason": "Policy assertions distinguish active Showhow identity from intentional legacy fallbacks"
+		},
+		{
+			"file": ".github/workflows/build.yml",
+			"reason": "Temporary read-only inherited release-token secret fallback until repository cutover"
+		},
+		{
+			"file": "scripts/build-macos-screencapturekit-helper.mjs",
+			"reason": "Showhow-first macOS helper architecture variable with read-only legacy fallback"
+		},
+		{
+			"file": "scripts/capture-showhow-preview.mjs",
+			"reason": "Showhow-first preview variables and paths with read-only legacy input discovery"
 		}
 	]
 }

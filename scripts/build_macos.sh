@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# OpenScreen macOS Build Script
-# Produces: release/<version>/OpenScreen-Mac-<arch>-<version>.dmg
+# Showhow macOS Build Script
+# Produces: release/<version>/showhow-desktop-Mac-<arch>-<version>-Installer.dmg
 #
 # Usage: chmod +x scripts/build_macos.sh && ./scripts/build_macos.sh
 #
@@ -139,7 +139,7 @@ for ARCH in "${ARCHS[@]}"; do
     print_ok "[${ARCH}] .app signature verified"
 
     # ── Create DMG ────────────────────────────────────────────────
-    DMG_NAME="${APP_NAME}-Mac-${ARCH}-${VERSION}.dmg"
+    DMG_NAME="showhow-desktop-Mac-${ARCH}-${VERSION}-Installer.dmg"
     DMG_OUTPUT="${RELEASE_DIR}/${DMG_NAME}"
     DMG_STAGING="${RELEASE_DIR}/dmg-staging-${ARCH}"
 
@@ -201,7 +201,7 @@ echo -e "${GREEN}${BOLD}══════════════════�
 echo ""
 
 for ARCH in "${ARCHS[@]}"; do
-    DMG_NAME="${APP_NAME}-Mac-${ARCH}-${VERSION}.dmg"
+    DMG_NAME="showhow-desktop-Mac-${ARCH}-${VERSION}-Installer.dmg"
     DMG_PATH="${RELEASE_DIR}/${DMG_NAME}"
     if [ -f "$DMG_PATH" ]; then
         DMG_SIZE=$(du -h "$DMG_PATH" | cut -f1)
