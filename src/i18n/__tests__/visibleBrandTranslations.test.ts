@@ -86,20 +86,29 @@ describe("visible Showhow translations", () => {
 			expect(editor.recording.accessibilityAllowAndRetry, locale).toContain("Showhow");
 			expect(launch.systemLanguagePrompt.description, locale).toContain("Showhow");
 		}
+
+		const frenchCommon = readNamespace("fr", "common.json") as {
+			actions: { about: string };
+		};
+		expect(frenchCommon.actions.about).toBe("À propos de Showhow");
 	});
 
 	it("names .showhow before legacy .openscreen only in project compatibility copy", () => {
 		for (const locale of locales) {
+			const compatibilityOccurrences: string[] = [];
 			for (const namespace of namespaces) {
 				for (const [key, value] of flatten(readNamespace(locale, namespace))) {
 					if (!value.includes(".openscreen")) continue;
-					expect(namespace, `${locale}:${key}`).toBe("editor.json");
-					expect(key, locale).toMatch(/^emptyState\.(dragDropHint|dropErrors\.)/);
+					compatibilityOccurrences.push(`${namespace}:${key}`);
 					expect(value.indexOf(".showhow"), `${locale}:${key}`).toBeLessThan(
 						value.indexOf(".openscreen"),
 					);
 				}
 			}
+			expect(compatibilityOccurrences, locale).toEqual([
+				"editor.json:emptyState.dragDropHint",
+				"editor.json:emptyState.dropErrors.unsupportedFormatMessage",
+			]);
 
 			const dialogs = readNamespace(locale, "dialogs.json") as {
 				fileDialogs: Record<string, string>;

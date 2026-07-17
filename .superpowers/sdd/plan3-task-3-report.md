@@ -101,3 +101,14 @@ the immutable SHA with `git rev-parse HEAD` after commit creation.
 
 Concern: translations were reviewed structurally and for preservation/localization quality, but no
 native-speaker linguistic review was available for all 12 non-English locales.
+
+## Review follow-up
+
+Review caught the French contraction produced by the mechanical proper-noun replacement. The
+French About label is now exactly `À propos de Showhow`, guarded by an exact-value assertion. The
+legacy extension policy assertion was also tightened: every locale must contain `.openscreen` in
+exactly two paths (`emptyState.dragDropHint` and
+`emptyState.dropErrors.unsupportedFormatMessage`), with `.showhow` first in both values.
+
+Because parent commit `fecde22` followed the original Task 3 commit, these corrections are recorded
+in a focused follow-up commit rather than rewriting that later plan-map commit.
