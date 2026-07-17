@@ -42,6 +42,10 @@
 			"reason": "Legacy compatibility instructions for executable diagnostic commands, paths, and variables"
 		},
 		{
+			"file": "docs/testing/showhow-legacy-compatibility.md",
+			"reason": "Acceptance matrix for intentional read-only legacy project, storage, profile, lock, and native-helper compatibility"
+		},
+		{
 			"file": "electron/native/README.md",
 			"reason": "Legacy compatibility instructions for inherited native helper binaries and variables"
 		},
