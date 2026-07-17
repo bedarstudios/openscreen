@@ -119,6 +119,7 @@ git commit -m "refactor: centralize Showhow identity constants"
 - Create: `src/lib/projectFilePolicy.test.ts`
 - Modify: `src/components/video-editor/EditorEmptyState.tsx`
 - Modify: `src/components/video-editor/EditorEmptyState.test.tsx`
+- Modify: `src/components/video-editor/VideoEditor.tsx`
 - Modify: `src/i18n/locales/*/dialogs.json`
 - Modify: `src/i18n/locales/*/editor.json`
 
