@@ -2,17 +2,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const LOCK_DIR_PREFIX = "openscreen-single-instance";
+const LOCK_DIR_PREFIXES = ["showhow-single-instance", "openscreen-single-instance"];
 const PID_FILE_NAME = "pid";
 const EMPTY_LOCK_STALE_MS = 30_000;
 
 export type StableInstanceLock = {
 	lockDir: string;
+	lockDirs: string[];
 	release: () => void;
 };
 
 type LockOptions = {
 	lockDir?: string;
+	lockDirs?: string[];
+	prefixes?: string[];
 	pid?: number;
 	now?: () => number;
 };
@@ -65,40 +68,69 @@ function getCurrentUserLockKey() {
 	}
 }
 
+export function getStableInstanceLockDirs(prefixes = LOCK_DIR_PREFIXES) {
+	return prefixes.map((prefix) =>
+		path.join(os.tmpdir(), `${prefix}-${getCurrentUserLockKey()}.lock`),
+	);
+}
+
 export function getStableInstanceLockDir() {
-	return path.join(os.tmpdir(), `${LOCK_DIR_PREFIX}-${getCurrentUserLockKey()}.lock`);
+	return getStableInstanceLockDirs()[0];
 }
 
 export function acquireStableInstanceLock(options: LockOptions = {}): StableInstanceLock | null {
-	const lockDir = options.lockDir ?? getStableInstanceLockDir();
+	const lockDirs =
+		options.lockDirs ??
+		(options.lockDir ? [options.lockDir] : getStableInstanceLockDirs(options.prefixes));
 	const pid = options.pid ?? process.pid;
 	const now = options.now ?? Date.now;
+	const acquired: string[] = [];
 
-	for (let attempt = 0; attempt < 2; attempt += 1) {
-		try {
-			fs.mkdirSync(lockDir, { mode: 0o700 });
-			fs.writeFileSync(path.join(lockDir, PID_FILE_NAME), `${pid}\n`, { flag: "wx" });
-			return {
-				lockDir,
-				release: () => releaseLock(lockDir, pid),
-			};
-		} catch (error) {
-			const code = (error as NodeJS.ErrnoException).code;
-			if (code !== "EEXIST") {
-				throw error;
-			}
+	for (const lockDir of lockDirs) {
+		let didAcquire = false;
+		for (let attempt = 0; attempt < 2; attempt += 1) {
+			let createdDirectory = false;
+			try {
+				fs.mkdirSync(lockDir, { mode: 0o700 });
+				createdDirectory = true;
+				fs.writeFileSync(path.join(lockDir, PID_FILE_NAME), `${pid}\n`, { flag: "wx" });
+				acquired.push(lockDir);
+				didAcquire = true;
+				break;
+			} catch (error) {
+				const code = (error as NodeJS.ErrnoException).code;
+				if (createdDirectory) {
+					fs.rmSync(lockDir, { recursive: true, force: true });
+				}
+				if (code !== "EEXIST") {
+					for (const owned of acquired) releaseLock(owned, pid);
+					throw error;
+				}
 
-			const existingPid = readLockPid(lockDir);
-			if (existingPid && isProcessRunning(existingPid)) {
-				return null;
-			}
-			if (!existingPid && !isEmptyLockStale(lockDir, now)) {
-				return null;
-			}
+				const existingPid = readLockPid(lockDir);
+				if (existingPid && isProcessRunning(existingPid)) {
+					for (const owned of acquired) releaseLock(owned, pid);
+					return null;
+				}
+				if (!existingPid && !isEmptyLockStale(lockDir, now)) {
+					for (const owned of acquired) releaseLock(owned, pid);
+					return null;
+				}
 
-			fs.rmSync(lockDir, { recursive: true, force: true });
+				fs.rmSync(lockDir, { recursive: true, force: true });
+			}
+		}
+		if (!didAcquire) {
+			for (const owned of acquired) releaseLock(owned, pid);
+			return null;
 		}
 	}
 
-	return null;
+	return {
+		lockDir: acquired[0],
+		lockDirs: [...acquired],
+		release: () => {
+			for (const lockDir of acquired) releaseLock(lockDir, pid);
+		},
+	};
 }
