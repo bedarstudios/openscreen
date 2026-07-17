@@ -1,176 +1,85 @@
-> [!NOTE]
-> This repository is an independent continuation of OpenScreen.
->
-> OpenScreen was originally created by [Siddharth Vaddem](https://github.com/siddharthvaddem). The original repository was archived after v1.5.0 and remains available here: [siddharthvaddem/openscreen](https://github.com/siddharthvaddem/openscreen).
->
-> This fork continues development under the OpenScreen name with the original author's approval, while remaining fully MIT open source.
+# Showhow
 
-> [!WARNING]
-> OpenScreen is not production-grade software. You should expect bugs, rough edges, and occasional breaking changes.
+Showhow is a free, MIT-licensed, local-first desktop screen recorder that turns recordings into
+workflow documentation and agent-ready handoff folders. It is pre-1.x software and is not
+production-grade; expect rough edges and breaking changes while the product is built.
 
-<p align="center">
-  <img src="public/openscreen.png" alt="OpenScreen Logo" width="64" />
-</p>
+## What Showhow does
 
-# <p align="center">OpenScreen</p>
+Showhow keeps its inherited recorder and editor foundation while adding a documentation workflow.
+The V1 path is:
 
-<p align="center"><strong>OpenScreen is a free, open-source tool for creating polished screen recordings, product demos, and walkthroughs.</strong></p>
+**record → folder bundle → workflow doc → copy path**
 
-<p align="center">
-  <a href="https://github.com/EtienneLescot/openscreen/blob/main/LICENSE"><img src="https://img.shields.io/github/license/EtienneLescot/openscreen?style=for-the-badge&label=License" alt="License" /></a>
-  <a href="https://github.com/EtienneLescot/openscreen/releases/latest"><img src="https://img.shields.io/github/v/release/EtienneLescot/openscreen?style=for-the-badge&label=Release" alt="Latest Release" /></a>
-  <a href="https://github.com/EtienneLescot/openscreen/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/EtienneLescot/openscreen/ci.yml?style=for-the-badge&label=CI" alt="CI Status" /></a>
-  <a href="https://discord.gg/VvT6Vtnyh"><img src="https://img.shields.io/badge/Discord-Join%20us-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord" /></a>
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey?style=for-the-badge" alt="Platform" />
-</p>
+A recording is saved as a self-contained folder containing the video, local transcript, metadata,
+cursor telemetry when available, and—once the desktop doc engine lands—generated steps and
+screenshots. Copying that folder path gives a person or an AI coding agent the complete handoff.
 
+## Current status
 
-OpenScreen was originally positioned as a free, open-source alternative to Screen Studio: something you can use to create quick, polished product demos and walkthroughs for X, Reddit, YouTube, documentation, landing pages, or internal demos.
+Phase 1 is complete: finished recordings are persisted as folder bundles under
+`~/Showhow/Recordings/`, with a manifest, transcript, screenshots directory, optional webcam, and
+cursor telemetry when captured. The workflow-doc engine, library and workflow UI, extension
+bridge, and final editing polish remain planned work; see [ROADMAP.md](./ROADMAP.md).
 
-It is not a 1:1 clone of Screen Studio. Screen Studio is an excellent commercial product. OpenScreen focuses on covering the core open-source workflow: recording, zooms, cursor effects, webcam overlay, captions, editing, annotations, and export.
+The inherited recorder and editor remain available, but Showhow's standalone identity migration is
+still in progress. Current package names, application labels, icons, and some persisted identifiers
+may retain legacy names until their compatibility-safe migration is completed.
 
-The goal of this continuation is to keep OpenScreen alive as a fully open-source project and progressively evolve it toward a broader recording and editing workflow.
+## Requirements
 
-**100% free** for both **personal** and **commercial** use. Use it, modify it, distribute it. Please respect the license.
+- macOS 13+ for the current Showhow V1 development target
+- Node.js 22.22.1
+- npm 10.9.4
+- Xcode Command Line Tools when building the native macOS capture helper
 
-> [!NOTE]
-> Software should be accessible. OpenScreen has no paid tiers, premium features, upsells, or functionality locked behind a paywall.
-
-<p align="center">
-	<img src="public/demo.png" alt="" style="height: 320px; margin-right: 12px;" />
-  <img src="public/sample.png" alt="" style="height: 320px; margin-right: 12px;" />
-</p>
-
-## Core Features
-- Record a specific window, or your whole screen.
-- Record microphone and system audio.
-- Webcam overlay with picture-in-picture, drag-to-position, mirroring, and shape options.
-- Auto or manual zooms with adjustable depth, duration, easing, and pixel-precise position; auto-zoom follows your cursor as you work.
-- Custom cursor size, smoothing, and click effects, with cursor themes and post-recording path smoothing.
-- Automatic captions for voiceovers, generated on-device with no upload (works offline).
-- Wallpapers, solid colors, gradients, or your own background image.
-- Motion blur.
-- Crop, trim, and per-segment speed control on the timeline.
-- Text, arrow, and image annotations, with text animation presets.
-- Timeline snapping guides and an audio waveform to make trimming easier.
-- Customizable keyboard shortcuts.
-- Export to MP4 or GIF in multiple aspect ratios and resolutions.
-- Languages supported: Arabic, English, Spanish, French, Italian, Japanese, Korean, Portuguese (Brazil), Russian, Turkish, Vietnamese, Simplified Chinese, and Traditional Chinese.
-
-
-## Installation
-
-Download the latest installer for your platform from the [GitHub Releases](https://github.com/EtienneLescot/openscreen/releases) page.
-
-### macOS
-
-Download the `.dmg` installer directly from the [Releases page](https://github.com/EtienneLescot/openscreen/releases). If Gatekeeper blocks the app, you can bypass it by running the following command in your terminal after installation:
+## Development
 
 ```bash
-xattr -rd com.apple.quarantine /Applications/Openscreen.app
+git clone https://github.com/bedarstudios/showhow-desktop.git
+cd showhow-desktop
+npm install
+npm run dev
 ```
 
-Note: Give your terminal Full Disk Access in **System Settings > Privacy & Security** to grant you access and then run the above command.
+Build the native macOS helper when working on capture or running a native recording locally:
 
-After running this command, proceed to **System Settings > Privacy & Security** to grant the necessary permissions for "screen recording" and "accessibility". Once permissions are granted, you can launch the app.
-
-> [!NOTE]
-> **Upgrading from an older version and hitting permission issues?** If you already had OpenScreen installed and the new version won't record (Screen Recording or Accessibility keep failing even after you grant them), uninstall the old version, remove OpenScreen's existing entries under **System Settings > Privacy & Security** (both Screen Recording and Accessibility), then do a fresh install and grant the permissions again when prompted.
-
-### Windows
-
-Download the `.exe` installer directly from the [Releases page](https://github.com/EtienneLescot/openscreen/releases).
-
-### Linux
-
-Three packages are published to the [Releases page](https://github.com/EtienneLescot/openscreen/releases) for each version. Pick the one that matches your distro:
-
-**Debian / Ubuntu / Pop!_OS (`.deb`)**
 ```bash
-sudo apt install ./Openscreen-Linux-latest.deb
+npm run build:native:mac
 ```
 
-**Arch / Manjaro (`.pacman`)**
+## Verification
+
 ```bash
-sudo pacman -U Openscreen-Linux-latest.pacman
+npm run test
+npm run test:browser
+npx tsc --noEmit
+npm run lint
+npm run i18n:check
+npm run branding:check
 ```
 
-**Any distro (`.AppImage`)**
-```bash
-chmod +x Openscreen-Linux-*.AppImage
-./Openscreen-Linux-*.AppImage
-```
+Browser tests require a one-time `npm run test:browser:install`. Native capture changes also require
+a manual smoke test on the affected operating system because CI cannot validate the macOS and
+Windows helpers end to end.
 
-**NixOS / Nix (flake)**
+## Repository policy
 
-Try without installing:
-```bash
-nix run github:EtienneLescot/openscreen
-```
+Showhow owns its roadmap, releases, branding, and architecture. Its source ancestor is not an
+operational parent. Do not configure a permanent source remote or perform full branch merges.
+Individually reviewed fixes may be imported using [UPSTREAM.md](./UPSTREAM.md), followed by the
+affected verification suite and branding audit.
 
-Install into your user profile:
-```bash
-nix profile install github:EtienneLescot/openscreen
-```
+New projects will use `.showhow`; compatibility with legacy `.openscreen` projects must remain
+explicit and tested throughout that migration.
 
-For a NixOS system config (flake):
-```nix
-{
-  inputs.openscreen.url = "github:EtienneLescot/openscreen";
+## Attribution
 
-  outputs = { nixpkgs, openscreen, ... }: {
-    nixosConfigurations.<host> = nixpkgs.lib.nixosSystem {
-      modules = [
-        openscreen.nixosModules.default
-        { programs.openscreen.enable = true; }
-      ];
-    };
-  };
-}
-```
-
-For Home Manager, use `openscreen.homeManagerModules.default` with the same `programs.openscreen.enable = true;`.
-
-You may need to grant screen recording permissions depending on your desktop environment.
-
-**Sandbox error:** If the AppImage fails to launch with a "sandbox" error, run it with `--no-sandbox`:
-```bash
-./Openscreen-Linux-*.AppImage --no-sandbox
-```
-
-### Platform differences
-
-Everything in the editor and export is the same on macOS, Windows, and Linux: zooms, backgrounds, motion blur, crop/trim/speed, blur regions, annotations, auto-captions, projects, export, and all languages. The differences are in **capture**, where macOS and Windows use a native pipeline that Linux doesn't have:
-
-- **Native recording**: macOS (ScreenCaptureKit) and Windows (Windows Graphics Capture) record through a native pipeline for higher quality and clean window-level capture. Linux records through the browser pipeline instead.
-- **Custom cursors**: on macOS and Windows the real cursor is captured (shape, type, and clicks), which powers the cursor themes, click effects, and editable cursor overlay. On Linux only the cursor position is captured (used for auto-zoom), so those cursor options aren't available.
-- **Webcam**: captured natively on macOS and Windows; on Linux it's recorded through the browser, but still works as a picture-in-picture overlay.
-- **System audio** support varies by OS:
-  - **macOS**: requires macOS 13+. On macOS 14.2+ you'll be prompted to grant audio capture permission. macOS 12 and below can't capture system audio (mic still works).
-  - **Windows**: works out of the box.
-  - **Linux**: needs PipeWire (default on Ubuntu 22.04+, Fedora 34+). Older PulseAudio-only setups may not capture system audio (mic should still work).
-
-## Official links
-
-This repository is the community-maintained continuation of OpenScreen.
-
-Official / trusted links:
-
-* Original archived repository: https://github.com/siddharthvaddem/openscreen
-* Community continuation: https://github.com/EtienneLescot/openscreen
-
-For safety, download OpenScreen only from the official GitHub Releases linked from this repository. Third-party websites using the OpenScreen name are not affiliated with this continuation unless explicitly listed here.
-
-## Community
-
-OpenScreen is community-driven. If you need help, want to report a bug, or just want to chat with other users and contributors:
-
-- 💬 **Discord** — [Join the OpenScreen Discord](https://discord.gg/VvT6Vtnyh) for real-time help, showcase, and discussion
-- 🐞 **[GitHub Issues](https://github.com/EtienneLescot/openscreen/issues)** — bug reports and feature requests
-- 🗺️ **[Roadmap](./ROADMAP.md)** — see what we're building next
-
----
+Showhow contains code derived from an earlier MIT-licensed project. It is independently developed
+and operated. See [NOTICE.md](./NOTICE.md) for source provenance and [UPSTREAM.md](./UPSTREAM.md) for
+the selective-intake policy.
 
 ## License
 
-This project is licensed under the [MIT License](./LICENSE). By using this software, you agree that the authors are not liable for any issues, damages, or claims arising from its use.
+Showhow is free software licensed under the [MIT License](./LICENSE) for personal and commercial
+use. No paid tier, premium feature, or upsell is part of the product direction.

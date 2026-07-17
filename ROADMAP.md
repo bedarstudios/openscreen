@@ -1,64 +1,70 @@
-# OpenScreen Roadmap
-The recorder you love, with an optional AI sidekick. Same sleek, low-friction recorder UX. An opt-in AI editing layer is on the way for users who want it — never required, never snuck in.
+# Showhow Roadmap
 
-This roadmap is the source of truth for what we're shipping next in OpenScreen. It is a living document — items move between tiers as work lands. Have an idea, a vote, or a dissenting opinion? Drop into the 🗺️・roadmap channel on our Discord or open a GitHub issue with the `roadmap` label.
+Showhow's V1 path is **record → folder bundle → workflow doc → copy path**. The product remains
+free, local-first, and MIT licensed.
 
-## 🧭 North Star
-**Record → Edit → Export.** (with an optional AI shortcut for users who want one)
+## Source order
 
-OpenScreen is, first and foremost, a polished screen recorder. Record, trim on the timeline, export. Most users will keep using exactly this workflow.
+Roadmap decisions are resolved in this order:
 
-We're also exploring an optional AI editing layer — for users who want to edit by talking or by editing a transcript. It's opt-in, off by default, and never required. If you don't enable it, the AI layer doesn't exist for your install: nothing downloads, nothing leaves your machine, no LLM is contacted.
+1. The approved [Showhow Desktop design spec](./docs/superpowers/specs/2026-07-11-showhow-desktop-design.md)
+   defines the V1 product and cut line.
+2. The current [feature backlog](./docs/product/feature-backlog.md) prioritizes post-V1 ideas.
+3. This roadmap communicates the resulting delivery sequence; it does not override either source.
 
-Three axes guide every decision on this roadmap:
+## Phase 1: Folder bundle — completed
 
-- **Stability first** — the recorder must work reliably on macOS, Windows, and Linux. Bugs found by real users ship before new features.
-- **Sleek UX stays** — every AI feature must keep the OpenScreen feel: minimal clicks, instant feedback, no clutter.
-- **100% free, forever** — no paywalls, no premium tier, no usage caps. Every feature on this page ships under MIT.
+- Finished recordings are stored under `~/Showhow/Recordings/` as self-contained bundles.
+- Bundles include video, `meta.json`, `transcript.txt`, `screenshots/`, optional webcam video, and
+  cursor telemetry when captured.
+- Transcript work uses the local captioning pipeline and survives the recorder-to-editor window
+  transition.
+- Bundling is fail-open so a documentation-layer failure never discards a recording.
 
-## 🤖 Direction — the optional AI Edition
-A Screen Studio + Descript clone, open-source and free forever. The recorder-first UX stays intact, and the AI layer sits beside it, off by default.
+## Phase 2: Desktop doc engine
 
-Capabilities we're exploring (each one opt-in, each one toggleable independently):
+- Turn desktop click timestamps into video frame screenshots with click markers.
+- Match the nearest transcript segment to each click without requiring a cloud service or AI.
+- Generate `steps.json` as source data and regenerate human-readable `steps.md` from it.
+- Keep generation derived and repeatable so failures never alter the source recording.
 
-- **Local Whisper transcription (opt-in, on-device)** — OpenScreen already ships on-device Whisper transcription for automatic captions. This extends that foundation: the same local transcript powers the editing features below, with no upload, no cloud, no extra setup required.
-- **Transcript-driven editing (opt-in, local)** — edit video like a doc (Descript-style: delete a word, cut the span). Works with the local transcript; no cloud needed.
-- **One-click cleanup (opt-in, local)** — filler-word removal, silence trimming, Studio Sound voice enhancement. All on-device.
-- **Edit by chat (opt-in, requires BYO LLM key)** — say "cut the part where I repeat myself between 0:42 and 1:10" and the agent applies a structured timeline operation. Off until you connect a provider.
-- **Non-destructive project document (always on)** — every edit, AI or manual, is undoable; the timeline is always recoverable.
-- **Bring-your-own LLM (opt-in)** — OpenAI, Anthropic, Google, Mistral, OpenRouter, GitHub Copilot, OpenAI-compatible endpoints, ChatGPT account auth. You choose; we never see your keys or your data.
+## Phase 3: Library and workflow UI
 
-This section is a direction, not a sprint plan. Concrete items land here as RFCs once the recorder is stable enough to build on top of.
+- Browse recording folders in a desktop library.
+- Show the recording, folder path, workflow steps, screenshots, and timestamp navigation together.
+- Copy a bundle path for direct handoff to a person or agent.
+- Add inline title and instruction editing plus step deletion; keep reorder and annotation out of
+  the V1 cut.
 
-## 🛠️ Stability & quality (what we're actually shipping)
-Pulled from real user bug reports on getopenscreen/openscreen. This is the queue for the next release window.
+## Phase 4: Extension bridge
 
-- [ ] **Fix:** video disappears from editor after export — [#8](../../issues/8) (Linux, Manjaro). Renderer regression after export.
-- [ ] **Fix:** crash after stopping macOS recording — [#21](../../issues/21) (macOS 26.4.1, Apple Silicon). Crash is in the Electron / Node async fs shutdown path; recording artifacts are written correctly.
-- [ ] **Fix:** macOS cursor offset in single-window capture — [#22](../../issues/22).
-- [ ] **Fix:** recover preview from WebGL context loss on Linux / Wayland — [#19](../../issues/19).
-- [ ] **Feature:** software H.264 fallback when no GPU encoder MFT is available — [#18](../../issues/18). Critical for VMs, broken-driver machines, and headless environments.
-- [ ] **Feature:** copy / paste attributes & effects in the timeline — [#24](../../issues/24). Right-click menu + standard Ctrl/Cmd+C / Ctrl/Cmd+V shortcuts.
-- [ ] **Feature:** restore blur regions (rectangle / oval / freehand, mosaic + CSS) — [#76](../../issues/76). Upstream v1.5.0 dropped the feature in the final release before archiving. The renderer pipeline (`BlurSettingsPanel`, `blurEffects`, `annotationRenderer`) is already present in this fork; the export guard in `src/lib/exporter/videoExporter.ts:151-152` (refuses export while `showBlur` or `motionBlurAmount` is set) is what needs to be unblocked, plus a regression test in the timeline.
+- Pair the browser companion with the desktop app over a local connection.
+- Synchronize clocks and stream semantic browser steps into the active desktop recording.
+- Use browser screenshots and exact accessible labels while falling back safely to desktop-tier
+  steps if the companion disconnects.
 
-## 📚 Site & documentation
-- [ ] **Feature:** Docusaurus site — landing + docs, deployed to GitHub Pages via CI.
-  - Monorepo at `website/`. Versioning off until v2.
-  - Landing (pitch, demo, quick start, downloads) + migrate `docs/` → `website/docs/`.
-  - Bespoke theme (TBD).
-  - CI: build on PR (artifact preview), deploy to Pages on `main`. Custom domain as follow-up.
-  - MIT, no tracking, no paywall — same posture as the app.
+## Phase 5: Polish
 
-## 📬 How to influence this roadmap
-- **Discord** — join the OpenScreen Discord and post in [#🗺️・roadmap](https://discord.com/channels/1489517664467681310/1493586210675884265). The fastest way to get a thumbs-up or thumbs-down on a feature.
-- **GitHub** — open an issue with the `enhancement` label, or react with 👍 / 👎 on existing items.
-- **PRs** — if you want to ship one of these, open a PR and link the relevant issue. We review fast and help with native-bridge / i18n questions.
+- Complete empty, generating, permission-denied, and partial-capture states.
+- Finish safe redaction reveal controls and workflow editing details.
+- Validate the complete record-save-doc-copy-path flow with a real bug walkthrough.
 
-Anything not on this list yet? Open an issue and tag it `roadmap` — we'll triage it into a tier within a week.
+## Post-V1 backlog
 
----
+After the V1 phases, prioritize the maintained feature backlog: multi-guide library improvements,
+AI-assisted step-text polish through user-provided credentials, screenshot editing, guide branding,
+and copy-to-destination formats. Hosted sharing, stale-guide detection, additional browser ports,
+and handbook exports remain later work because they add infrastructure or research scope.
 
-## Changelog
-- **2026-06-24** — initial draft. Stability items pulled from open issues / PRs on getopenscreen/openscreen. AI section presented as opt-in / off by default. Whisper entry updated to reflect existing caption feature.
-- **2026-06-25** — added "Site & documentation" tier: Docusaurus + GitHub Pages. Cleaned smoke-test noise from the changelog (internal CI sync validation, not user-facing).
-- **2026-07-06** — added blur regions to the stability & quality tier. Confirmed upstream deprecated the feature in v1.5.0 without an explicit reason; the renderer code carried over to the fork, so the work is unblocking the export guard + adding coverage. Tracked via #76.
+## Inherited technical backlog
+
+Inherited recorder/editor work belongs here only when it still affects Showhow's recording path:
+
+- reliability of save and shutdown on native macOS capture;
+- cursor alignment for single-window macOS capture;
+- Linux/Wayland preview recovery after WebGL context loss;
+- software H.264 fallback where hardware encoding is unavailable; and
+- restoration and regression coverage for inherited editor features that Showhow still exposes.
+
+These items do not redefine Showhow's product direction. A confirmed data-loss, recording, or
+editor regression may take priority over planned product work.

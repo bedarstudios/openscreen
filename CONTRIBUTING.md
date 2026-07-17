@@ -1,83 +1,66 @@
- # Contribution Guidelines
+# Contributing to Showhow
 
-Thank you for considering contributing to this project! By contributing, you help make this project better for everyone. Please take a moment to review these guidelines to ensure a smooth contribution process.
+Thank you for helping improve Showhow. The project is free, local-first, MIT licensed, and pre-1.x;
+please keep changes focused and expect some rough edges.
 
-## How to Contribute
+## Get started
 
-1. **Fork the Repository**
-   - Click the "Fork" button at the top right of this repository to create your own copy.
+1. Fork [bedarstudios/showhow-desktop](https://github.com/bedarstudios/showhow-desktop).
+2. Clone your fork and install the pinned toolchain dependencies:
 
-2. **Clone Your Fork**
-   - Clone your forked repository to your local machine:
-     ```bash
-     git clone https://github.com/your-username/openscreen.git
-     ```
+   ```bash
+   git clone https://github.com/your-username/showhow-desktop.git
+   cd showhow-desktop
+   npm install
+   ```
 
-3. **Create a New Branch**
-   - Create a branch for your feature or bug fix:
-     ```bash
-     git checkout -b feature/your-feature-name
-     ```
+3. Create a focused branch:
 
-4. **Make Changes**
-   - Make your changes.
+   ```bash
+   git checkout -b feature/short-description
+   ```
 
-5. **Test Your Changes**
-   - Test your changes thoroughly to ensure they work as expected and do not break existing functionality.
+4. Make the change, add same-package tests for new behavior, and run the relevant verification.
+5. Push the branch and open a pull request against
+   [bedarstudios/showhow-desktop](https://github.com/bedarstudios/showhow-desktop/pulls).
 
-6. **Commit Your Changes**
-   - Commit your changes with a clear and concise commit message:
-     ```bash
-     git add .
-     git commit -m "Add a brief description of your changes"
-     ```
+## Verification
 
-7. **Push Your Changes**
-   - Push your branch to your forked repository:
-     ```bash
-     git push origin feature/your-feature-name
-     ```
+Use the checks that cover your change. Before a broad pull request, run:
 
-8. **Open a Pull Request**
-   - Go to the original repository and open a pull request from your branch. Provide a clear description of your changes and the problem they solve.
-
-## Reporting Issues
-
-If you encounter a bug or have a feature request, please open an issue in the [Issues](https://github.com/EtienneLescot/openscreen/issues) section of this repository. Provide as much detail as possible to help us address the issue effectively.
-
-## Issue lifecycle
-
-Issues are closed when the corresponding fix or feature is merged into `main`.
-
-For desktop users, this does not always mean the change is already available in the latest downloadable release. When relevant, closed issues are marked as `status: fixed in main` and `status: pending release`.
-
-Once a GitHub Release containing the change is published, the issue can be marked as `status: released`.
-
-The next version number is not always known when a PR is merged. In that case, issues are assigned to the `Next Release` milestone. When preparing a release, this milestone can be renamed to the actual version, such as `v1.6.0` or `v2.0.0`, and a new `Next Release` milestone can be created.
-
-When a PR fully resolves an issue, link it with a GitHub closing keyword:
-
-```txt
-Fixes #123
-Closes #123
-Resolves #123
+```bash
+npm run test
+npm run test:browser
+npx tsc --noEmit
+npm run lint
+npm run i18n:check
+npm run branding:check
 ```
 
-If a PR only partially addresses an issue, use a non-closing reference instead:
+Install browser-test dependencies once with `npm run test:browser:install`. Native capture changes
+also require a manual smoke test on the affected operating system.
 
-```txt
-Refs #123
-Part of #123
-Related to #123
-```
+## Reporting issues
 
-## Style Guide
+Open bugs and feature requests in
+[Showhow Issues](https://github.com/bedarstudios/showhow-desktop/issues). Include reproduction steps,
+operating system, expected behavior, actual behavior, and relevant logs or sample files. Do not
+attach secrets or private recordings.
 
-- Write clear, concise, and descriptive commit messages.
-- Include comments where necessary to explain complex code.
+An issue closes when its fix reaches `main`, which may be earlier than its first packaged release.
+Use `Fixes #123`, `Closes #123`, or `Resolves #123` only when a pull request fully resolves the
+issue; use `Refs #123` or `Part of #123` for partial work.
+
+## Pull-request expectations
+
+- Keep the scope narrow and explain the user-facing reason for the change.
+- Use clear, imperative commit subjects and a Conventional Commit PR title.
+- Preserve legacy `.openscreen` reads while new project writes move to `.showhow`.
+- Do not overwrite or delete legacy user data during a migration.
+- Do not import the source ancestor through a full merge. Follow [UPSTREAM.md](./UPSTREAM.md) for
+  one focused, reviewed change and document its attribution.
+- Keep recorder/editor behavior intact when changing the Showhow documentation layer.
 
 ## License
 
-By contributing to this project, you agree that your contributions will be licensed under the [MIT License](./LICENSE).
-
-Thank you for your contributions!
+By contributing, you agree that your contributions are licensed under the [MIT License](./LICENSE).
