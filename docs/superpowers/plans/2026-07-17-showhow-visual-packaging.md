@@ -167,6 +167,7 @@ git commit -m "feat: replace visible product identity with Showhow"
 ### Task 4: Replace package and release identity
 
 **Files:**
+- Create: `.github/scripts/package-identity.test.mjs`
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `.env.example`
@@ -178,6 +179,9 @@ git commit -m "feat: replace visible product identity with Showhow"
 - Modify: `nix/hm-module.nix`
 - Modify: `.github/workflows/build.yml`
 - Modify: `.github/actions/setup/action.yml`
+- Modify: `scripts/build-macos-screencapturekit-helper.mjs` (Showhow-first architecture env with legacy read fallback)
+- Modify: `scripts/build_macos.sh` (active package/artifact identity only)
+- Modify: `scripts/fetch-caption-model.mjs` (active package user-agent only)
 - Modify: `scripts/capture-openscreen-preview.mjs` and rename to `scripts/capture-showhow-preview.mjs`
 
 **Interfaces:**
