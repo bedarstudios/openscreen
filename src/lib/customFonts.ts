@@ -1,5 +1,8 @@
 // Google Fonts loading and management
 
+import { readWithLegacyFallback, writeCurrent } from "@/lib/migratingStorage";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/shared/productIdentity";
+
 export interface CustomFont {
 	id: string;
 	name: string;
@@ -7,12 +10,15 @@ export interface CustomFont {
 	importUrl: string; // Google Fonts @import URL
 }
 
-const STORAGE_KEY = "openscreen_custom_fonts";
 const loadedFonts = new Set<string>();
 
 export function getCustomFonts(): CustomFont[] {
 	try {
-		const stored = localStorage.getItem(STORAGE_KEY);
+		const stored = readWithLegacyFallback(
+			localStorage,
+			STORAGE_KEYS.customFonts,
+			LEGACY_STORAGE_KEYS.customFonts,
+		);
 		return stored ? JSON.parse(stored) : [];
 	} catch (error) {
 		console.error("Failed to load custom fonts from storage:", error);
@@ -22,7 +28,7 @@ export function getCustomFonts(): CustomFont[] {
 
 export function saveCustomFonts(fonts: CustomFont[]): void {
 	try {
-		localStorage.setItem(STORAGE_KEY, JSON.stringify(fonts));
+		writeCurrent(localStorage, STORAGE_KEYS.customFonts, JSON.stringify(fonts));
 	} catch (error) {
 		console.error("Failed to save custom fonts to storage:", error);
 	}

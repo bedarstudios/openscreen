@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/shared/productIdentity";
 import {
 	DEFAULT_PREFS,
 	getProjectFolder,
@@ -6,6 +7,10 @@ import {
 	parentDirectoryOf,
 	saveUserPreferences,
 } from "./userPreferences";
+
+afterEach(() => {
+	vi.restoreAllMocks();
+});
 
 describe("parentDirectoryOf", () => {
 	it("returns the directory for a POSIX path", () => {
@@ -102,5 +107,37 @@ describe("user preferences", () => {
 		localStorage.setItem("openscreen_user_preferences", JSON.stringify({ trayLayout: "diagonal" }));
 
 		expect(loadUserPreferences().trayLayout).toBe("horizontal");
+	});
+
+	it("reads legacy preferences, copies them to the Showhow key, and preserves legacy data", () => {
+		const legacyValue = JSON.stringify({ trayLayout: "vertical" });
+		localStorage.setItem(LEGACY_STORAGE_KEYS.preferences, legacyValue);
+
+		expect(loadUserPreferences().trayLayout).toBe("vertical");
+		expect(localStorage.getItem(STORAGE_KEYS.preferences)).toBe(legacyValue);
+		expect(localStorage.getItem(LEGACY_STORAGE_KEYS.preferences)).toBe(legacyValue);
+	});
+
+	it("saves preferences to the Showhow key", () => {
+		saveUserPreferences({ trayLayout: "vertical" });
+
+		expect(localStorage.getItem(STORAGE_KEYS.preferences)).not.toBeNull();
+		expect(localStorage.getItem(LEGACY_STORAGE_KEYS.preferences)).toBeNull();
+	});
+
+	it("returns defaults when storage reads throw", () => {
+		vi.spyOn(localStorage, "getItem").mockImplementation(() => {
+			throw new Error("read failed");
+		});
+
+		expect(loadUserPreferences()).toEqual(DEFAULT_PREFS);
+	});
+
+	it("retains silent save failure behavior when storage writes throw", () => {
+		vi.spyOn(localStorage, "setItem").mockImplementation(() => {
+			throw new Error("write failed");
+		});
+
+		expect(() => saveUserPreferences({ trayLayout: "vertical" })).not.toThrow();
 	});
 });

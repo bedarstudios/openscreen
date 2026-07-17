@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
 	preferences: "showhow_user_preferences",
 	customFonts: "showhow_custom_fonts",
 	locale: "showhow-locale",
+	systemLanguagePromptSeen: "showhow_system_language_prompt_seen",
 	sourceCache: "showhow-source-cache",
 } as const;
 
@@ -15,6 +16,7 @@ export const LEGACY_STORAGE_KEYS = {
 	preferences: "openscreen_user_preferences",
 	customFonts: "openscreen_custom_fonts",
 	locale: "openscreen-locale",
+	systemLanguagePromptSeen: "openscreen-system-language-prompt-seen",
 	sourceCache: "openscreen-source-cache",
 } as const;
 
