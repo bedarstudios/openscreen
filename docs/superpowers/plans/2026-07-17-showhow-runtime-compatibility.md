@@ -457,6 +457,7 @@ git commit -m "feat: migrate the Electron profile to Showhow"
 - Modify: `scripts/test-windows-wgc-helper.mjs`
 - Modify: `scripts/diagnostic-tool/diagnostic.mjs`
 - Modify: `electron/native/wgc-capture/CMakeLists.txt`
+- Modify: `electron/native/wgc-capture/src/dshow_webcam_capture.cpp` (DirectShow identity labels only)
 
 **Interfaces:**
 - Produces: `resolveEnv(primary: string, legacy: string): string | undefined`.
