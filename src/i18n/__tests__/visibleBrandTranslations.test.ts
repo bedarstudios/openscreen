@@ -37,7 +37,16 @@ describe("visible Showhow translations", () => {
 	it("uses Showhow fallbacks and favicon in application entry points", () => {
 		const electronMain = fs.readFileSync(path.resolve("electron/main.ts"), "utf8");
 		const electronHandlers = fs.readFileSync(path.resolve("electron/ipc/handlers.ts"), "utf8");
+		const electronWindows = fs.readFileSync(path.resolve("electron/windows.ts"), "utf8");
+		const windowsCursorDiagnostic = fs.readFileSync(
+			path.resolve("scripts/test-windows-native-cursor.mjs"),
+			"utf8",
+		);
 		const appComponent = fs.readFileSync(path.resolve("src/App.tsx"), "utf8");
+		const settingsPanel = fs.readFileSync(
+			path.resolve("src/components/video-editor/SettingsPanel.tsx"),
+			"utf8",
+		);
 		const indexHtml = fs.readFileSync(path.resolve("index.html"), "utf8");
 
 		expect(electronMain).toContain('"About Showhow"');
@@ -47,8 +56,21 @@ describe("visible Showhow translations", () => {
 		expect(electronMain).not.toMatch(/OpenScreen|openscreen\.png/);
 		expect(electronHandlers).toContain("Allow Showhow under System Settings");
 		expect(electronHandlers).toContain("Allow Showhow in macOS System Settings");
+		expect(electronHandlers).toContain("`showhow-diagnostic-${Date.now()}.json`");
+		expect(electronHandlers).not.toContain("`openscreen-diagnostic-${Date.now()}.json`");
+		expect(electronWindows).toContain('title: "Showhow"');
+		expect(electronWindows).toContain('title: "Showhow - Notes"');
+		expect(electronWindows).not.toMatch(/title: "OpenScreen(?: - Notes)?"/);
+		expect(windowsCursorDiagnostic).toContain("<title>Showhow native cursor diagnostic</title>");
+		expect(windowsCursorDiagnostic).toContain("<h1>Showhow native cursor diagnostic</h1>");
+		expect(windowsCursorDiagnostic).toContain(
+			"<title>Showhow native cursor real capture diagnostic</title>",
+		);
+		expect(windowsCursorDiagnostic).not.toMatch(/<(?:title|h1)>OpenScreen/);
 		expect(appComponent).toContain("<h1>Showhow</h1>");
 		expect(appComponent).not.toContain("<h1>Openscreen</h1>");
+		expect(settingsPanel).toContain("https://github.com/bedarstudios/showhow-desktop");
+		expect(settingsPanel).not.toContain("EtienneLescot/openscreen");
 		expect(indexHtml).toContain('href="/showhow.png"');
 		expect(indexHtml).not.toMatch(/vite\.svg|openscreen/i);
 	});
