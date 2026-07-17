@@ -1,0 +1,13 @@
+{
+	"allowed": [
+		{ "file": "LICENSE", "reason": "Required MIT copyright notice" },
+		{
+			"file": "docs/superpowers/specs/2026-07-11-showhow-desktop-design.md",
+			"reason": "Dated record of the original fork decision"
+		},
+		{
+			"file": "docs/superpowers/specs/2026-07-16-showhow-standalone-repository-design.md",
+			"reason": "Approved migration design and compatibility policy"
+		}
+	]
+}
