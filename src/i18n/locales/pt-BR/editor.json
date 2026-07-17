@@ -40,7 +40,8 @@
 		"cameraDenied": "Acesso à câmera negado. A gravação continuará sem webcam.",
 		"cameraDisconnected": "Webcam desconectada.",
 		"cameraNotFound": "Câmera não encontrada.",
-		"permissionDenied": "Permissão de gravação negada. Por favor, permita a gravação de tela."
+		"permissionDenied": "Permissão de gravação negada. Por favor, permita a gravação de tela.",
+		"accessibilityAllowAndRetry": "Permita o acesso de Acessibilidade para o Showhow e pressione gravar novamente para iniciar a contagem regressiva."
 	},
 	"autoCaptions": {
 		"button": "Legendas automáticas",
@@ -87,5 +88,6 @@
 			"couldNotOpenTitle": "Não foi possível abrir o arquivo",
 			"couldNotOpenMessage": "Não foi possível abrir o arquivo de projeto. O vídeo referenciado pode ter sido movido ou excluído."
 		}
-	}
+	},
+	"loadingEditor": "Carregando editor…"
 }

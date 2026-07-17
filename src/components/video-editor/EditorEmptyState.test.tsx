@@ -41,4 +41,16 @@ describe("EditorEmptyState project drops", () => {
 			expect(onProjectOpened).toHaveBeenCalledWith({ version: 1 }, "/tmp/demo.showhow");
 		});
 	});
+
+	it("renders the Showhow product image", () => {
+		const { container } = render(
+			<EditorEmptyState onVideoImported={vi.fn()} onProjectOpened={vi.fn()} />,
+		);
+
+		const imageSources = Array.from(container.querySelectorAll("img")).map((image) =>
+			image.getAttribute("src"),
+		);
+		expect(imageSources).toContain("/showhow.png");
+		expect(imageSources).not.toContain("./openscreen.png");
+	});
 });

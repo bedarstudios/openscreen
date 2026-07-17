@@ -20,7 +20,8 @@
 			"numberedList": "Elenco numerato",
 			"blockquote": "Citazione",
 			"codeBlock": "Blocco di codice"
-		}
+		},
+		"openStudio": "Apri Studio"
 	},
 	"audio": {
 		"enableSystemAudio": "Abilita audio di sistema",
@@ -45,7 +46,10 @@
 		"loading": "Caricamento sorgenti...",
 		"screens": "Schermi ({{count}})",
 		"windows": "Finestre ({{count}})",
-		"defaultSourceName": "Schermo"
+		"defaultSourceName": "Schermo",
+		"emptyTitle": "Nessuno schermo o finestra trovato",
+		"emptyDescription": "Se hai appena concesso l’autorizzazione alla registrazione dello schermo, ricarica questo selettore. Su macOS potrebbe essere necessario riaprire Showhow.",
+		"loadFailedDescription": "Showhow non ha potuto caricare le sorgenti di acquisizione. Ricarica questo selettore e riprova."
 	},
 	"recording": {
 		"selectSource": "Seleziona una sorgente da registrare",
@@ -54,7 +58,7 @@
 	"language": "Lingua",
 	"systemLanguagePrompt": {
 		"title": "Usare la lingua del sistema?",
-		"description": "Abbiamo rilevato {{language}} come lingua del sistema. Vuoi passare OpenScreen a {{language}}?",
+		"description": "Abbiamo rilevato {{language}} come lingua del sistema. Vuoi passare Showhow a {{language}}?",
 		"switch": "Passa a {{language}}",
 		"keepDefault": "Mantieni la lingua corrente"
 	}

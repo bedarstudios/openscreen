@@ -20,7 +20,8 @@
 			"numberedList": "번호 매기기 목록",
 			"blockquote": "인용문",
 			"codeBlock": "코드 블록"
-		}
+		},
+		"openStudio": "스튜디오 열기"
 	},
 	"audio": {
 		"enableSystemAudio": "시스템 오디오 활성화",
@@ -45,7 +46,10 @@
 		"loading": "소스 불러오는 중...",
 		"screens": "화면 ({{count}}개)",
 		"windows": "창 ({{count}}개)",
-		"defaultSourceName": "화면"
+		"defaultSourceName": "화면",
+		"emptyTitle": "화면 또는 창을 찾을 수 없음",
+		"emptyDescription": "화면 녹화 권한을 방금 허용했다면 이 선택기를 새로고침하세요. macOS에서는 Showhow를 다시 열어야 할 수 있습니다.",
+		"loadFailedDescription": "Showhow에서 캡처 소스를 불러오지 못했습니다. 이 선택기를 새로고침한 후 다시 시도하세요."
 	},
 	"recording": {
 		"selectSource": "녹화할 소스를 선택해 주세요",
@@ -54,7 +58,7 @@
 	"language": "언어",
 	"systemLanguagePrompt": {
 		"title": "시스템 언어를 사용하시겠습니까?",
-		"description": "시스템 언어가 {{language}}(으)로 감지되었습니다. OpenScreen을 {{language}}(으)로 전환하시겠습니까?",
+		"description": "시스템 언어가 {{language}}(으)로 감지되었습니다. Showhow을 {{language}}(으)로 전환하시겠습니까?",
 		"switch": "{{language}}(으)로 전환",
 		"keepDefault": "현재 언어 유지"
 	}

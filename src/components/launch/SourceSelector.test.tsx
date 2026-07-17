@@ -18,10 +18,10 @@ vi.mock("@/contexts/I18nContext", () => ({
 			if (key === "sourceSelector.loading") return "Loading sources...";
 			if (key === "sourceSelector.emptyTitle") return "No screens or windows found";
 			if (key === "sourceSelector.emptyDescription") {
-				return "If you just granted screen recording permission, reload this picker. On macOS you may need to reopen OpenScreen.";
+				return "If you just granted screen recording permission, reload this picker. On macOS you may need to reopen Showhow.";
 			}
 			if (key === "sourceSelector.loadFailedDescription") {
-				return "OpenScreen could not load capture sources. Reload this picker and try again.";
+				return "Showhow could not load capture sources. Reload this picker and try again.";
 			}
 			if (key === "sourceSelector.screens") return `Screens (${vars?.count ?? "0"})`;
 			if (key === "sourceSelector.windows") return `Windows (${vars?.count ?? "0"})`;
@@ -43,6 +43,7 @@ describe("SourceSelector", () => {
 		render(<SourceSelector />);
 
 		await screen.findByText("No screens or windows found");
+		expect(screen.getByText(/reopen Showhow/)).toBeInTheDocument();
 		expect(screen.getByRole("button", { name: "Reload" })).toBeInTheDocument();
 	});
 

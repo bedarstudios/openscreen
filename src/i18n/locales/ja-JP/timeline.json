@@ -5,7 +5,11 @@
 		"addTrim": "トリムを追加 (T)",
 		"addAnnotation": "注釈を追加 (A)",
 		"addBlur": "ぼかしを追加 (B)",
-		"addSpeed": "再生速度を追加 (S)"
+		"addSpeed": "再生速度を追加 (S)",
+		"autoZoomOn": "自動ズーム候補はオンです — クリックして候補のズームを削除",
+		"autoZoomOff": "自動ズーム候補はオフです — クリックしてカーソルからズームを提案",
+		"autoFocusAllOn": "すべてのズームで自動フォーカスがオンです — クリックしてすべて手動に切り替え",
+		"autoFocusAllOff": "すべてのズームを自動フォーカス（カメラがカーソルを追従）"
 	},
 	"hints": {
 		"pressZoom": "Zキーを押してズームを追加",
