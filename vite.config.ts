@@ -16,7 +16,13 @@ export default defineConfig({
 					return startup(["."], { env });
 				},
 				vite: {
-					build: {},
+					build: {
+						rollupOptions: {
+							output: {
+								entryFileNames: "main.js",
+							},
+						},
+					},
 				},
 			},
 			preload: {
