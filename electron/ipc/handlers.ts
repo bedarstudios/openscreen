@@ -41,12 +41,18 @@ import { RECORDINGS_DIR } from "../main";
 import { createCursorRecordingSession } from "../native-bridge/cursor/recording/factory";
 import { requestMacCursorAccessibilityAccess } from "../native-bridge/cursor/recording/macNativeCursorRecordingSession";
 import type { CursorRecordingSession } from "../native-bridge/cursor/recording/session";
+import {
+	getDefaultProjectFileName,
+	getWritableExistingProjectPath,
+	isSupportedProjectPath,
+	PROJECT_OPEN_FILTER_EXTENSIONS,
+	PROJECT_SAVE_FILTER_EXTENSIONS,
+} from "../projectFilePolicy";
 import { patchWebmDurationOnDisk } from "../recording/webm-duration";
 import { createRecordingBundle, SHOWHOW_RECORDINGS_ROOT } from "../showhow/bundle";
 import { registerNativeBridgeHandlers } from "./nativeBridge";
 import { RecordingStreamRegistry, registerRecordingStreamHandlers } from "./recordingStream";
 
-const PROJECT_FILE_EXTENSION = "openscreen";
 export const SHORTCUTS_FILE = path.join(app.getPath("userData"), "shortcuts.json");
 const RECORDING_FILE_PREFIX = "recording-";
 const RECORDING_SESSION_SUFFIX = ".session.json";
@@ -2790,8 +2796,9 @@ export function registerIpcHandlers(
 		existingProjectPath?: string,
 	): Promise<ProjectFileResult> {
 		try {
-			const trustedExistingProjectPath = isTrustedProjectPath(existingProjectPath)
-				? existingProjectPath
+			const writableExistingProjectPath = getWritableExistingProjectPath(existingProjectPath);
+			const trustedExistingProjectPath = isTrustedProjectPath(writableExistingProjectPath)
+				? writableExistingProjectPath
 				: null;
 
 			if (trustedExistingProjectPath) {
@@ -2808,10 +2815,7 @@ export function registerIpcHandlers(
 				};
 			}
 
-			const safeName = (suggestedName || `project-${Date.now()}`).replace(/[^a-zA-Z0-9-_]/g, "_");
-			const defaultName = safeName.endsWith(`.${PROJECT_FILE_EXTENSION}`)
-				? safeName
-				: `${safeName}.${PROJECT_FILE_EXTENSION}`;
+			const defaultName = getDefaultProjectFileName(suggestedName, `project-${Date.now()}`);
 
 			const dialogOptions = buildDialogOptions(
 				{
@@ -2819,10 +2823,10 @@ export function registerIpcHandlers(
 					defaultPath: path.join(RECORDINGS_DIR, defaultName),
 					filters: [
 						{
-							name: mainT("dialogs", "fileDialogs.openscreenProject"),
-							extensions: [PROJECT_FILE_EXTENSION],
+							name: mainT("dialogs", "fileDialogs.showhowProject"),
+							extensions: PROJECT_SAVE_FILTER_EXTENSIONS[0],
 						},
-						{ name: "JSON", extensions: ["json"] },
+						{ name: "JSON", extensions: PROJECT_SAVE_FILTER_EXTENSIONS[1] },
 					],
 					properties: ["createDirectory", "showOverwriteConfirmation"],
 				},
@@ -2886,11 +2890,14 @@ export function registerIpcHandlers(
 					defaultPath: defaultDir,
 					filters: [
 						{
-							name: mainT("dialogs", "fileDialogs.openscreenProject"),
-							extensions: [PROJECT_FILE_EXTENSION],
+							name: mainT("dialogs", "fileDialogs.showhowProject"),
+							extensions: PROJECT_OPEN_FILTER_EXTENSIONS[0],
 						},
-						{ name: "JSON", extensions: ["json"] },
-						{ name: mainT("dialogs", "fileDialogs.allFiles"), extensions: ["*"] },
+						{ name: "JSON", extensions: PROJECT_OPEN_FILTER_EXTENSIONS[1] },
+						{
+							name: mainT("dialogs", "fileDialogs.allFiles"),
+							extensions: PROJECT_OPEN_FILTER_EXTENSIONS[2],
+						},
 					],
 					properties: ["openFile"],
 				},
@@ -2933,8 +2940,8 @@ export function registerIpcHandlers(
 				return { success: false, message: "Invalid file path" };
 			}
 			// Validate extension and readability
-			if (path.extname(filePath).toLowerCase() !== `.${PROJECT_FILE_EXTENSION}`) {
-				return { success: false, message: "Not an Openscreen project file" };
+			if (!isSupportedProjectPath(filePath)) {
+				return { success: false, message: "Not a supported project file" };
 			}
 			const stats = await fs.stat(filePath).catch(() => null);
 			if (!stats?.isFile()) {

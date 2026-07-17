@@ -65,12 +65,12 @@
 		"saveGif": "Guardar GIF exportado",
 		"saveVideo": "Guardar video exportado",
 		"selectVideo": "Seleccionar archivo de video",
-		"saveProject": "Guardar proyecto OpenScreen",
-		"openProject": "Abrir proyecto OpenScreen",
+		"saveProject": "Guardar proyecto Showhow",
+		"openProject": "Abrir proyecto Showhow",
 		"gifImage": "Imagen GIF",
 		"mp4Video": "Video MP4",
 		"videoFiles": "Archivos de video",
-		"openscreenProject": "Proyecto OpenScreen",
-		"allFiles": "Todos los archivos"
+		"allFiles": "Todos los archivos",
+		"showhowProject": "Proyecto Showhow"
 	}
 }

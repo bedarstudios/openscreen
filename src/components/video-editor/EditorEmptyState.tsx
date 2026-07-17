@@ -2,6 +2,7 @@ import { AlertCircle, Film, FolderOpen, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useScopedT } from "@/contexts/I18nContext";
+import { isSupportedProjectPath } from "@/lib/projectFilePolicy";
 import { getProjectFolder, parentDirectoryOf, saveUserPreferences } from "@/lib/userPreferences";
 import { nativeBridgeClient } from "@/native";
 
@@ -68,7 +69,7 @@ export function EditorEmptyState({ onVideoImported, onProjectOpened }: EditorEmp
 			const files = Array.from(e.dataTransfer.files);
 			if (files.length === 0) return;
 
-			const projectFile = files.find((f) => f.name.endsWith(".openscreen"));
+			const projectFile = files.find((file) => isSupportedProjectPath(file.name));
 			if (!projectFile) {
 				setDropError("unsupported-format");
 				return;
