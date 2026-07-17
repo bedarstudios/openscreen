@@ -42,6 +42,10 @@ describe("visible Showhow translations", () => {
 			path.resolve("scripts/test-windows-native-cursor.mjs"),
 			"utf8",
 		);
+		const diagnosticReadme = fs.readFileSync(
+			path.resolve("scripts/diagnostic-tool/README.md"),
+			"utf8",
+		);
 		const appComponent = fs.readFileSync(path.resolve("src/App.tsx"), "utf8");
 		const settingsPanel = fs.readFileSync(
 			path.resolve("src/components/video-editor/SettingsPanel.tsx"),
@@ -67,9 +71,19 @@ describe("visible Showhow translations", () => {
 			"<title>Showhow native cursor real capture diagnostic</title>",
 		);
 		expect(windowsCursorDiagnostic).not.toMatch(/<(?:title|h1)>OpenScreen/);
+		expect(windowsCursorDiagnostic).toContain("`showhow-cursor-native-${Date.now()}`");
+		expect(windowsCursorDiagnostic).not.toContain("`openscreen-cursor-native-${Date.now()}`");
+		expect(diagnosticReadme).toContain("`./showhow-diagnostic-<timestamp>.json`");
+		expect(diagnosticReadme).not.toContain("`./openscreen-diagnostic-<timestamp>.json`");
+		expect(diagnosticReadme).not.toContain("retains this inherited filename until");
 		expect(appComponent).toContain("<h1>Showhow</h1>");
 		expect(appComponent).not.toContain("<h1>Openscreen</h1>");
-		expect(settingsPanel).toContain("https://github.com/bedarstudios/showhow-desktop");
+		expect(settingsPanel).toContain(
+			'openExternalUrl("https://github.com/bedarstudios/showhow-desktop")',
+		);
+		expect(settingsPanel).toContain(
+			'"https://github.com/bedarstudios/showhow-desktop/issues/new/choose"',
+		);
 		expect(settingsPanel).not.toContain("EtienneLescot/openscreen");
 		expect(indexHtml).toContain('href="/showhow.png"');
 		expect(indexHtml).not.toMatch(/vite\.svg|openscreen/i);

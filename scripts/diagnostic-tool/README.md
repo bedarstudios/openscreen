@@ -27,9 +27,9 @@ node diagnostic.mjs --duration 10 --output ./diag.json
 
 Flags:
 - `-d, --duration <seconds>` recording length before sending stop (default 10)
-- `-o, --output <path>` output JSON path (default `./openscreen-diagnostic-<timestamp>.json`).
-  **Legacy compatibility:** the current executable retains this inherited filename until the runtime
-  compatibility migration changes new output names.
+- `-o, --output <path>` output JSON path (default `./showhow-diagnostic-<timestamp>.json`).
+  New reports use the Showhow filename. Legacy helper environment variables and macOS helper names
+  remain read-only discovery fallbacks.
 - `--window` capture a window instead of the full display (default: display)
 - `-h, --help` show help
 
