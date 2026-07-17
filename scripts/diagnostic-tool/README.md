@@ -1,4 +1,4 @@
-# OpenScreen standalone diagnostic tool
+# Showhow standalone diagnostic tool
 
 A small Node.js script that runs the native capture helper outside the
 Electron app, captures its stdout/stderr, and writes a JSON report.
@@ -9,14 +9,15 @@ data without installing or rebuilding the full app.
 
 ## Requirements
 
-- Node.js 22+ (OpenScreen's own engine pin)
+- Node.js 22+ (Showhow's own engine pin)
 - The native capture helper for your platform in one of:
   - the same directory as `diagnostic.mjs` (`wgc-capture.exe` on Windows,
     `openscreen-screencapturekit-helper` on macOS)
   - `helpers/<platform>-<arch>/<helper-name>` (CI artifact layout)
-  - `$OPENSCREEN_HELPER_EXE` env var
+  - `$OPENSCREEN_HELPER_EXE` env var. **Legacy compatibility:** the diagnostic executable still
+    reads this inherited variable until the runtime compatibility migration adds `SHOWHOW_HELPER_EXE`.
 
-Linux is not currently supported — OpenScreen has no Linux native helper.
+Linux is not currently supported — Showhow has no Linux native helper.
 
 ## Usage
 
@@ -26,7 +27,9 @@ node diagnostic.mjs --duration 10 --output ./diag.json
 
 Flags:
 - `-d, --duration <seconds>` recording length before sending stop (default 10)
-- `-o, --output <path>` output JSON path (default `./openscreen-diagnostic-<timestamp>.json`)
+- `-o, --output <path>` output JSON path (default `./openscreen-diagnostic-<timestamp>.json`).
+  **Legacy compatibility:** the current executable retains this inherited filename until the runtime
+  compatibility migration changes new output names.
 - `--window` capture a window instead of the full display (default: display)
 - `-h, --help` show help
 
@@ -57,9 +60,5 @@ scripts/diagnostic-tool/
   diagnostic.sh         # macOS / Linux launcher
 ```
 
-## CI artifacts
-
-`.github/workflows/diagnostic-artifact.yml` builds per-platform zips
-that bundle this directory with the prebuilt helper. The workflow runs on
-every push to main and on manual dispatch; artifacts are retained for 14
-days.
+Run the tool from the repository with `npm run diagnostic:run`. On Windows,
+`npm run diagnostic:smoke:win` runs the same executable with a three-second duration.

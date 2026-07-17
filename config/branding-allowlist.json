@@ -10,6 +10,46 @@
 			"reason": "Approved migration design and compatibility policy"
 		},
 		{
+			"file": "docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md",
+			"reason": "Dated completed implementation plan describing the inherited source baseline"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-16-showhow-workspace-retirement.md",
+			"reason": "Dated completed workspace-retirement plan recording the former repository identity"
+		},
+		{
+			"file": "docs/superpowers/specs/2026-07-16-showhow-workspace-retirement-design.md",
+			"reason": "Dated approved retirement design recording the former repository identity"
+		},
+		{
+			"file": "implementation-notes.md",
+			"reason": "Historical Phase 1 implementation notes describing inherited source behavior"
+		},
+		{
+			"file": "docs/github-actions-workflows.md",
+			"reason": "Legacy compatibility instruction for the temporary inherited release-token fallback"
+		},
+		{
+			"file": "docs/secrets.md",
+			"reason": "Legacy compatibility instruction for the temporary inherited release-token fallback"
+		},
+		{
+			"file": "docs/testing/macos-native-cursor.md",
+			"reason": "Legacy compatibility instructions for inherited helper binaries and environment variables"
+		},
+		{
+			"file": "docs/testing/windows-native-cursor.md",
+			"reason": "Legacy compatibility instructions for executable diagnostic commands, paths, and variables"
+		},
+		{
+			"file": "electron/native/README.md",
+			"reason": "Legacy compatibility instructions for inherited native helper binaries and variables"
+		},
+		{
+			"file": "scripts/diagnostic-tool/README.md",
+			"reason": "Legacy compatibility instructions for the diagnostic executable interface"
+		},
+		{
 			"file": ".harness/memory/MEMORY.md",
 			"reason": "Append-only historical harness memory"
 		},

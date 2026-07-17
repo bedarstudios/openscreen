@@ -9,7 +9,8 @@ macOS native recording will use a ScreenCaptureKit helper with the same process 
 3. The helper owns ScreenCaptureKit/AVFoundation capture, timing, encoding, and muxing.
 4. Electron persists the resulting media/session manifest and reports helper errors explicitly.
 
-Helper locations:
+Helper locations (**Legacy compatibility:** helper variables and binary names retain their inherited
+OpenScreen identifiers until the runtime compatibility migration adds Showhow-first resolution):
 
 1. `OPENSCREEN_SCK_CAPTURE_EXE`, for local development and diagnostics.
 2. `electron/native/screencapturekit/build/openscreen-screencapturekit-helper`, for locally built Swift output.
@@ -33,7 +34,9 @@ See `docs/engineering/macos-native-recorder-roadmap.md` for the contract, rollou
 
 ## Windows
 
-Windows native recording is resolved from one of these locations:
+Windows native recording is resolved from one of these locations (**Legacy compatibility:** the
+`OPENSCREEN_WGC_CAPTURE_EXE` variable remains the current diagnostic override until the runtime
+compatibility migration adds a Showhow-first variable):
 
 1. `OPENSCREEN_WGC_CAPTURE_EXE`, for local development and diagnostics.
 2. `electron/native/wgc-capture/build/wgc-capture.exe`, for a locally built Ninja helper.
@@ -96,7 +99,8 @@ npm run test:wgc-mixed-audio:win
 npm run test:wgc-webcam:win
 ```
 
-To validate a specific native webcam manually:
+To validate a specific native webcam manually (**Legacy compatibility:** these inherited test
+variables remain the executable interface until the runtime compatibility migration):
 
 ```powershell
 $env:OPENSCREEN_WGC_TEST_WEBCAM_DEVICE_NAME = "NVIDIA Broadcast"
@@ -104,7 +108,8 @@ npm run test:wgc-webcam:win
 Remove-Item Env:OPENSCREEN_WGC_TEST_WEBCAM_DEVICE_NAME
 ```
 
-To validate a specific native microphone manually:
+To validate a specific native microphone manually (**Legacy compatibility:** these inherited test
+variables remain the executable interface until the runtime compatibility migration):
 
 ```powershell
 $env:OPENSCREEN_WGC_TEST_MICROPHONE_DEVICE_NAME = "Microphone (NVIDIA Broadcast)"
