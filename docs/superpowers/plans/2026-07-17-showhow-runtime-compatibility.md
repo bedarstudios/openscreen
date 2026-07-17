@@ -513,7 +513,7 @@ git add electron/native electron/native-bridge electron/ipc/handlers.ts scripts
 git commit -m "refactor: migrate native helpers to Showhow identity"
 ```
 
-### Task 7: Run the compatibility acceptance gate
+### Task 7: Run the runtime compatibility acceptance gate
 
 **Files:**
 - Modify: `config/branding-allowlist.json`
@@ -529,14 +529,16 @@ Save As `.showhow`, new `.showhow` reopen, legacy native env override, and new n
 ```bash
 npm run test
 npm run test:browser
-npm run i18n:check
 npx tsc --noEmit
 npm run lint
-npm run branding:check
 git diff --check
 ```
 
-Expected: all exit `0`; remaining OpenScreen code matches are only documented fallback readers.
+Expected: all exit `0`. Also run `npm run i18n:check` and `npm run branding:check` as diagnostic
+inventories, but do not require them to exit `0` or allowlist active product identity at this point:
+visible localization, packaging, icons, and release identity are intentionally owned by Plan 3. The
+full i18n and branding green gate runs in Plan 3 Task 5. Any remaining OpenScreen match in files
+already migrated by Plan 2 must still be an intentional, documented compatibility reader.
 
 - [ ] **Step 3: Commit the verified compatibility record**
 
