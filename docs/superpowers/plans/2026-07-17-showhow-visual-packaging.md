@@ -122,6 +122,8 @@ git commit -m "build: generate Showhow application icons"
 
 **Files:**
 - Modify: `electron/main.ts`
+- Modify: `electron/ipc/handlers.ts` (visible accessibility fallback strings only)
+- Modify: `src/App.tsx` (default visible fallback heading only)
 - Modify: `src/components/video-editor/EditorEmptyState.tsx`
 - Modify: `src/components/video-editor/UnsavedChangesDialog.tsx`
 - Modify: `src/i18n/locales/*/{common,dialogs,editor,launch}.json`
