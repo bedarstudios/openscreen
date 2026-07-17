@@ -1,4 +1,4 @@
-import { LEGACY_PROJECT_FILE_EXTENSIONS, PROJECT_FILE_EXTENSION } from "@/shared/productIdentity";
+import { LEGACY_PROJECT_FILE_EXTENSIONS, PROJECT_FILE_EXTENSION } from "../shared/productIdentity";
 
 const SUPPORTED_PROJECT_EXTENSIONS = new Set<string>([
 	PROJECT_FILE_EXTENSION,

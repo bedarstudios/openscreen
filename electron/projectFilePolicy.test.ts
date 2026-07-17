@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
 	getDefaultProjectFileName,
@@ -8,6 +10,12 @@ import {
 } from "./projectFilePolicy";
 
 describe("project file policy", () => {
+	it("keeps the shared renderer policy resolvable by the Electron bundle", () => {
+		const rendererPolicySource = readFileSync(resolve("src/lib/projectFilePolicy.ts"), "utf8");
+
+		expect(rendererPolicySource).not.toMatch(/from\s+["']@\//);
+	});
+
 	it.each([
 		"demo.showhow",
 		"demo.openscreen",
