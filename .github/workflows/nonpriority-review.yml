@@ -1,0 +1,133 @@
+# Copilot model pin = Claude Sonnet 5 (enforced by the Copilot model picker, not this workflow).
+name: Non-priority Cold Review+Fix Loop
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  issue_comment:
+    types: [created]
+
+permissions:
+  pull-requests: write
+  issues: write
+  contents: read
+
+jobs:
+  open-review:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'opened' &&
+      !contains(toJSON(github.event.pull_request.labels.*.name), 'priority')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch cold Copilot reviewer on non-priority PR open
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.BEDAR_LOOP_PAT }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const add = (names) => github.rest.issues.addLabels({
+              ...context.repo, issue_number: prNumber, labels: names });
+            const remove = async (name) => {
+              const { data: pr } = await github.rest.pulls.get({
+                ...context.repo, pull_number: prNumber });
+              const labels = pr.labels.map(l => l.name);
+              if (!labels.includes(name)) return;
+              await github.rest.issues.removeLabel({
+                ...context.repo, issue_number: prNumber, name }).catch(() => {});
+            };
+            const comment = (text) => github.rest.issues.createComment({
+              ...context.repo, issue_number: prNumber, body: text });
+
+            await add(['needs-review', 'round-1']);
+            await remove('review-passed');
+            await remove('needs-fixes');
+            await remove('needs-human');
+            await remove('round-2');
+
+            const REVIEWER = `You are a REVIEWER. Read the full diff of this PR against \`main\`. Score it against \`.github/copilot-review-rubric.md\`. Output exactly one line \`Confidence Score: N/5\` and numbered findings with file:line. Do NOT modify any file. If the score is <5, a separate fixer run will address it.`;
+            await comment(`@copilot ${REVIEWER}`);
+
+  route-score:
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.action == 'created' &&
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.user.login, 'copilot') &&
+      !contains(toJSON(github.event.issue.labels.*.name), 'priority')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Parse Copilot reviewer score and route
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.BEDAR_LOOP_PAT }}
+          script: |
+            const body = context.payload.comment.body || '';
+            const prNumber = context.payload.issue.number;
+
+            const m = body.match(/Score:\s*([0-5])\s*\/\s*5/i);
+            if (!m) {
+              core.info(`No "Score: N/5" line on PR #${prNumber}; not a scored review, skipping.`);
+              return;
+            }
+            const score = Number(m[1]);
+            core.info(`PR #${prNumber}: score ${score}/5`);
+
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo, pull_number: prNumber });
+            const labels = pr.labels.map(l => l.name);
+
+            const add = (names) => github.rest.issues.addLabels({
+              ...context.repo, issue_number: prNumber, labels: names });
+            const remove = async (name) => {
+              if (!labels.includes(name)) return;
+              await github.rest.issues.removeLabel({
+                ...context.repo, issue_number: prNumber, name }).catch(() => {});
+            };
+            const comment = (text) => github.rest.issues.createComment({
+              ...context.repo, issue_number: prNumber, body: text });
+
+            // Pass: 5/5. Findings stay logged for merge-time reading.
+            if (score === 5) {
+              await add(['review-passed']);
+              await remove('needs-fixes');
+              await remove('needs-review');
+              return;
+            }
+
+            // Cap: round-2 already failed once -> human.
+            if (labels.includes('round-2')) {
+              await add(['needs-human']);
+              await remove('needs-fixes');
+              await comment(
+                `Round cap reached (2 rounds). Latest score: ${score}/5. Handing to a human.`);
+              return;
+            }
+
+            // Fix round: dispatch Copilot, advance the round label.
+            await add(['needs-fixes', 'round-2']);
+            await remove('round-1');
+            await remove('review-passed');
+            const FIXER = `You are a FIXER. Address only the numbered findings from the reviewer comment above. Fix only what the findings name; push to this PR branch; reply to each finding with what changed or a reasoned pushback. Do NOT score. See .github/copilot-instructions.md.`;
+            await comment(`@copilot ${FIXER}`);
+
+  rereview-after-fix:
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.action == 'synchronize' &&
+      contains(toJSON(github.event.pull_request.labels.*.name), 'needs-fixes') &&
+      contains(github.event.pull_request.user.login, 'copilot') &&
+      !contains(toJSON(github.event.pull_request.labels.*.name), 'priority')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch fresh cold Copilot reviewer after fixer push
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.BEDAR_LOOP_PAT }}
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const comment = (text) => github.rest.issues.createComment({
+              ...context.repo, issue_number: prNumber, body: text });
+
+            const REVIEWER = `You are a REVIEWER. Read the full diff of this PR against \`main\`. Score it against \`.github/copilot-review-rubric.md\`. Output exactly one line \`Confidence Score: N/5\` and numbered findings with file:line. Do NOT modify any file. If the score is <5, a separate fixer run will address it.`;
+            await comment(`@copilot ${REVIEWER}`);
