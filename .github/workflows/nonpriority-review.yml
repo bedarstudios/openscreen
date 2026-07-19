@@ -116,7 +116,7 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.action == 'synchronize' &&
       contains(toJSON(github.event.pull_request.labels.*.name), 'needs-fixes') &&
-      contains(github.event.pull_request.user.login, 'copilot') &&
+      contains(github.event.sender.login, 'copilot') &&
       !contains(toJSON(github.event.pull_request.labels.*.name), 'priority')
     runs-on: ubuntu-latest
     steps:
