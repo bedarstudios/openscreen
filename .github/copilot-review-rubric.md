@@ -13,8 +13,10 @@ This lane is calibrated for **Claude Sonnet 5**.
 - **3/5** — A meaningful behavioral, coverage, or scope problem remains. Examples include a
   user flow that can deadlock, a change that weakens review coverage, or multiple actionable
   gaps in an otherwise plausible change.
-- **2/5 or lower** — A critical correctness, security, data-integrity, or user-flow failure
-  exists, or the diff is too incomplete to assess safely.
+- **2/5** — A high-severity correctness, security, data-integrity, or user-flow failure exists,
+  but the affected behavior is bounded and a clear repair path is evident.
+- **1/5** — The diff is catastrophically unsafe, destroys core trust/data integrity, or is too
+  incomplete to assess safely.
 
 ## What to Flag
 
@@ -44,6 +46,7 @@ Confidence Score: N/5
 2. path/to/file:line — actionable finding and consequence.
 ```
 
-Emit exactly one `Confidence Score: N/5` line. Number findings only when they exist; a 5/5
+Emit exactly one `Confidence Score: N/5` line, where `N` is an integer from 1 through 5.
+Number findings only when they exist; a 5/5
 response has no finding lines. Findings must cite `file:line`. Do not set labels, request a
 fix, explain a fixer's reasoning, or perform changes.
