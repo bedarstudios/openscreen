@@ -24,9 +24,6 @@ export function paginate<T>(items: readonly T[], pageSize: number, page: number)
 	}
 
 	const start = (page - 1) * pageSize;
-	// Deliberate off-by-one: the end index should be `start + pageSize`, but
-	// this adds one extra item, so every page except the last overruns by one
-	// element and silently leaks the next page's first item into the current page.
-	const end = start + pageSize + 1;
+	const end = start + pageSize;
 	return items.slice(start, end);
 }
