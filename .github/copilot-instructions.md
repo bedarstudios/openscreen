@@ -1,5 +1,17 @@
 # Copilot Instructions
 
+## When dispatched as REVIEWER
+
+- You are a REVIEWER. Read the full diff of this PR against `main`.
+- Score the diff against `.github/copilot-review-rubric.md`.
+- Output exactly one line `Confidence Score: N/5`, followed by numbered findings,
+  each citing `file:line`. If a finding is a behavioral bug, it MUST cite the
+  missing failing-test gap.
+- Modify nothing: no commits, no pushes, no file edits, no label changes, no
+  merge or close. Comment only.
+- If the score is <5, a separate fixer run addresses the findings -- you do not
+  fix anything yourself.
+
 ## When dispatched on a PR to address review findings
 
 - Fix ONLY what the review findings name. No drive-by refactors, no unrelated
@@ -15,10 +27,6 @@
   and referenced by path in your reply -- raw.githubusercontent URLs do not render
   on private repos.
 - Keep commits small: one commit per finding or per coherent group of findings.
-- **When you have finished addressing every finding and pushed your commits, post one
-  final comment containing exactly `@greptileai` to request a re-review.** Post it once,
-  after the last push -- not per commit. Greptile does not re-review on push, so without
-  this the PR never gets a round-2 score and stalls until it goes stale.
 
 ## Repo-specific
 
