@@ -1,0 +1,40 @@
+name: Overnight Cold Review Sweep
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  pull-requests: read
+  issues: write
+
+jobs:
+  dispatch-cold-reviewers:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch cold Copilot reviewer on unfinished non-priority PRs
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.BEDAR_LOOP_PAT }}
+          script: |
+            const { data: prs } = await github.rest.pulls.list({
+              ...context.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const REVIEWER = `You are a REVIEWER. Read the full diff of this PR against \`main\`. Score it against \`.github/copilot-review-rubric.md\`. Output exactly one line \`Confidence Score: N/5\` and numbered findings with file:line. Do NOT modify any file. If the score is <5, a separate fixer run will address it.`;
+
+            for (const pr of prs) {
+              const labels = pr.labels.map(label => label.name);
+              if (['review-passed', 'needs-human', 'priority'].some(label => labels.includes(label))) {
+                core.info(`PR #${pr.number} is settled, escalated, or priority; skipping.`);
+                continue;
+              }
+
+              await github.rest.issues.createComment({
+                ...context.repo,
+                issue_number: pr.number,
+                body: `@copilot ${REVIEWER}`,
+              });
+            }
