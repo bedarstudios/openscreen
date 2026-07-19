@@ -1,0 +1,87 @@
+name: Bug
+description: Report a defect. Ends in a machine-checkable "Done when" the loop can verify.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: checkboxes
+    attributes:
+      label: Search existing issues
+      options:
+        - label: I have searched and this is not a duplicate
+          required: true
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One line. What is broken.
+      placeholder: e.g. Recording stops silently after ~30s on external display
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered, exact. The loop replays these to confirm the fault before fixing.
+      placeholder: |
+        1. Launch the app
+        2. Start a recording on the external display
+        3. Wait ~30s
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS / version / device where this happens (if relevant).
+      placeholder: e.g. macOS 14.5, app v0.3.1
+    validations:
+      required: false
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Recording / evidence
+      description: >
+        Paste a Showhow step doc, attach a screen recording, or drop screenshots.
+        The reproduce step reads this as the target for the fix.
+    validations:
+      required: false
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Analysis / notes
+      description: Any root-cause hunch. Non-binding. The fixer confirms cause before touching code.
+    validations:
+      required: false
+
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: >
+        The single machine-checkable condition that closes this. Must be observable in a
+        terminal, console, or on screen. Not "works correctly" or "tests pass". The loop
+        cannot verify a vague done-when and will burn attempts guessing.
+      placeholder: >
+        e.g. A 5-minute recording on an external display produces one continuous file with
+        no gap in timestamps; ffprobe reports duration >= 300s.
+    validations:
+      required: true

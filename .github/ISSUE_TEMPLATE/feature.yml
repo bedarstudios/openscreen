@@ -1,0 +1,65 @@
+name: Feature
+description: Request a capability. Ends in a machine-checkable "Done when" the loop can verify.
+title: "[Feature]: "
+labels: ["feature"]
+body:
+  - type: checkboxes
+    attributes:
+      label: Search existing issues
+      options:
+        - label: I have searched and this is not a duplicate
+          required: true
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One line. What capability is missing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal (user story)
+      description: Who wants this and why. "As a X I want Y so that Z."
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Requirements
+      description: What must be true for this to count as built. Bullet list.
+    validations:
+      required: true
+
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What this explicitly does NOT include. Keeps the loop from over-building.
+    validations:
+      required: false
+
+  - type: textarea
+    id: approach
+    attributes:
+      label: Suggested approach
+      description: Optional and non-binding. A hint, not a spec. The loop may choose otherwise.
+    validations:
+      required: false
+
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: >
+        The single machine-checkable condition that closes this. Must be observable in a
+        terminal, console, or on screen. Not "works correctly" or "tests pass". The loop
+        cannot verify a vague done-when and will burn attempts guessing.
+      placeholder: >
+        e.g. Clicking Export writes a valid .md file to the chosen path; opening it shows
+        one heading per captured step in order.
+    validations:
+      required: true
