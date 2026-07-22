@@ -34,7 +34,7 @@ final class MouseButtonTracker {
 			(1 << CGEventType.leftMouseDown.rawValue) |
 			(1 << CGEventType.leftMouseUp.rawValue)
 		guard let tap = CGEvent.tapCreate(
-			tap: .cgSessionEventTap,
+			tap: .cghidEventTap,
 			place: .headInsertEventTap,
 			options: .listenOnly,
 			eventsOfInterest: CGEventMask(mask),
