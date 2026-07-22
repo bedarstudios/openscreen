@@ -1,0 +1,257 @@
+---
+schema_version: 1
+project:
+  name: Showhow Desktop
+  repository: bedarstudios/openscreen
+  sources:
+  - docs/superpowers/specs/2026-07-11-showhow-desktop-design.md
+  - docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md
+  - docs/superpowers/specs/2026-07-16-showhow-workspace-retirement-design.md
+  - ROADMAP.md
+phases:
+- id: showhow-p1-folder-bundle
+  title: Showhow Phase 1 — Folder bundle
+  goal: Preserve every finished macOS recording as a local, agent-ready folder with
+    video metadata and timestamped transcription.
+  source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#v1-cut-line-and-build-order
+  issues:
+  - id: showhow-p1-recording-bundle
+    title: 'Phase 1: fork orientation and recording bundles'
+    goal: Keep OpenScreen recording behavior intact while persisting each recording
+      as a recoverable Showhow bundle.
+    github_number: 1
+    labels:
+    - feature
+    depends_on: []
+    source: docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md
+    status: completed
+    completion_evidence:
+    - 'merged PR #2'
+    scope:
+    - Fork orientation, fail-open bundle persistence, metadata, cursor telemetry,
+      local transcript generation, and Phase 1 acceptance.
+    exclusions:
+    - No steps.json, steps.md, generated step screenshots, library UI, or extension
+      bridge.
+    done_when:
+    - A narrated native macOS recording opens in the editor and its bundle contains
+      the video, cursor telemetry, meta.json, timestamped transcript.txt, and screenshots
+      directory.
+  github_number: 1
+- id: showhow-p2-desktop-doc-engine
+  title: Showhow Phase 2 — Desktop doc engine
+  goal: Turn desktop recordings into deterministic step-by-step workflow documents
+    and agent-ready bug reports.
+  source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#v1-cut-line-and-build-order
+  issues:
+  - id: showhow-p2-click-frame-capture
+    title: Capture desktop clicks and extract step frames
+    goal: Produce timestamped desktop step inputs without disrupting the recorder
+      when accessibility capture is unavailable.
+    labels:
+    - feature
+    depends_on:
+    - showhow-p1-recording-bundle
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#screenshots-differ-by-tier
+    status: planned
+    completion_evidence: []
+    scope:
+    - Reuse existing cursor telemetry when viable or add a macOS click hook, record
+      screen coordinates and timestamps, and extract marked video frames.
+    exclusions:
+    - No browser semantic steps and no failure path may interrupt or lose the recording.
+    done_when:
+    - A macOS desktop recording produces one correctly marked frame per captured click,
+      and denied accessibility permission leaves the video intact with a transcript-only
+      explanation.
+    github_number: 19
+  - id: showhow-p2-doc-generation
+    title: Generate deterministic workflow-doc artifacts
+    goal: Derive agent-readable steps and screenshots from immutable recording inputs.
+    labels:
+    - feature
+    depends_on:
+    - showhow-p2-click-frame-capture
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#doc-engine-in-the-desktop-app
+    status: planned
+    completion_evidence: []
+    scope:
+    - Match nearby transcript sentences to click timestamps and generate steps.json,
+      steps.md, and numbered screenshots.
+    exclusions:
+    - No AI instruction generation, share links, PDF export, or destructive source
+      mutation.
+    done_when:
+    - Regenerating from the same video, transcript, and click inputs produces the
+      same steps, and every steps.md timestamp is within one second of its visible
+      click.
+    github_number: 20
+  - id: showhow-p2-agent-handoff-acceptance
+    title: Prove the agent-ready bug-report handoff
+    goal: Validate that a generated folder communicates a real bug walkthrough without
+      extra explanation.
+    labels:
+    - phase
+    depends_on:
+    - showhow-p2-doc-generation
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#testing
+    status: planned
+    completion_evidence: []
+    scope:
+    - Record a real bug walkthrough, verify the six-artifact folder contract, and
+      give only the folder path to a coding agent.
+    exclusions:
+    - No hosted sharing or manual context outside the generated folder.
+    done_when:
+    - A coding agent diagnoses the recorded bug from the folder path alone and the
+      acceptance evidence records artifact completeness and timestamp accuracy.
+    github_number: 21
+  github_number: 2
+- id: showhow-p3-library-doc-ui
+  title: Showhow Phase 3 — Library and doc view
+  goal: Make local recording folders browsable and render their workflow documents
+    inside the desktop application.
+  source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#v1-cut-line-and-build-order
+  issues:
+  - id: showhow-p3-recording-library
+    title: Build the local recording library
+    goal: Discover valid recording folders and expose their identity and source without
+      introducing a second database.
+    labels:
+    - feature
+    depends_on:
+    - showhow-p2-doc-generation
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#library-workflow-doc-view
+    status: planned
+    completion_evidence: []
+    scope:
+    - Read Showhow recording folders, render the approved sidebar states, and distinguish
+      browser and desktop sources.
+    exclusions:
+    - No cloud library, share links, or recorder/editor reskin.
+    done_when:
+    - The library lists valid local bundles from newest to oldest, selects the active
+      recording, and handles an empty recordings directory with the approved empty
+      state.
+    github_number: 22
+  - id: showhow-p3-workflow-doc-view
+    title: Build the workflow document view
+    goal: Let Mohamed review a generated workflow alongside its recording and hand
+      its folder path to an agent.
+    labels:
+    - feature
+    depends_on:
+    - showhow-p3-recording-library
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#library-workflow-doc-view
+    status: planned
+    completion_evidence: []
+    scope:
+    - Render video, title, source tag, folder path with Copy path, numbered screenshots,
+      instructions, and seekable timestamp chips using the approved mock and design
+      system.
+    exclusions:
+    - No document editing, reordering, annotations, hosted sharing, or export.
+    done_when:
+    - Selecting a bundle renders its generated steps, Copy path returns the exact
+      folder path, and each timestamp chip seeks the built-in player to its step.
+    github_number: 23
+  github_number: 3
+- id: showhow-p4-browser-bridge
+  title: Showhow Phase 4 — Browser companion bridge
+  goal: Pair browser capture with the desktop recorder so semantic steps and screenshots
+    enter the same folder contract.
+  source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#v1-cut-line-and-build-order
+  issues:
+  - id: showhow-p4-desktop-bridge
+    title: Implement the desktop bridge and clock contract
+    goal: Receive browser steps on localhost with recording-relative timestamps and
+      fail safely when the companion disconnects.
+    labels:
+    - feature
+    depends_on:
+    - showhow-p3-workflow-doc-view
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#showhow-desktop-the-openscreen-fork
+    status: planned
+    completion_evidence: []
+    scope:
+    - Local WebSocket pairing, recording-start epoch handshake, step ingestion, and
+      desktop-tier fallback.
+    exclusions:
+    - No remote service, cloud upload, or loss of video when pairing fails.
+    done_when:
+    - Browser events retain recording-relative timestamps after the handshake, and
+      a mid-recording disconnect preserves video while marking semantic steps unavailable.
+    github_number: 24
+  - id: showhow-p4-companion-capture
+    title: Rebuild the browser companion capture path
+    goal: Stream redacted semantic browser steps and pre-action screenshots into the
+      active desktop product.
+    labels:
+    - feature
+    depends_on:
+    - showhow-p4-desktop-bridge
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#showhow-extension-companion
+    status: planned
+    completion_evidence: []
+    scope:
+    - Pairing status UI, semantic action streaming, capture-time redaction, SPA navigation,
+      meaningful-action filtering, and captureVisibleTab screenshots.
+    exclusions:
+    - No standalone extension recording flow, floating toolbar, hosted service, or
+      restoration of the retired extension roadmap.
+    done_when:
+    - A paired browser recording yields exact semantic labels, redacted values, synchronized
+      timestamps, and pre-action screenshots in the desktop bundle while start and
+      stop remain desktop-owned.
+    github_number: 25
+  github_number: 4
+- id: showhow-p5-polish
+  title: Showhow Phase 5 — V1 polish
+  goal: Finish safe document editing and the empty, generating, and failure states
+    required for a dependable personal V1.
+  source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#v1-cut-line-and-build-order
+  issues:
+  - id: showhow-p5-doc-editing
+    title: Add safe workflow-doc editing
+    goal: Keep agent-facing Markdown synchronized with minimal user edits while defaulting
+      sensitive text to redacted.
+    labels:
+    - feature
+    depends_on:
+    - showhow-p4-companion-capture
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#doc-editing-in-v1
+    status: planned
+    completion_evidence: []
+    scope:
+    - Inline title and instruction edits, step deletion, per-step reveal state, and
+      steps.md regeneration.
+    exclusions:
+    - No step reorder, annotation editor, share links, PDF export, or HTML export.
+    done_when:
+    - Title and instruction edits and deletions persist through steps.json and regenerate
+      steps.md, while revealed text remains excluded unless explicitly enabled for
+      that step.
+    github_number: 26
+  - id: showhow-p5-resilience-acceptance
+    title: Complete V1 resilience and acceptance states
+    goal: Make every doc-generation state understandable without weakening the recorder-first
+      fail-open contract.
+    labels:
+    - phase
+    depends_on:
+    - showhow-p5-doc-editing
+    source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#privacy-and-failure-behaviour
+    status: planned
+    completion_evidence: []
+    scope:
+    - Approved empty and generating states, retryable derivation failures, unpaired
+      companion messaging, accessibility-denied explanation, and full V1 acceptance.
+    exclusions:
+    - No Windows or Linux product acceptance, cloud backend, or recorder/editor visual
+      reskin.
+    done_when:
+    - Every documented failure mode preserves the recording and offers a clear retry
+      or fallback, and the complete record-to-folder-to-doc-to-copy-path V1 flow passes
+      on macOS 13 or newer.
+    github_number: 27
+  github_number: 5
