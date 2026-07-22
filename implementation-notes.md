@@ -5,6 +5,20 @@ logged as they're discovered mid-build. Nothing is deleted from this file.
 
 ## Deviations
 
+### 2026-07-22: Frame extraction uses an optional system ffmpeg
+
+**What changed:** Desktop click frames are extracted with `ffmpeg`, which is available
+on the development machine but is not a declared application dependency.
+
+**Why:** Adding and shipping a video-processing binary is outside this ticket's narrow
+scope, while the existing recording must never fail because documentation artifacts
+cannot be generated.
+
+**What was done instead (conservative option):** Bundle creation attempts extraction
+after the video and cursor telemetry have been moved. If ffmpeg is unavailable or a
+frame command fails, the video stays intact and `meta.json` marks the bundle as a
+transcript-only document with an explanation.
+
 ### 2026-07-12: Native macOS capture path bypasses bundling entirely
 
 **What changed:** Task 3 wired `createRecordingBundle` into

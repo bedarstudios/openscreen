@@ -2,7 +2,7 @@ import { mkdtemp, readFile, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildMeta, bundleDirName, createRecordingBundle } from "./bundle";
+import { buildMeta, bundleDirName, createRecordingBundle, type FrameExtractor } from "./bundle";
 
 describe("bundleDirName", () => {
 	it("formats createdAt as YYYY-MM-DD_HHMMSS-recording in local time", () => {
@@ -49,6 +49,73 @@ describe("buildMeta", () => {
 });
 
 describe("createRecordingBundle", () => {
+	it("extracts a marked step frame for every click in cursor telemetry", async () => {
+		const work = await mkdtemp(path.join(os.tmpdir(), "showhow-bundle-"));
+		const screenVideoPath = path.join(work, "rec-clicks.mp4");
+		await writeFile(screenVideoPath, "fake-mp4");
+		await writeFile(
+			`${screenVideoPath}.cursor.json`,
+			JSON.stringify({
+				samples: [
+					{ timeMs: 1_250, cx: 0.25, cy: 0.5, interactionType: "click" },
+					{ timeMs: 2_000, cx: 0.5, cy: 0.5, interactionType: "move" },
+					{ timeMs: 3_500, cx: 0.75, cy: 0.2, interactionType: "click" },
+				],
+			}),
+		);
+		const frames: Parameters<FrameExtractor>[0][] = [];
+		const extractFrames: FrameExtractor = async (input) => {
+			frames.push(input);
+		};
+
+		const result = await createRecordingBundle({
+			screenVideoPath,
+			createdAt: Date.now(),
+			recordingsRoot: path.join(work, "Recordings"),
+			extractFrames,
+		});
+
+		expect(frames).toEqual([
+			{
+				videoPath: result.screenVideoPath,
+				screenshotsDir: path.join(result.bundleDir, "screenshots"),
+				clicks: [
+					{ timeMs: 1_250, cx: 0.25, cy: 0.5, outputPath: "step-01.png" },
+					{ timeMs: 3_500, cx: 0.75, cy: 0.2, outputPath: "step-02.png" },
+				],
+			},
+		]);
+	});
+
+	it("keeps the video and records transcript-only degradation when frame extraction fails", async () => {
+		const work = await mkdtemp(path.join(os.tmpdir(), "showhow-bundle-"));
+		const screenVideoPath = path.join(work, "rec-click.mp4");
+		await writeFile(screenVideoPath, "fake-mp4");
+		await writeFile(
+			`${screenVideoPath}.cursor.json`,
+			JSON.stringify({
+				samples: [{ timeMs: 100, cx: 0.5, cy: 0.5, interactionType: "click" }],
+			}),
+		);
+
+		const result = await createRecordingBundle({
+			screenVideoPath,
+			createdAt: Date.now(),
+			recordingsRoot: path.join(work, "Recordings"),
+			extractFrames: async () => {
+				throw new Error("ffmpeg is unavailable");
+			},
+		});
+
+		expect(await readFile(result.screenVideoPath, "utf-8")).toBe("fake-mp4");
+		const meta = JSON.parse(await readFile(path.join(result.bundleDir, "meta.json"), "utf-8"));
+		expect(meta.stepCapture).toEqual({
+			status: "unavailable",
+			message:
+				"Desktop click frames could not be extracted; this bundle has a transcript-only doc.",
+		});
+	});
+
 	it("moves artifacts into the bundle folder and writes meta.json", async () => {
 		const work = await mkdtemp(path.join(os.tmpdir(), "showhow-bundle-"));
 		const root = path.join(work, "Recordings");
