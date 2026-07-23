@@ -50,6 +50,9 @@ playwright-report/
 # Vitest browser mode screenshots
 __screenshots__/
 
+# Git worktrees — scratch checkouts, never part of the tree
+/.worktrees/
+
 # shell files
 /shell.sh
 # Nix
