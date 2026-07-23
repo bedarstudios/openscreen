@@ -7,7 +7,7 @@
 <p align="center"><strong>A screen recorder that hands your recordings to an AI agent.</strong></p>
 
 <p align="center">
-  <a href="./LICENSE"><img src="https://img.shields.io/github/license/bedarstudios/openscreen?style=for-the-badge&label=License" alt="License" /></a>
+  <a href="./LICENSE"><img src="https://img.shields.io/github/license/bedarstudios/showhow?style=for-the-badge&label=License" alt="License" /></a>
   <img src="https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge" alt="Platform" />
   <img src="https://img.shields.io/badge/status-pre--v1-orange?style=for-the-badge" alt="Status" />
 </p>
