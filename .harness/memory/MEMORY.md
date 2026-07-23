@@ -1,4 +1,4 @@
-# OpenScreen — Shared Team Memory
+# Showhow — Shared Team Memory
 
 This file is the shared memory across all Mavis reins in this repo. Add durable facts here that the team should remember across sessions: build quirks, gotchas, environment-specific notes.
 
@@ -22,5 +22,9 @@ There's no Prettier/ESLint — Biome 2.4 does both. Config in `biome.json`: tabs
 ## `npm run build` is slow (2026-06-22)
 `npm run build` runs tsc + vite build + electron-builder packaging. For renderer-only iteration use `npm run build-vite` (tsc + vite only, no packaging). Only run the full `build` when verifying a release artifact.
 
-## Release tag must point at the release branch, not main (2026-07-05)
-On 2026-07-05 the original `promote.yml` did `git checkout main && git tag vX.Y.Z`, which captured the post-RC tip of `main` (23 commits after the RC cut) as the "stable" v1.6.0. The fix landed the same day: both `prerelease.yml` and `promote.yml` now use a frozen `release/vX.Y.Z-rc.N` branch and tag its tip — see `.github/workflows/prerelease.yml` § Push RC tag and `.github/workflows/promote.yml` § Push stable tag. When reviewing release-related changes, **always verify the tag is being applied to the release branch tip, not to main.** The build.yml `release_tag` input is the SHA, not a branch name; if you set it to a tag the GitHub Release check will look for the source ref — pass the release branch name when smoke-testing without a tag.
+## Tag the exact commit you mean to release (2026-07-05, upstream — still the lesson)
+**Historical.** The workflows this entry described (`prerelease.yml`, `promote.yml`, release branches) were deleted when Showhow dropped upstream's RC pipeline. Do not go looking for them.
+
+What happened upstream: `promote.yml` did `git checkout main && git tag vX.Y.Z`, which captured the tip of `main` — 23 commits past the RC cut — as "stable" v1.6.0.
+
+The lesson survives the workflows. Showhow releases by pushing a `v*` tag by hand (see `.harness/docs/git-workflow.md` § Release flow), so **tag an explicit SHA you have verified, never whatever `main` happens to point at.** Nothing freezes the codebase for you any more.

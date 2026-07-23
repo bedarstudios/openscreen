@@ -1,6 +1,8 @@
 # AGENTS.md
 
-OpenScreen is a free, open-source screen recorder and video editor (Electron + React + TypeScript + Pixi.js) maintained as a continuation of the original v1.5.0 release. This file is the canonical guide for any AI coding agent working in this repo.
+Showhow is a screen recorder that saves every recording as a self-contained, agent-readable bundle folder (Electron + React + TypeScript + Pixi.js). It is built on [OpenScreen](https://github.com/getopenscreen/openscreen) (MIT), whose recorder and editor it keeps intact. This file is the canonical guide for any AI coding agent working in this repo.
+
+Read `SHOWHOW.md` before renaming anything: several OpenScreen identifiers are kept deliberately, and the reasons are recorded there.
 
 ## Setup commands
 
@@ -53,15 +55,24 @@ OpenScreen is a free, open-source screen recorder and video editor (Electron + R
 
 ## Release flow
 
-Two `workflow_dispatch` workflows cut a release with a pre-release candidate (RC) first, then promote to stable. Trunk-based, no extra branch. Full operational guide in `.harness/docs/git-workflow.md` § Release flow.
+Showhow is pre-v1 and releases from a single workflow. Upstream OpenScreen's RC
+pipeline — `prerelease.yml`, `promote.yml`, release branches, milestone
+migration, Discord announcements, and the homebrew/winget/nix/aur publishers —
+was deleted. Do not reintroduce any of it or write docs that assume it exists.
 
-- **Cut RC**: Actions → "Cut a release candidate" → Run workflow. Inputs: `bump` (patch|minor|major), `rc_number` (default 1), optional `target_version` override. Snaps issues out of the rolling `Next Release` milestone into a versioned `vX.Y.Z` milestone, bumps `package.json`, pushes the `vX.Y.Z-rc.N` tag, which triggers the existing `build.yml` to publish a GitHub pre-release. Notarization is skipped on RCs. Notifies `#rc-testing` on Discord.
-- **Promote RC**: Actions → "Promote RC to stable release" → Run workflow. Input: `rc_tag` (e.g. `v1.5.0-rc.2`), optional `release_notes_extra`. Closes the `vX.Y.Z` milestone, strips `-rc.N` from `package.json`, pushes `vX.Y.Z` tag, which triggers `build.yml` to publish a stable release (full notarization, Tier 3 homebrew/winget/nix/aur fires). Notifies `#announcements` on Discord.
-- **Manual fallback**: `git tag vX.Y.Z-rc.N <sha> && git push origin vX.Y.Z-rc.N` does the same as Cut RC (minus the milestone migration and Discord announce) — useful for emergency cuts.
+- **Cut a release**: push a `v*` tag. `build.yml` builds macOS (arm64 + x64),
+  Windows, and Linux installers, then `publish-release` creates the GitHub
+  Release and uploads them.
+- **Build without releasing**: Actions → "Build Electron App" → Run workflow.
+  Takes an `arch` input and an optional `release_tag`; leave the tag empty to get
+  installers as workflow artifacts only.
+- **Pre-releases**: any tag containing `-` (e.g. `v1.7.0-rc.1`) is published as a
+  GitHub pre-release, and macOS notarization is skipped.
 
-Both workflows require the `OPENSCREEN_RELEASE_TOKEN` secret (a fine-grained PAT with `contents: write` + `issues: write`). This is the standard fix for `release: published` not triggering downstream workflows when the release is created by `GITHUB_TOKEN`. See `docs/secrets.md`.
-
-**Release branches freeze the build between cut and promote.** Every RC cut creates `release/vX.Y.Z-rc.N`. The branch is *not* merged into `main` until the stable tag is published; only cherry-picks of bugfixes land on the release branch during the RC window. The stable tag points at the branch tip (RC + cherry-picks), then `promote.yml` opens a `release/vX.Y.Z-sync → main` PR to bring main into line. This contract exists because of the v1.6.0 incident (2026-07-05) where the original promote workflow tagged `main` instead of the RC snapshot, causing 23 unreleased commits to ship in `v1.6.0`. Full rules in `.harness/docs/git-workflow.md` § Release branches.
+`publish-release` needs the `OPENSCREEN_RELEASE_TOKEN` secret — a legacy name,
+still in use; see `docs/secrets.md` for what it does and how to rename it.
+Signing and notarization degrade gracefully: if the Apple secrets are absent the
+build still publishes, but the DMG is unsigned.
 
 ## Security
 

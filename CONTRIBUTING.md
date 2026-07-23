@@ -10,7 +10,7 @@ Thank you for considering contributing to this project! By contributing, you hel
 2. **Clone Your Fork**
    - Clone your forked repository to your local machine:
      ```bash
-     git clone https://github.com/your-username/openscreen.git
+     git clone https://github.com/your-username/showhow.git
      ```
 
 3. **Create a New Branch**
@@ -43,7 +43,9 @@ Thank you for considering contributing to this project! By contributing, you hel
 
 ## Reporting Issues
 
-If you encounter a bug or have a feature request, please open an issue in the [Issues](https://github.com/EtienneLescot/openscreen/issues) section of this repository. Provide as much detail as possible to help us address the issue effectively.
+If you encounter a bug or have a feature request, please open an issue in the [Issues](https://github.com/bedarstudios/showhow/issues) section of this repository. Provide as much detail as possible to help us address the issue effectively.
+
+Bugs in the underlying recorder and editor — capture, zooms, cursor effects, export — may belong to [OpenScreen](https://github.com/getopenscreen/openscreen), which Showhow is built on. Report those upstream; Showhow does not maintain a separate fix queue for them.
 
 ## Issue lifecycle
 
@@ -53,7 +55,7 @@ For desktop users, this does not always mean the change is already available in 
 
 Once a GitHub Release containing the change is published, the issue can be marked as `status: released`.
 
-The next version number is not always known when a PR is merged. In that case, issues are assigned to the `Next Release` milestone. When preparing a release, this milestone can be renamed to the actual version, such as `v1.6.0` or `v2.0.0`, and a new `Next Release` milestone can be created.
+Work is tracked by phase in `.bedar/project-plan.yml` and `ROADMAP.md` rather than by release milestone.
 
 When a PR fully resolves an issue, link it with a GitHub closing keyword:
 

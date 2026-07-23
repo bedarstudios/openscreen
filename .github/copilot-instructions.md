@@ -30,7 +30,12 @@
 
 ## Repo-specific
 
-- This repo is a fork of OpenScreen, but it is our codebase -- no upstream merges
-  are planned. Do not open PRs against `getopenscreen/openscreen`, and do not
-  restore the upstream release/Discord workflows that were deliberately removed.
-- Always target `bedarstudios/openscreen` `main` as the PR base.
+- This repo is Showhow, which began as a fork of OpenScreen, but it is our
+  codebase -- no upstream merges are planned. Do not open PRs against
+  `getopenscreen/openscreen`, and do not restore the upstream release, Discord,
+  or milestone workflows and scripts that were deliberately deleted.
+- Always target `bedarstudios/showhow` `main` as the PR base.
+- OpenScreen still appears deliberately in a few places: the `.openscreen`
+  project file extension, `package.json` `name`, the Nix module API, native
+  helper env vars, and the historical specs under `docs/superpowers/`. See
+  SHOWHOW.md before "fixing" any of them.

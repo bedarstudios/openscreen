@@ -84,7 +84,7 @@
     ],
     "icon": "icons/icons/png",
     "artifactName": "${productName}-Linux-${version}.${ext}",
-    "maintainer": "Etienne Lescot <etiennelescot@gmail.com>",
+    "maintainer": "Bedar Studios <mohamed@bedarstudios.com>",
     "category": "AudioVideo"
   },
   "win": {

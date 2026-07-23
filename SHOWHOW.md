@@ -95,7 +95,8 @@ were left on the OpenScreen name **on purpose**:
   `src/components/video-editor/EditorEmptyState.tsx` hardcodes
   `.endsWith(".openscreen")` for drag-and-drop.
 - **`package.json` `name: "openscreen"`** — the npm package is private and never
-  published; renaming it only adds upstream merge noise.
+  published; renaming it only adds upstream merge noise. But see the userData
+  note below: this field is not inert, because Electron falls back to it.
 - **The Nix module API** (`programs.openscreen.enable`, `nix/*.nix`). That's a
   public interface for upstream's users. `startupWMClass` *was* updated, because
   Electron derives it from `productName` and a mismatch breaks the Linux
@@ -107,6 +108,24 @@ be granted again from scratch. `productName` determines
 `app.getPath("userData")`, so it moves
 `~/Library/Application Support/Openscreen` → `.../Showhow`, orphaning
 `recordings/` (raw session scratch), `shortcuts.json`, and `Preferences`.
+
+**Dev and packaged builds now use different userData directories.** Electron
+takes the app name from `productName` in the app's `package.json`, and falls back
+to `name` when it is absent. `productName` lives in `electron-builder.json5`, not
+`package.json`, so:
+
+| | app name | userData |
+|---|---|---|
+| `npm run dev` | `name` → `openscreen` | `~/Library/Application Support/openscreen` |
+| packaged | `productName` → `Showhow` | `~/Library/Application Support/Showhow` |
+
+This is a consequence of keeping `package.json` `name` on the old value, and it
+is worth knowing before debugging anything that reads userData: shortcuts,
+`Preferences`, renderer `localStorage` (so every `openscreen_*` storage key), and
+the `recordings/` scratch directory. A dev run will not see what a packaged run
+wrote, and vice versa. Adding `"productName": "Showhow"` to `package.json` would
+collapse the two — at the cost of orphaning the dev directory that currently
+holds real data.
 
 **Showhow bundles are unaffected by any of this.** `SHOWHOW_RECORDINGS_ROOT` is
 `os.homedir()/Showhow/Recordings` — deliberately derived from `$HOME`, never
