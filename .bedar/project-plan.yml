@@ -53,8 +53,9 @@ phases:
     depends_on:
     - showhow-p1-recording-bundle
     source: docs/superpowers/specs/2026-07-11-showhow-desktop-design.md#screenshots-differ-by-tier
-    status: planned
-    completion_evidence: []
+    status: completed
+    completion_evidence:
+    - 'merged PR #28'
     scope:
     - Reuse existing cursor telemetry when viable or add a macOS click hook, record
       screen coordinates and timestamps, and extract marked video frames.

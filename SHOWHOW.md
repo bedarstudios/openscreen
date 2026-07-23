@@ -83,6 +83,35 @@ shape but is **intentionally not hooked** -- V1 scope is macOS-only.
   `transcript.txt` containing a `(transcription failed)` marker rather than
   a missing file, so bundle shape stays guaranteed.
 
+## App identity — what was renamed, and what deliberately was not
+
+The app presents as **Showhow** (`productName: "Showhow"`,
+`appId: "com.bedarstudios.showhow"` in `electron-builder.json5`). Three things
+were left on the OpenScreen name **on purpose**:
+
+- **`.openscreen` project file extension** (`PROJECT_FILE_EXTENSION`,
+  `electron/ipc/handlers.ts`). A file extension is a data format, not branding.
+  Renaming it makes every saved project invisible to the open dialog, and
+  `src/components/video-editor/EditorEmptyState.tsx` hardcodes
+  `.endsWith(".openscreen")` for drag-and-drop.
+- **`package.json` `name: "openscreen"`** — the npm package is private and never
+  published; renaming it only adds upstream merge noise.
+- **The Nix module API** (`programs.openscreen.enable`, `nix/*.nix`). That's a
+  public interface for upstream's users. `startupWMClass` *was* updated, because
+  Electron derives it from `productName` and a mismatch breaks the Linux
+  desktop entry.
+
+**Renaming `productName` or `appId` is not free.** `appId` is the macOS bundle
+identifier, so changing it resets TCC: Screen Recording and Accessibility must
+be granted again from scratch. `productName` determines
+`app.getPath("userData")`, so it moves
+`~/Library/Application Support/Openscreen` → `.../Showhow`, orphaning
+`recordings/` (raw session scratch), `shortcuts.json`, and `Preferences`.
+
+**Showhow bundles are unaffected by any of this.** `SHOWHOW_RECORDINGS_ROOT` is
+`os.homedir()/Showhow/Recordings` — deliberately derived from `$HOME`, never
+from the app name, so the real deliverable can't be orphaned by a rebrand.
+
 ## Conventions
 
 - All Showhow code lives in `electron/showhow/` and `src/lib/showhow/`.

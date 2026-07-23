@@ -109,7 +109,7 @@ buildNpmPackage {
         "Video"
         "Recorder"
       ];
-      startupWMClass = "Openscreen";
+      startupWMClass = "Showhow";
       terminal = false;
     })
   ];
