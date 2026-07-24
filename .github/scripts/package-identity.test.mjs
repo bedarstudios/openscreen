@@ -16,7 +16,7 @@ function parseJson5(relativePath) {
 describe("standalone package identity", () => {
 	test("publishes canonical npm and repository metadata", () => {
 		const manifest = JSON.parse(read("package.json"));
-		expect(manifest.name).toBe("showhow-desktop");
+		expect(manifest.name).toBe("showhow");
 		expect(manifest.productName).toBeUndefined();
 		expect(manifest.author).toEqual({
 			name: "Bedar Studios",
@@ -71,12 +71,13 @@ describe("standalone package identity", () => {
 	test("exposes only canonical Showhow Nix package and module names", () => {
 		for (const file of ["flake.nix", "nix/package.nix", "nix/module.nix", "nix/hm-module.nix"]) {
 			const source = read(file);
-			expect(source).toContain("showhow-desktop");
+			expect(source).toContain("showhow");
+			expect(source).not.toContain("showhow-desktop");
 			expect(source).not.toMatch(/openscreen/i);
 		}
 		const packageSource = read("nix/package.nix");
 		expect(packageSource).toContain('desktopName = "Showhow"');
-		expect(packageSource).toContain('mainProgram = "showhow-desktop"');
+		expect(packageSource).toContain('mainProgram = "showhow"');
 	});
 
 	test("uses canonical environment, workflow artifact, and cache identity", () => {
@@ -96,12 +97,13 @@ describe("standalone package identity", () => {
 
 		const workflow = read(".github/workflows/build.yml");
 		for (const artifact of [
-			"showhow-desktop-windows",
-			"showhow-desktop-mac-${{ matrix.arch }}",
-			"showhow-desktop-linux",
+			"showhow-windows",
+			"showhow-mac-${{ matrix.arch }}",
+			"showhow-linux",
 		]) {
 			expect(workflow).toContain(`name: ${artifact}`);
 		}
+		expect(workflow).not.toContain("showhow-desktop");
 		expect(workflow).toContain("SHOWHOW_MAC_HELPER_ARCHS: ${{ matrix.arch }}");
 		expect(workflow).toContain('DMG_NAME="Showhow-Mac-${ARCH}-${VERSION}-Installer.dmg"');
 		expect(workflow).not.toMatch(/name:\s*openscreen-/i);
@@ -159,7 +161,8 @@ describe("standalone package identity", () => {
 
 	test("identifies model downloads as Showhow packaging traffic", () => {
 		const source = read("scripts/fetch-caption-model.mjs");
-		expect(source).toContain('"user-agent": "showhow-desktop-build"');
+		expect(source).toContain('"user-agent": "showhow-build"');
+		expect(source).not.toContain("showhow-desktop");
 		expect(source).not.toMatch(/openscreen-build/i);
 	});
 });
