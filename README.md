@@ -43,7 +43,7 @@ Later phases add `steps.json` and `steps.md` — a deterministic, numbered walkt
 
 ## Where it's going
 
-Phase 1 shipped; the doc engine is being built now. The plan is in [ROADMAP.md](./ROADMAP.md), and [SHOWHOW.md](./SHOWHOW.md) has the implementation notes and the fork's architectural contracts.
+Phase 1 shipped; the doc engine is being built now. The plan is in [ROADMAP.md](./ROADMAP.md), the bundle and save-path contracts are in [docs/architecture/showhow-bundles.md](./docs/architecture/showhow-bundles.md), and [SHOWHOW.md](./SHOWHOW.md) records which inherited identifiers are deliberately kept.
 
 ## Credit and lineage
 
