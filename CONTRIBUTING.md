@@ -9,8 +9,8 @@ please keep changes focused and expect some rough edges.
 2. Clone your fork and install the pinned toolchain dependencies:
 
    ```bash
-   git clone https://github.com/your-username/showhow-desktop.git
-   cd showhow-desktop
+   git clone https://github.com/your-username/showhow.git
+   cd showhow
    npm install
    ```
 

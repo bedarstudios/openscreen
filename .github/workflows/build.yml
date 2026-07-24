@@ -50,7 +50,7 @@ jobs:
       - name: Upload Windows installer
         uses: actions/upload-artifact@v4
         with:
-          name: showhow-desktop-windows
+          name: showhow-windows
           path: release/**/*.Setup.*.exe
           if-no-files-found: error
           retention-days: 30
@@ -220,7 +220,7 @@ jobs:
       - name: Upload macOS DMG
         uses: actions/upload-artifact@v4
         with:
-          name: showhow-desktop-mac-${{ matrix.arch }}
+          name: showhow-mac-${{ matrix.arch }}
           path: ${{ steps.dmg.outputs.dmg_path }}
           if-no-files-found: error
           retention-days: 30
@@ -254,7 +254,7 @@ jobs:
       - name: Upload Linux packages
         uses: actions/upload-artifact@v4
         with:
-          name: showhow-desktop-linux
+          name: showhow-linux
           path: |
             release/**/*.AppImage
             release/**/*.zsync
@@ -333,27 +333,27 @@ jobs:
       - name: Download Windows installer
         uses: actions/download-artifact@v4
         with:
-          name: showhow-desktop-windows
+          name: showhow-windows
           path: artifacts/windows
 
       - name: Download macOS arm64 DMG
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: showhow-desktop-mac-arm64
+          name: showhow-mac-arm64
           path: artifacts/mac-arm64
 
       - name: Download macOS x64 DMG
         continue-on-error: true
         uses: actions/download-artifact@v4
         with:
-          name: showhow-desktop-mac-x64
+          name: showhow-mac-x64
           path: artifacts/mac-x64
 
       - name: Download Linux packages
         uses: actions/download-artifact@v4
         with:
-          name: showhow-desktop-linux
+          name: showhow-linux
           path: artifacts/linux
 
       - name: Publish release assets

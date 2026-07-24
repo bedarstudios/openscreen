@@ -18,8 +18,8 @@
       # -- Per-system outputs (packages, dev shells) --
 
       packages = forAllSystems (pkgs: {
-        showhow-desktop = pkgs.callPackage ./nix/package.nix { };
-        default = self.packages.${pkgs.stdenv.hostPlatform.system}.showhow-desktop;
+        showhow = pkgs.callPackage ./nix/package.nix { };
+        default = self.packages.${pkgs.stdenv.hostPlatform.system}.showhow;
       });
 
       devShells = forAllSystems (
@@ -113,7 +113,7 @@
       # -- System-wide outputs (modules, overlay) --
 
       overlays.default = final: _prev: {
-        showhow-desktop = self.packages.${final.stdenv.hostPlatform.system}.showhow-desktop;
+        showhow = self.packages.${final.stdenv.hostPlatform.system}.showhow;
       };
 
       nixosModules.default = import ./nix/module.nix self;

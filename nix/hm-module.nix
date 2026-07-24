@@ -1,11 +1,11 @@
 # Home Manager module for Showhow
 # Usage in flake-based Home Manager config:
 #
-#   inputs.showhow-desktop.url = "github:bedarstudios/showhow";
+#   inputs.showhow.url = "github:bedarstudios/showhow";
 #
 #   { inputs, ... }: {
-#     imports = [ inputs.showhow-desktop.homeManagerModules.default ];
-#     programs.showhow-desktop.enable = true;
+#     imports = [ inputs.showhow.homeManagerModules.default ];
+#     programs.showhow.enable = true;
 #   }
 self:
 {
@@ -16,16 +16,16 @@ self:
 }:
 
 let
-  cfg = config.programs.showhow-desktop;
+  cfg = config.programs.showhow;
 in
 {
-  options.programs.showhow-desktop = {
+  options.programs.showhow = {
     enable = lib.mkEnableOption "Showhow workflow documentation recorder";
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = self.packages.${pkgs.stdenv.hostPlatform.system}.showhow-desktop;
-      defaultText = lib.literalExpression "inputs.showhow-desktop.packages.\${pkgs.stdenv.hostPlatform.system}.showhow-desktop";
+      default = self.packages.${pkgs.stdenv.hostPlatform.system}.showhow;
+      defaultText = lib.literalExpression "inputs.showhow.packages.\${pkgs.stdenv.hostPlatform.system}.showhow";
       description = "The Showhow package to use.";
     };
   };
