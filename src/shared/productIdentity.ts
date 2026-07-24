@@ -1,5 +1,5 @@
 export const PRODUCT_NAME = "Showhow";
-export const PACKAGE_NAME = "showhow-desktop";
+export const PACKAGE_NAME = "showhow";
 export const APP_ID = "com.bedarstudios.showhow";
 export const PROJECT_FILE_EXTENSION = "showhow";
 export const LEGACY_PROJECT_FILE_EXTENSIONS = ["openscreen"] as const;
