@@ -1,4 +1,4 @@
-name: Setup Node.js
+name: Setup Showhow Node.js
 description: Install Node 22, restore npm cache, run npm ci
 runs:
   using: composite
@@ -7,5 +7,6 @@ runs:
       with:
         node-version: 22
         cache: npm
+        cache-dependency-path: package-lock.json
     - run: npm ci
       shell: bash

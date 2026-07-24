@@ -1,10 +1,10 @@
 # macOS native cursor test pipeline
 
-This document covers manual and diagnostic testing for macOS native cursor capture — the path that records real system cursor bitmaps via `NSCursor.currentSystem` and surfaces them through the OpenScreen editor and export pipeline.
+This document covers manual and diagnostic testing for macOS native cursor capture — the path that records real system cursor bitmaps via `NSCursor.currentSystem` and surfaces them through the Showhow editor and export pipeline.
 
 ## How the macOS cursor helper works
 
-The helper binary (`openscreen-macos-cursor-helper`) runs as a child process of Electron during recording. It:
+The helper binary (`openscreen-macos-cursor-helper`) runs as a child process of Electron during recording. **Legacy compatibility:** the helper filename and `OPENSCREEN_MAC_CURSOR_HELPER_EXE` override below retain their inherited identifiers until the runtime compatibility migration adds Showhow-first names. It:
 
 - polls `NSCursor.currentSystem` at the configured sample interval
 - converts each cursor image to PNG and computes a SHA-256 content hash as a stable asset id

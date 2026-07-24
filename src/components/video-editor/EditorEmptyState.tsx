@@ -2,6 +2,7 @@ import { AlertCircle, Film, FolderOpen, Upload, X } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useScopedT } from "@/contexts/I18nContext";
+import { isSupportedProjectPath } from "@/lib/projectFilePolicy";
 import { getProjectFolder, parentDirectoryOf, saveUserPreferences } from "@/lib/userPreferences";
 import { nativeBridgeClient } from "@/native";
 
@@ -68,7 +69,7 @@ export function EditorEmptyState({ onVideoImported, onProjectOpened }: EditorEmp
 			const files = Array.from(e.dataTransfer.files);
 			if (files.length === 0) return;
 
-			const projectFile = files.find((f) => f.name.endsWith(".openscreen"));
+			const projectFile = files.find((file) => isSupportedProjectPath(file.name));
 			if (!projectFile) {
 				setDropError("unsupported-format");
 				return;
@@ -125,7 +126,7 @@ export function EditorEmptyState({ onVideoImported, onProjectOpened }: EditorEmp
 					<DialogHeader className="mb-4">
 						<div className="flex items-center gap-3">
 							<img
-								src="./openscreen.png"
+								src="/showhow.png"
 								alt=""
 								aria-hidden="true"
 								className="w-9 h-9 rounded-xl flex-shrink-0"
@@ -163,7 +164,7 @@ export function EditorEmptyState({ onVideoImported, onProjectOpened }: EditorEmp
 			<div className="relative flex flex-col items-center gap-8 px-6 text-center">
 				{/* Logo */}
 				<img
-					src="./openscreen.png"
+					src="/showhow.png"
 					alt=""
 					aria-hidden="true"
 					className="h-16 w-16 rounded-2xl opacity-90"

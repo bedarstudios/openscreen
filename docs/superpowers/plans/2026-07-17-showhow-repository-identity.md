@@ -1,5 +1,9 @@
 # Showhow Repository Identity Implementation Plan
 
+> **Status: completed — 2026-07-24.** Executed on branch `codex/showhow-standalone` and merged in PR #29. The branding policy and
+> scanner it specifies are live: `config/branding-allowlist.json` and `npm run branding:check`,
+> wired into `ci.yml`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
@@ -298,7 +302,7 @@ git diff --cached --check
 git commit -m "chore: align repository automation with Showhow"
 ```
 
-### Task 4: Align active engineering documentation and close the inventory
+### Task 4: Align active engineering documentation and close the documentation inventory
 
 **Files:**
 - Modify: `docs/architecture/native-bridge.md`
@@ -313,7 +317,9 @@ git commit -m "chore: align repository automation with Showhow"
 - Modify: `config/branding-allowlist.json`
 
 **Interfaces:**
-- Produces: a zero-unclassified-match branding baseline before runtime migration.
+- Produces: active engineering/native/testing documentation with no unintentional legacy branding.
+- Preserves: an expected-red repository-wide inventory whose remaining unclassified matches belong
+  only to the later runtime, localization, packaging, visual-asset, and native-helper plans.
 
 - [ ] **Step 1: Rebrand current engineering docs without rewriting history**
 
@@ -326,11 +332,18 @@ to the allowlist with that exact reason.
 Add dated completed specs/plans and `implementation-notes.md` to the allowlist only when the
 OpenScreen reference describes a past decision or legacy behavior. Do not allowlist active source.
 
-- [ ] **Step 3: Run the closed inventory**
+- [ ] **Step 3: Close documentation scope without weakening the global guard**
 
 Run: `npm run branding:check`
 
-Expected: `Branding check passed: all OpenScreen references are classified.`
+Expected: FAIL until the later runtime and visual/packaging plans complete. Review every reported
+match in the files owned by this task: it must be either removed or explicitly classified for
+historical/legacy compatibility. Do not allowlist active source merely to force a green result.
+
+Run a scoped search across `docs`, `electron/native/README.md`, and
+`scripts/diagnostic-tool/README.md` and confirm that any remaining source-ancestor name appears only
+in a dated historical file, focused attribution, or an explicitly labelled legacy-compatibility
+instruction.
 
 Run: `npm run lint && npm run test && npx tsc --noEmit && git diff --check`
 

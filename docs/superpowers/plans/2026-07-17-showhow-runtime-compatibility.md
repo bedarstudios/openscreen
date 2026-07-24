@@ -1,5 +1,10 @@
 # Showhow Runtime Compatibility Implementation Plan
 
+> **Status: completed — 2026-07-24.** Executed on branch `codex/showhow-standalone` and merged in PR #29. Shipped as
+> `src/shared/productIdentity.ts`, `electron/userDataMigration.ts`,
+> `electron/projectFilePolicy.ts`, `src/lib/migratingStorage.ts`, and
+> `electron/native-bridge/helperIdentity.ts`, each with tests.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
@@ -119,6 +124,7 @@ git commit -m "refactor: centralize Showhow identity constants"
 - Create: `src/lib/projectFilePolicy.test.ts`
 - Modify: `src/components/video-editor/EditorEmptyState.tsx`
 - Modify: `src/components/video-editor/EditorEmptyState.test.tsx`
+- Modify: `src/components/video-editor/VideoEditor.tsx`
 - Modify: `src/i18n/locales/*/dialogs.json`
 - Modify: `src/i18n/locales/*/editor.json`
 
@@ -456,6 +462,7 @@ git commit -m "feat: migrate the Electron profile to Showhow"
 - Modify: `scripts/test-windows-wgc-helper.mjs`
 - Modify: `scripts/diagnostic-tool/diagnostic.mjs`
 - Modify: `electron/native/wgc-capture/CMakeLists.txt`
+- Modify: `electron/native/wgc-capture/src/dshow_webcam_capture.cpp` (DirectShow identity labels only)
 
 **Interfaces:**
 - Produces: `resolveEnv(primary: string, legacy: string): string | undefined`.
@@ -511,7 +518,7 @@ git add electron/native electron/native-bridge electron/ipc/handlers.ts scripts
 git commit -m "refactor: migrate native helpers to Showhow identity"
 ```
 
-### Task 7: Run the compatibility acceptance gate
+### Task 7: Run the runtime compatibility acceptance gate
 
 **Files:**
 - Modify: `config/branding-allowlist.json`
@@ -527,14 +534,16 @@ Save As `.showhow`, new `.showhow` reopen, legacy native env override, and new n
 ```bash
 npm run test
 npm run test:browser
-npm run i18n:check
 npx tsc --noEmit
 npm run lint
-npm run branding:check
 git diff --check
 ```
 
-Expected: all exit `0`; remaining OpenScreen code matches are only documented fallback readers.
+Expected: all exit `0`. Also run `npm run i18n:check` and `npm run branding:check` as diagnostic
+inventories, but do not require them to exit `0` or allowlist active product identity at this point:
+visible localization, packaging, icons, and release identity are intentionally owned by Plan 3. The
+full i18n and branding green gate runs in Plan 3 Task 5. Any remaining OpenScreen match in files
+already migrated by Plan 2 must still be an intentional, documented compatibility reader.
 
 - [ ] **Step 3: Commit the verified compatibility record**
 

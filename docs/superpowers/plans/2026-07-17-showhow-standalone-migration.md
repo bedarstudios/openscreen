@@ -1,5 +1,8 @@
 # Showhow Standalone Migration Plan Series
 
+> **Status: completed — 2026-07-24.** Executed on branch `codex/showhow-standalone` and merged in PR #29, with one deviation:
+> the GitHub cutover took a different route (see the cutover plan's status note).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.

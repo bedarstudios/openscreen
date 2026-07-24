@@ -1,3 +1,5 @@
+import { STORAGE_KEYS } from "@/shared/productIdentity";
+
 export const DEFAULT_LOCALE = "en" as const;
 export const SUPPORTED_LOCALES = [
 	"en",
@@ -27,4 +29,4 @@ export const I18N_NAMESPACES = [
 export type Locale = string;
 export type I18nNamespace = (typeof I18N_NAMESPACES)[number];
 
-export const LOCALE_STORAGE_KEY = "openscreen-locale";
+export const LOCALE_STORAGE_KEY = STORAGE_KEYS.locale;

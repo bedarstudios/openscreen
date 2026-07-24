@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const helperPath = path.join(
 	process.cwd(),
-	"electron/native/screencapturekit/Sources/OpenScreenMacOSCursorHelper/main.swift",
+	"electron/native/screencapturekit/Sources/ShowhowMacOSCursorHelper/main.swift",
 );
 
 describe("macOS cursor helper click hook", () => {

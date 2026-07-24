@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/openscreen.png" alt="Showhow" width="64" />
+  <img src="public/showhow.png" alt="Showhow" width="64" />
 </p>
 
 # <p align="center">Showhow</p>
@@ -43,7 +43,7 @@ Later phases add `steps.json` and `steps.md` — a deterministic, numbered walkt
 
 ## Where it's going
 
-Phase 1 shipped; the doc engine is being built now. The plan is in [ROADMAP.md](./ROADMAP.md), and [SHOWHOW.md](./SHOWHOW.md) has the implementation notes and the fork's architectural contracts.
+Phase 1 shipped; the doc engine is being built now. The plan is in [ROADMAP.md](./ROADMAP.md), the bundle and save-path contracts are in [docs/architecture/showhow-bundles.md](./docs/architecture/showhow-bundles.md), and [SHOWHOW.md](./SHOWHOW.md) records which inherited identifiers are deliberately kept.
 
 ## Credit and lineage
 
@@ -67,8 +67,25 @@ npm run dev
 
 Requires Node 22.22.1 and macOS 13+. On first launch, grant **Screen Recording** and **Accessibility** permission in System Settings → Privacy & Security.
 
+Build the native macOS helper when working on capture, or to run a native recording locally:
+
+```bash
+npm run build:native:mac
+```
+
+## Verification
+
+```bash
+npm run test
+npm run test:browser
+npx tsc --noEmit
+npm run lint
+npm run i18n:check
+npm run branding:check
+```
+
 For pre-built OpenScreen binaries on macOS, Windows, or Linux, see the [upstream releases](https://github.com/getopenscreen/openscreen/releases).
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). Inherited from OpenScreen and staying that way. Free for personal and commercial use, no paid tiers, nothing behind a paywall.
+MIT — see [LICENSE](./LICENSE). Inherited from OpenScreen and staying that way. Free for personal and commercial use, no paid tiers, nothing behind a paywall. Attribution and import policy: [NOTICE.md](./NOTICE.md), [UPSTREAM.md](./UPSTREAM.md).

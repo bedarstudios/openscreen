@@ -1,5 +1,9 @@
 # Showhow Visual and Packaging Identity Implementation Plan
 
+> **Status: completed — 2026-07-24.** Executed on branch `codex/showhow-standalone` and merged in PR #29. Shipped as
+> `docs/design/brand/showhow-app-icon.svg`, the generated `icons/` set,
+> `public/showhow.png`, and the packaging identity in `electron-builder.json5`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
@@ -122,9 +126,12 @@ git commit -m "build: generate Showhow application icons"
 
 **Files:**
 - Modify: `electron/main.ts`
+- Modify: `electron/ipc/handlers.ts` (visible accessibility fallback strings only)
+- Modify: `src/App.tsx` (default visible fallback heading only)
 - Modify: `src/components/video-editor/EditorEmptyState.tsx`
 - Modify: `src/components/video-editor/UnsavedChangesDialog.tsx`
 - Modify: `src/i18n/locales/*/{common,dialogs,editor,launch}.json`
+- Modify: `src/i18n/locales/*/{settings,shortcuts,timeline}.json` as required to restore locale-key parity
 - Modify: `index.html`
 - Modify: `public/showhow.png`
 
@@ -149,9 +156,11 @@ translations. Use the translation key `showhowProject`. Update compatibility cop
 
 - [ ] **Step 4: Verify and commit**
 
-Run: `npm run i18n:check && npm run test && npm run branding:check`
+Run: `npm run i18n:check && npm run test`
 
-Expected: all exit `0`.
+Expected: both exit `0`. Run `npm run branding:check` diagnostically: visible-copy matches owned by
+this task must be gone, while package, bundle, Nix, entitlement, preview-script, and release
+identity remain intentionally visible until Task 4. Do not allowlist those active Task 4 matches.
 
 ```bash
 git add electron/main.ts src/components/video-editor src/i18n index.html public/showhow.png \
@@ -162,6 +171,7 @@ git commit -m "feat: replace visible product identity with Showhow"
 ### Task 4: Replace package and release identity
 
 **Files:**
+- Create: `.github/scripts/package-identity.test.mjs`
 - Modify: `package.json`
 - Modify: `package-lock.json`
 - Modify: `.env.example`
@@ -173,6 +183,9 @@ git commit -m "feat: replace visible product identity with Showhow"
 - Modify: `nix/hm-module.nix`
 - Modify: `.github/workflows/build.yml`
 - Modify: `.github/actions/setup/action.yml`
+- Modify: `scripts/build-macos-screencapturekit-helper.mjs` (Showhow-first architecture env with legacy read fallback)
+- Modify: `scripts/build_macos.sh` (active package/artifact identity only)
+- Modify: `scripts/fetch-caption-model.mjs` (active package user-agent only)
 - Modify: `scripts/capture-openscreen-preview.mjs` and rename to `scripts/capture-showhow-preview.mjs`
 
 **Interfaces:**

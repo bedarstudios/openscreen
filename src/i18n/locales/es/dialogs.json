@@ -59,7 +59,9 @@
 		"discardAndLoadProject": "Descartar y cargar proyecto",
 		"loadProject": "Cargar proyecto…",
 		"saveProject": "Guardar proyecto…",
-		"saveProjectAs": "Guardar proyecto como…"
+		"saveProjectAs": "Guardar proyecto como…",
+		"newProject": "Nuevo proyecto",
+		"importVideo": "Importar archivo de vídeo…"
 	},
 	"fileDialogs": {
 		"saveGif": "Guardar GIF exportado",
@@ -70,7 +72,7 @@
 		"gifImage": "Imagen GIF",
 		"mp4Video": "Video MP4",
 		"videoFiles": "Archivos de video",
-		"openscreenProject": "Proyecto Showhow",
-		"allFiles": "Todos los archivos"
+		"allFiles": "Todos los archivos",
+		"showhowProject": "Proyecto Showhow"
 	}
 }

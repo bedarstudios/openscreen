@@ -59,7 +59,9 @@
 		"discardAndLoadProject": "Bỏ qua & Tải dự án",
 		"loadProject": "Tải dự án…",
 		"saveProject": "Lưu dự án…",
-		"saveProjectAs": "Lưu dự án thành…"
+		"saveProjectAs": "Lưu dự án thành…",
+		"newProject": "Dự án mới",
+		"importVideo": "Nhập tệp video…"
 	},
 	"fileDialogs": {
 		"saveGif": "Lưu GIF đã xuất",
@@ -70,7 +72,7 @@
 		"gifImage": "Hình ảnh GIF",
 		"mp4Video": "Video MP4",
 		"videoFiles": "Tệp Video",
-		"openscreenProject": "Dự án Showhow",
-		"allFiles": "Tất cả các tệp"
+		"allFiles": "Tất cả các tệp",
+		"showhowProject": "Dự án Showhow"
 	}
 }

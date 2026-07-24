@@ -18,7 +18,10 @@
 			"numberedList": "Lista numerada",
 			"blockquote": "Citação",
 			"codeBlock": "Bloco de código"
-		}
+		},
+		"openStudio": "Abrir o estúdio",
+		"useHorizontalTray": "Usar bandeja horizontal",
+		"useVerticalTray": "Usar bandeja vertical"
 	},
 	"audio": {
 		"enableSystemAudio": "Ativar áudio do sistema",
@@ -43,7 +46,10 @@
 		"loading": "Carregando fontes...",
 		"screens": "Telas ({{count}})",
 		"windows": "Janelas ({{count}})",
-		"defaultSourceName": "Tela"
+		"defaultSourceName": "Tela",
+		"emptyTitle": "Nenhuma tela ou janela encontrada",
+		"emptyDescription": "Se você acabou de conceder permissão para gravar a tela, recarregue este seletor. No macOS, talvez seja necessário reabrir o Showhow.",
+		"loadFailedDescription": "O Showhow não conseguiu carregar as fontes de captura. Recarregue este seletor e tente novamente."
 	},
 	"recording": {
 		"selectSource": "Por favor, selecione uma fonte para gravar",

@@ -7,13 +7,13 @@ set(CMAKE_CXX_STANDARD_LIBRARIES
   "kernel32.lib user32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib comdlg32.lib advapi32.lib"
   CACHE STRING "" FORCE)
 
-project(openscreen-wgc-capture LANGUAGES CXX)
+project(showhow-wgc-capture LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(wgc-capture
+add_executable(showhow-wgc-capture
   src/audio_sample_utils.cpp
   src/audio_sample_utils.h
   src/dshow_webcam_capture.cpp
@@ -31,15 +31,15 @@ add_executable(wgc-capture
   src/wgc_session.h
 )
 
-target_compile_definitions(wgc-capture PRIVATE
+target_compile_definitions(showhow-wgc-capture PRIVATE
   NOMINMAX
   WIN32_LEAN_AND_MEAN
   _WIN32_WINNT=0x0A00
 )
 
-target_compile_options(wgc-capture PRIVATE /EHsc /W4 /utf-8)
+target_compile_options(showhow-wgc-capture PRIVATE /EHsc /W4 /utf-8)
 
-target_link_libraries(wgc-capture PRIVATE
+target_link_libraries(showhow-wgc-capture PRIVATE
   d3d11
   dxgi
   mf
@@ -50,18 +50,18 @@ target_link_libraries(wgc-capture PRIVATE
   windowsapp
 )
 
-add_executable(cursor-sampler
+add_executable(showhow-cursor-sampler
   src/cursor-sampler.cpp
 )
 
-target_compile_definitions(cursor-sampler PRIVATE
+target_compile_definitions(showhow-cursor-sampler PRIVATE
   NOMINMAX
   _WIN32_WINNT=0x0A00
 )
 
-target_compile_options(cursor-sampler PRIVATE /EHsc /W4 /utf-8)
+target_compile_options(showhow-cursor-sampler PRIVATE /EHsc /W4 /utf-8)
 
-target_link_libraries(cursor-sampler PRIVATE
+target_link_libraries(showhow-cursor-sampler PRIVATE
   gdi32
   gdiplus
 )

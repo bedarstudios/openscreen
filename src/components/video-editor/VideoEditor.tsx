@@ -50,6 +50,7 @@ import {
 	VideoExporter,
 } from "@/lib/exporter";
 import { computeFrameStepTime } from "@/lib/frameStep";
+import { getProjectSavePath } from "@/lib/projectFilePolicy";
 import {
 	type CursorCaptureMode,
 	completeShowhowTranscriptSession,
@@ -714,7 +715,7 @@ export default function VideoEditor() {
 			const result = await nativeBridgeClient.project.saveProjectFile(
 				projectData,
 				fileNameBase,
-				forceSaveAs ? undefined : (currentProjectPath ?? undefined),
+				forceSaveAs ? undefined : getProjectSavePath(currentProjectPath ?? undefined),
 			);
 
 			if (result.canceled) {

@@ -8,7 +8,8 @@
 			"title": "وضع التركيز",
 			"manual": "يدوي",
 			"auto": "تلقائي",
-			"autoDescription": "الكاميرا تتبع موضع المؤشر المسجل"
+			"autoDescription": "الكاميرا تتبع موضع المؤشر المسجل",
+			"lockedDisclaimer": "يتحكم مفتاح التركيز التلقائي العام في المخطط الزمني بهذا الخيار. عطّله لضبط وضع التركيز لكل تكبير."
 		},
 		"customScale": "تكبير مخصص",
 		"position": {
@@ -133,8 +134,6 @@
 		"textPlaceholder": "أدخل النص هنا...",
 		"fontStyle": "نمط الخط",
 		"selectStyle": "حدد النمط",
-		"textAnimation": "تحريك النص",
-		"selectAnimation": "حدد الحركة",
 		"size": "الحجم",
 		"customFonts": "خطوط مخصصة",
 		"textColor": "لون النص",
@@ -207,7 +206,8 @@
 		"smoothing": "التنعيم",
 		"motionBlur": "ضبابية الحركة",
 		"clickBounce": "ارتداد النقر",
-		"clipToBounds": "القص ضمن اللوحة"
+		"clipToBounds": "القص ضمن اللوحة",
+		"clipToBoundsDescription": "يبقي المؤشر داخل إطار الفيديو. عطّل هذا الخيار للسماح للمؤشر بتجاوز الحواف، وهو مفيد عند التكبير أو التحريك."
 	},
 	"language": {
 		"title": "اللغة"
@@ -215,5 +215,16 @@
 	"timeline": {
 		"title": "المخطط الزمني",
 		"waveform": "عرض الموجة الصوتية على مسار القطع"
+	},
+	"textAnimation": {
+		"title": "حركة النص",
+		"selectAnimation": "اختر الحركة",
+		"none": "بلا",
+		"fade": "تلاشي",
+		"rise": "صعود",
+		"pop": "انبثاق",
+		"slideLeft": "انزلاق إلى اليسار",
+		"typewriter": "آلة كاتبة",
+		"pulse": "نبض"
 	}
 }

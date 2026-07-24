@@ -10,6 +10,8 @@ import {
 } from "react";
 import { DEFAULT_LOCALE, type I18nNamespace, LOCALE_STORAGE_KEY, type Locale } from "@/i18n/config";
 import { getAvailableLocales, translate } from "@/i18n/loader";
+import { readWithLegacyFallback, writeCurrent } from "@/lib/migratingStorage";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/shared/productIdentity";
 
 type TranslateVars = Record<string, string | number>;
 
@@ -22,8 +24,6 @@ interface I18nContextValue {
 	dismissSystemLocaleSuggestion: () => void;
 	resolveSystemLocaleSuggestion: () => void;
 }
-
-const SYSTEM_LANGUAGE_PROMPT_SEEN_KEY = "openscreen-system-language-prompt-seen";
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
@@ -77,7 +77,11 @@ function getSupportedSystemLocale(): Locale | null {
 
 function getInitialLocale(): Locale {
 	try {
-		const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+		const stored = readWithLegacyFallback(
+			localStorage,
+			LOCALE_STORAGE_KEY,
+			LEGACY_STORAGE_KEYS.locale,
+		);
 		if (stored && isSupportedLocale(stored)) return stored;
 	} catch {
 		// localStorage may be unavailable
@@ -92,7 +96,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 	const markPromptAsHandled = useCallback(() => {
 		try {
-			localStorage.setItem(SYSTEM_LANGUAGE_PROMPT_SEEN_KEY, "1");
+			writeCurrent(localStorage, STORAGE_KEYS.systemLanguagePromptSeen, "1");
 		} catch {
 			// localStorage may be unavailable
 		}
@@ -101,7 +105,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 	const setLocale = useCallback((newLocale: Locale) => {
 		setLocaleState(newLocale);
 		try {
-			localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
+			writeCurrent(localStorage, LOCALE_STORAGE_KEY, newLocale);
 		} catch {
 			// localStorage may be unavailable
 		}
@@ -121,9 +125,18 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 		let hasStoredLocale = false;
 		let hasHandledSystemPrompt = false;
 		try {
-			const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+			const stored = readWithLegacyFallback(
+				localStorage,
+				LOCALE_STORAGE_KEY,
+				LEGACY_STORAGE_KEYS.locale,
+			);
 			hasStoredLocale = Boolean(stored && isSupportedLocale(stored));
-			hasHandledSystemPrompt = localStorage.getItem(SYSTEM_LANGUAGE_PROMPT_SEEN_KEY) === "1";
+			hasHandledSystemPrompt =
+				readWithLegacyFallback(
+					localStorage,
+					STORAGE_KEYS.systemLanguagePromptSeen,
+					LEGACY_STORAGE_KEYS.systemLanguagePromptSeen,
+				) === "1";
 		} catch {
 			// localStorage may be unavailable
 		}

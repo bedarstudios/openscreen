@@ -20,7 +20,8 @@
 			"numberedList": "Нумерованный список",
 			"blockquote": "Цитата",
 			"codeBlock": "Блок кода"
-		}
+		},
+		"openStudio": "Открыть студию"
 	},
 	"audio": {
 		"enableSystemAudio": "Включить системное аудио",
@@ -41,7 +42,10 @@
 		"loading": "Загрузка источников...",
 		"screens": "Экраны ({{count}})",
 		"windows": "Окна ({{count}})",
-		"defaultSourceName": "Экран"
+		"defaultSourceName": "Экран",
+		"emptyTitle": "Экраны и окна не найдены",
+		"emptyDescription": "Если вы только что разрешили запись экрана, перезагрузите окно выбора. В macOS может потребоваться перезапустить Showhow.",
+		"loadFailedDescription": "Showhow не удалось загрузить источники захвата. Перезагрузите окно выбора и повторите попытку."
 	},
 	"recording": {
 		"selectSource": "Пожалуйста, выберите источник для записи",

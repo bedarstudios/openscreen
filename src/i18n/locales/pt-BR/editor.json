@@ -40,7 +40,8 @@
 		"cameraDenied": "Acesso à câmera negado. A gravação continuará sem webcam.",
 		"cameraDisconnected": "Webcam desconectada.",
 		"cameraNotFound": "Câmera não encontrada.",
-		"permissionDenied": "Permissão de gravação negada. Por favor, permita a gravação de tela."
+		"permissionDenied": "Permissão de gravação negada. Por favor, permita a gravação de tela.",
+		"accessibilityAllowAndRetry": "Permita o acesso de Acessibilidade para o Showhow e pressione gravar novamente para iniciar a contagem regressiva."
 	},
 	"autoCaptions": {
 		"button": "Legendas automáticas",
@@ -72,5 +73,21 @@
 			"annotation": "Anotação",
 			"blur": "Desfoque"
 		}
-	}
+	},
+	"emptyState": {
+		"title": "Nenhum projeto aberto",
+		"description": "Importe um vídeo para começar a editar ou carregue um projeto Showhow existente.",
+		"importVideoButton": "Importar arquivo de vídeo…",
+		"loadProjectButton": "Carregar projeto…",
+		"supportedFormats": "Formatos compatíveis: MP4, MOV, WebM, MKV, AVI, M4V, WMV",
+		"dragDropHint": "ou arraste para cá um arquivo .showhow ou um arquivo .openscreen legado",
+		"dropOverlay": "Solte o arquivo de projeto para abrir",
+		"dropErrors": {
+			"unsupportedFormatTitle": "Formato não compatível",
+			"unsupportedFormatMessage": "Somente arquivos de projeto .showhow e arquivos .openscreen legados podem ser soltos aqui. Para importar um vídeo, use o botão \"Importar arquivo de vídeo…\".",
+			"couldNotOpenTitle": "Não foi possível abrir o arquivo",
+			"couldNotOpenMessage": "Não foi possível abrir o arquivo de projeto. O vídeo referenciado pode ter sido movido ou excluído."
+		}
+	},
+	"loadingEditor": "Carregando editor…"
 }

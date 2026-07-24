@@ -1,3 +1,4 @@
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "../../shared/productIdentity";
 import { MAX_IN_MEMORY_SOURCE_BYTES } from "./sourceFileLimits";
 
 /**
@@ -31,8 +32,6 @@ import { MAX_IN_MEMORY_SOURCE_BYTES } from "./sourceFileLimits";
 // Chunk size for streaming a large file into OPFS. Large enough to keep IPC
 // overhead low, small enough that peak memory stays bounded.
 const COPY_CHUNK_BYTES = 32 * 1024 * 1024;
-
-const OPFS_CACHE_DIR = "openscreen-source-cache";
 
 export interface MaterializeProgress {
 	copiedBytes: number;
@@ -103,7 +102,7 @@ export async function clearStaleSourceCache(): Promise<void> {
 	if (!getDirectory) return;
 	try {
 		const root = await getDirectory();
-		const dir = await root.getDirectoryHandle(OPFS_CACHE_DIR);
+		const dir = await root.getDirectoryHandle(STORAGE_KEYS.sourceCache);
 		await pruneStaleEntries(dir, keepSet());
 	} catch {
 		// No cache directory yet — nothing to clean.
@@ -199,7 +198,7 @@ async function copyToOpfsFile(
 	}
 
 	const root = await getDirectory();
-	const dir = await root.getDirectoryHandle(OPFS_CACHE_DIR, { create: true });
+	const dir = await root.getDirectoryHandle(STORAGE_KEYS.sourceCache, { create: true });
 
 	// Cache key ties the copy to this exact file revision so repeated exports of
 	// the same recording reuse the cached copy instead of re-streaming gigabytes.
@@ -228,6 +227,7 @@ async function copyToOpfsFile(
 			// when the copy prunes, and so concurrent prunes keep mid-write entries.
 			inflightCopies.set(cacheName, fresh);
 			fresh.promise = runCopy(
+				root,
 				dir,
 				cacheName,
 				videoUrl,
@@ -275,6 +275,7 @@ async function copyToOpfsFile(
 
 /** Streams the source into the cache entry; resolves once it is complete on disk. */
 async function runCopy(
+	root: FileSystemDirectoryHandle,
 	dir: FileSystemDirectoryHandle,
 	cacheName: string,
 	videoUrl: string,
@@ -286,13 +287,23 @@ async function runCopy(
 	try {
 		await pruneStaleEntries(dir, keepSet());
 
-		const handle = await dir.getFileHandle(cacheName, { create: true });
-
-		// Reuse a complete prior copy.
-		const existing = await handle.getFile();
-		if (existing.size === size) {
-			emitProgress({ copiedBytes: size, totalBytes: size });
-			return;
+		let handle: FileSystemFileHandle;
+		try {
+			handle = await dir.getFileHandle(cacheName);
+			// Current cache always wins when it contains a complete copy.
+			const existing = await handle.getFile();
+			if (existing.size === size) {
+				emitProgress({ copiedBytes: size, totalBytes: size });
+				return;
+			}
+		} catch (error) {
+			if (!isNotFoundError(error)) throw error;
+			handle = await dir.getFileHandle(cacheName, { create: true });
+			const migrated = await copyLegacyCacheEntry(root, handle, cacheName, size);
+			if (migrated) {
+				emitProgress({ copiedBytes: size, totalBytes: size });
+				return;
+			}
 		}
 
 		const writable = await handle.createWritable();
@@ -343,6 +354,55 @@ async function runCopy(
 		}
 		throw error;
 	}
+}
+
+function isNotFoundError(error: unknown): boolean {
+	return error instanceof DOMException && error.name === "NotFoundError";
+}
+
+/** Copies a complete legacy entry forward without changing or removing its source. */
+async function copyLegacyCacheEntry(
+	root: FileSystemDirectoryHandle,
+	currentHandle: FileSystemFileHandle,
+	cacheName: string,
+	size: number,
+): Promise<boolean> {
+	let legacyDir: FileSystemDirectoryHandle;
+	try {
+		legacyDir = await root.getDirectoryHandle(LEGACY_STORAGE_KEYS.sourceCache);
+	} catch (error) {
+		if (isNotFoundError(error)) return false;
+		throw error;
+	}
+
+	let legacyFile: File;
+	try {
+		const legacyHandle = await legacyDir.getFileHandle(cacheName);
+		legacyFile = await legacyHandle.getFile();
+	} catch (error) {
+		if (isNotFoundError(error)) return false;
+		throw error;
+	}
+	if (legacyFile.size !== size) return false;
+
+	const writable = await currentHandle.createWritable();
+	try {
+		await writable.write(legacyFile);
+		await writable.close();
+	} catch (error) {
+		try {
+			await writable.abort();
+		} catch {
+			// Surface the copy error; the outer cleanup removes the partial current entry.
+		}
+		throw error;
+	}
+
+	const copied = await currentHandle.getFile();
+	if (copied.size !== size) {
+		throw new Error(`Legacy cache copy is incomplete (${copied.size} of ${size} bytes).`);
+	}
+	return true;
 }
 
 /** Removes cached copies in the directory whose names are not in `keep`. */
