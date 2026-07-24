@@ -142,7 +142,7 @@ vi.mock("@/contexts/I18nContext", () => ({
 			language: "Language",
 			"systemLanguagePrompt.title": "Use your system language?",
 			"systemLanguagePrompt.description":
-				"We detected English as your system language. Do you want to switch OpenScreen to English?",
+				"We detected English as your system language. Do you want to switch Showhow to English?",
 			"systemLanguagePrompt.keepDefault": "Keep current language",
 			"systemLanguagePrompt.switch": "Switch to English",
 		};
@@ -448,5 +448,17 @@ describe("LaunchWindow system language prompt", () => {
 		// And must be less than the full viewport — guards against regressions that always
 		// grow to the full viewport because of a missed bottom anchor.
 		expect(height).toBeLessThan(viewportHeight + 24);
+	});
+
+	it("shows the Showhow product name in the system-language prompt", async () => {
+		i18nState.value.systemLocaleSuggestion = "zh-CN";
+
+		renderLaunchWindow();
+
+		expect(
+			await screen.findByText(
+				"We detected English as your system language. Do you want to switch Showhow to English?",
+			),
+		).toBeInTheDocument();
 	});
 });

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// OpenScreen standalone diagnostic tool.
+// Showhow standalone diagnostic tool.
 //
 // Runs the native capture helper outside the Electron app, captures its
 // stdout/stderr, and writes a JSON report you can attach to a bug report.
@@ -13,9 +13,9 @@
 //   node diagnostic.mjs --window              # capture a window (default: display)
 //
 // Helper discovery:
-//   1. $OPENSCREEN_HELPER_EXE (any path)
-//   2. ./wgc-capture.exe                          (Windows)
-//      ./openscreen-screencapturekit-helper        (macOS)
+//   1. $SHOWHOW_HELPER_EXE, then $OPENSCREEN_HELPER_EXE (any path)
+//   2. ./showhow-wgc-capture.exe                  (Windows)
+//      ./showhow-screencapturekit-helper          (macOS)
 //   3. ./helpers/<platform>-<arch>/<helper-name>  (CI artifact layout)
 
 import { spawn } from "node:child_process";
@@ -29,12 +29,18 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const HELPER_CANDIDATES = {
 	win32: {
-		x64: { name: "wgc-capture.exe", kind: "windows" },
-		arm64: { name: "wgc-capture.exe", kind: "windows" },
+		x64: { names: ["showhow-wgc-capture.exe", "wgc-capture.exe"], kind: "windows" },
+		arm64: { names: ["showhow-wgc-capture.exe", "wgc-capture.exe"], kind: "windows" },
 	},
 	darwin: {
-		x64: { name: "openscreen-screencapturekit-helper", kind: "mac" },
-		arm64: { name: "openscreen-screencapturekit-helper", kind: "mac" },
+		x64: {
+			names: ["showhow-screencapturekit-helper", "openscreen-screencapturekit-helper"],
+			kind: "mac",
+		},
+		arm64: {
+			names: ["showhow-screencapturekit-helper", "openscreen-screencapturekit-helper"],
+			kind: "mac",
+		},
 	},
 };
 
@@ -78,14 +84,14 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-	console.log(`OpenScreen standalone diagnostic tool
+	console.log(`Showhow standalone diagnostic tool
 
 Usage:
   node diagnostic.mjs [flags]
 
 Flags:
   -d, --duration <seconds>   Recording length before sending stop (default: 10)
-  -o, --output  <path>       Output JSON path (default: ./openscreen-diagnostic-<timestamp>.json)
+  -o, --output  <path>       Output JSON path (default: ./showhow-diagnostic-<timestamp>.json)
   --source <display|window>  Capture source type (default: display)
   --window                   Shortcut for --source window
   -h, --help                 Show this help
@@ -93,7 +99,8 @@ Flags:
 }
 
 function findHelper() {
-	const explicit = process.env.OPENSCREEN_HELPER_EXE?.trim();
+	const explicit =
+		process.env.SHOWHOW_HELPER_EXE?.trim() || process.env.OPENSCREEN_HELPER_EXE?.trim();
 	if (explicit && fs.existsSync(explicit)) return { path: explicit, kind: null };
 
 	const platform = process.platform;
@@ -103,18 +110,18 @@ function findHelper() {
 		throw new Error(`Unsupported platform: ${platform}-${arch}`);
 	}
 
-	const inScriptDir = path.join(__dirname, descriptor.name);
-	if (fs.existsSync(inScriptDir)) return { path: inScriptDir, kind: descriptor.kind };
-
-	const inHelpersDir = path.join(__dirname, "helpers", `${platform}-${arch}`, descriptor.name);
-	if (fs.existsSync(inHelpersDir)) return { path: inHelpersDir, kind: descriptor.kind };
+	const candidates = descriptor.names.flatMap((name) => [
+		path.join(__dirname, name),
+		path.join(__dirname, "helpers", `${platform}-${arch}`, name),
+	]);
+	const found = candidates.find((candidate) => fs.existsSync(candidate));
+	if (found) return { path: found, kind: descriptor.kind };
 
 	throw new Error(
 		`Native helper not found for ${platform}-${arch}. Looked for:\n` +
-			`  $OPENSCREEN_HELPER_EXE\n` +
-			`  ${inScriptDir}\n` +
-			`  ${inHelpersDir}\n` +
-			`Download the matching diagnostic bundle from the OpenScreen releases / CI artifacts.`,
+			`  $SHOWHOW_HELPER_EXE (or legacy $OPENSCREEN_HELPER_EXE)\n` +
+			`${candidates.map((candidate) => `  ${candidate}`).join("\n")}\n` +
+			`Download the matching diagnostic bundle from the Showhow releases / CI artifacts.`,
 	);
 }
 
@@ -123,7 +130,7 @@ function buildConfig(opts) {
 	return {
 		schemaVersion: 2,
 		recordingId: now,
-		outputPath: path.join(os.tmpdir(), `openscreen-diag-${now}.mp4`),
+		outputPath: path.join(os.tmpdir(), `showhow-diag-${now}.mp4`),
 		sourceType: opts.source === "window" ? "window" : "display",
 		sourceId: opts.source === "window" ? "window:0:0" : "screen:0:0",
 		displayId: 0,
@@ -223,6 +230,7 @@ function run(opts) {
 				stdout,
 				stderr,
 				config,
+				helperPath: helper.path,
 			});
 		});
 		proc.once("error", (error) => {
@@ -238,6 +246,7 @@ function run(opts) {
 				stdout,
 				stderr: stderr + `\n[spawn-error] ${error.message}\n`,
 				config,
+				helperPath: helper.path,
 				spawnError: error,
 			});
 		});
@@ -247,7 +256,7 @@ function run(opts) {
 function buildReport(result) {
 	const stopTiming = parseStopTiming(result.stderr);
 	const stopElapsedMs = result.stopSentAt > 0 ? result.tExit - result.stopSentAt : null;
-	const helperPath = process.env.OPENSCREEN_HELPER_EXE?.trim() || "(auto-resolved)";
+	const helperPath = result.helperPath;
 
 	return {
 		timestamp: new Date(result.t0).toISOString(),
@@ -295,7 +304,7 @@ async function main() {
 
 	const report = buildReport(result);
 	const outputPath =
-		opts.output ?? path.join(process.cwd(), `openscreen-diagnostic-${Date.now()}.json`);
+		opts.output ?? path.join(process.cwd(), `showhow-diagnostic-${Date.now()}.json`);
 	await fs.promises.writeFile(outputPath, JSON.stringify(report, null, 2), "utf-8");
 
 	console.log("");

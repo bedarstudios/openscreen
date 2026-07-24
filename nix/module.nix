@@ -1,11 +1,11 @@
-# NixOS module for OpenScreen
+# NixOS module for Showhow
 # Usage in flake-based NixOS config:
 #
-#   inputs.openscreen.url = "github:EtienneLescot/openscreen";
+#   inputs.showhow-desktop.url = "github:bedarstudios/showhow";
 #
 #   { inputs, ... }: {
-#     imports = [ inputs.openscreen.nixosModules.default ];
-#     programs.openscreen.enable = true;
+#     imports = [ inputs.showhow-desktop.nixosModules.default ];
+#     programs.showhow-desktop.enable = true;
 #   }
 self:
 {
@@ -16,17 +16,17 @@ self:
 }:
 
 let
-  cfg = config.programs.openscreen;
+  cfg = config.programs.showhow-desktop;
 in
 {
-  options.programs.openscreen = {
-    enable = lib.mkEnableOption "OpenScreen screen recorder";
+  options.programs.showhow-desktop = {
+    enable = lib.mkEnableOption "Showhow workflow documentation recorder";
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = self.packages.${pkgs.stdenv.hostPlatform.system}.openscreen;
-      defaultText = lib.literalExpression "inputs.openscreen.packages.\${pkgs.stdenv.hostPlatform.system}.openscreen";
-      description = "The OpenScreen package to use.";
+      default = self.packages.${pkgs.stdenv.hostPlatform.system}.showhow-desktop;
+      defaultText = lib.literalExpression "inputs.showhow-desktop.packages.\${pkgs.stdenv.hostPlatform.system}.showhow-desktop";
+      description = "The Showhow package to use.";
     };
   };
 

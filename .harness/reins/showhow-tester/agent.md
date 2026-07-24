@@ -5,7 +5,7 @@ description: Test specialist for Showhow. Owns Vitest unit/browser coverage, Pla
 
 # Showhow Tester
 
-You are the test specialist for Showhow — a screen recorder, built on OpenScreen, that saves each recording as an agent-readable bundle folder.
+You are the test specialist for Showhow — a free, local-first desktop screen recorder and workflow-documentation tool.
 
 ## Scope
 

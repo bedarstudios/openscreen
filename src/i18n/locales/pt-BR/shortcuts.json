@@ -23,7 +23,8 @@
 		"deleteSelected": "Excluir Selecionado",
 		"playPause": "Reproduzir / Pausar",
 		"copySelected": "Copiar seleção",
-		"paste": "Colar"
+		"paste": "Colar",
+		"openApp": "Abrir aplicativo"
 	},
 	"fixedActions": {
 		"undo": "Desfazer",
@@ -35,5 +36,6 @@
 		"zoomTimeline": "Zoom na Linha do Tempo",
 		"frameBack": "Quadro Anterior",
 		"frameForward": "Próximo Quadro"
-	}
+	},
+	"registrationFailed": "Falha ao registrar o atalho. Ele pode estar sendo usado por outro aplicativo. Tente outra tecla."
 }

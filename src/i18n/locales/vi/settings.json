@@ -8,7 +8,8 @@
 			"title": "Chế độ lấy nét",
 			"manual": "Thủ công",
 			"auto": "Tự động",
-			"autoDescription": "Máy ảnh đi theo vị trí con trỏ đã ghi"
+			"autoDescription": "Máy ảnh đi theo vị trí con trỏ đã ghi",
+			"lockedDisclaimer": "Được điều khiển bằng nút Tự động lấy nét chung trên dòng thời gian. Tắt nút này để đặt chế độ lấy nét cho từng vùng phóng to."
 		},
 		"customScale": "Thu phóng tùy chỉnh",
 		"position": {
@@ -133,8 +134,6 @@
 		"textPlaceholder": "Nhập văn bản của bạn...",
 		"fontStyle": "Kiểu phông chữ",
 		"selectStyle": "Chọn kiểu",
-		"textAnimation": "Hoạt ảnh văn bản",
-		"selectAnimation": "Chọn hoạt ảnh",
 		"size": "Kích thước",
 		"customFonts": "Phông chữ tùy chỉnh",
 		"textColor": "Màu văn bản",
@@ -207,7 +206,8 @@
 		"smoothing": "Làm mượt",
 		"motionBlur": "Làm mờ chuyển động",
 		"clickBounce": "Nảy khi nhấp",
-		"clipToBounds": "Cắt theo khung"
+		"clipToBounds": "Cắt theo khung",
+		"clipToBoundsDescription": "Giữ con trỏ trong khung hình video. Tắt để cho phép con trỏ vượt qua các cạnh, hữu ích khi phóng to hoặc di chuyển."
 	},
 	"language": {
 		"title": "Ngôn ngữ"
@@ -215,5 +215,16 @@
 	"timeline": {
 		"title": "Dòng thời gian",
 		"waveform": "Hiển thị dạng sóng âm thanh trên rãnh cắt"
+	},
+	"textAnimation": {
+		"title": "Hoạt ảnh văn bản",
+		"selectAnimation": "Chọn hoạt ảnh",
+		"none": "Không có",
+		"fade": "Mờ dần",
+		"rise": "Đi lên",
+		"pop": "Bật lên",
+		"slideLeft": "Trượt sang trái",
+		"typewriter": "Máy đánh chữ",
+		"pulse": "Nhịp đập"
 	}
 }

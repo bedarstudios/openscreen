@@ -8,7 +8,8 @@
 			"title": "Modo de Foco",
 			"manual": "Manual",
 			"auto": "Automático",
-			"autoDescription": "A câmera segue a posição do cursor gravado"
+			"autoDescription": "A câmera segue a posição do cursor gravado",
+			"lockedDisclaimer": "Controlado pelo botão global de foco automático na linha do tempo. Desative-o para definir o modo de foco em cada zoom."
 		},
 		"threeD": {
 			"title": "Rotação 3D",
@@ -23,7 +24,8 @@
 			"x": "X (%)",
 			"y": "Y (%)",
 			"hint": "0 = mais à esquerda / topo, 100 = mais à direita / inferior"
-		}
+		},
+		"previewHold": "Segure para visualizar o efeito de zoom"
 	},
 	"speed": {
 		"playbackSpeed": "Velocidade de Reprodução",
@@ -47,7 +49,8 @@
 		"webcamShape": "Formato da Câmera",
 		"webcamSize": "Tamanho da Webcam",
 		"reactiveWebcam": "Encolher ao ampliar",
-		"reactiveWebcamDescription": "A câmera diminui suavemente enquanto o vídeo está ampliado, para não atrapalhar."
+		"reactiveWebcamDescription": "A câmera diminui suavemente enquanto o vídeo está ampliado, para não atrapalhar.",
+		"mirrorWebcam": "Espelhar webcam"
 	},
 	"effects": {
 		"title": "Efeitos de Vídeo",
@@ -100,16 +103,13 @@
 	},
 	"project": {
 		"save": "Salvar Projeto",
-		"load": "Carregar Projeto"
+		"load": "Carregar Projeto",
+		"new": "Novo projeto"
 	},
 	"export": {
 		"videoButton": "Exportar Vídeo",
 		"gifButton": "Exportar GIF",
 		"chooseSaveLocation": "Escolher Local para Salvar"
-	},
-	"links": {
-		"reportBug": "Relatar Bug",
-		"starOnGithub": "Dar Estrela no GitHub"
 	},
 	"imageUpload": {
 		"invalidFileType": "Tipo de arquivo inválido",
@@ -202,9 +202,29 @@
 		"motionBlur": "Desfoque de movimento",
 		"clickBounce": "Rebote ao clicar",
 		"clipToBounds": "Recortar à tela",
-		"clipToBoundsDescription": "Mantém o cursor dentro do quadro do vídeo. Desative para permitir que o cursor ultrapasse as bordas — útil ao aplicar zoom ou ao deslocar."
+		"clipToBoundsDescription": "Mantém o cursor dentro do quadro do vídeo. Desative para permitir que ele ultrapasse as bordas, útil ao ampliar ou deslocar."
 	},
 	"language": {
 		"title": "Idioma"
+	},
+	"support": {
+		"reportBug": "Relatar erro",
+		"saveDiagnostics": "Salvar diagnóstico",
+		"starOnGithub": "Dar estrela no GitHub"
+	},
+	"textAnimation": {
+		"title": "Animação de texto",
+		"selectAnimation": "Selecionar animação",
+		"none": "Nenhuma",
+		"fade": "Esmaecer",
+		"rise": "Subir",
+		"pop": "Saltar",
+		"slideLeft": "Deslizar para a esquerda",
+		"typewriter": "Máquina de escrever",
+		"pulse": "Pulsar"
+	},
+	"timeline": {
+		"title": "Linha do tempo",
+		"waveform": "Mostrar forma de onda de áudio na faixa de corte"
 	}
 }

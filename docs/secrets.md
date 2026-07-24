@@ -1,89 +1,54 @@
 # Secrets and tokens
 
-Showhow uses a small set of GitHub Actions secrets. This file documents what each
-one does and how to create or rotate it.
+Showhow uses repository secrets for release publication, macOS signing, and review routing. Store
+real values only in GitHub; never commit them or place them in `.env` files.
 
-Everything here is verified against the workflows that actually exist in
-`.github/workflows/`: `ci.yml`, `build.yml`, `nonpriority-review.yml`,
-`overnight-sweep.yml`, and `stale.yml`. Upstream OpenScreen's release-candidate,
-Discord, and package-registry pipelines were deleted along with their secrets
-documentation — if you are looking for `DISCORD_*`, `HOMEBREW_TAP_TOKEN`,
-`WINGET_ACC_TOKEN`, or `AUR_SSH_PRIVATE_KEY`, they are gone on purpose.
+## `SHOWHOW_RELEASE_TOKEN`
 
-## Releases
+`build.yml` uses this fine-grained personal access token when `publish-release` creates or updates a
+GitHub release. The token must have read and write access to repository contents in
+`bedarstudios/showhow` so releases and release assets can be published.
 
-### `OPENSCREEN_RELEASE_TOKEN`
+Create the token under the repository's GitHub organization, give it access only to
+`bedarstudios/showhow`, and set it with stdin or `--body`:
 
-> **Legacy name.** This secret is still called `OPENSCREEN_RELEASE_TOKEN` because
-> renaming a GitHub secret means creating the new one in repository settings
-> before the old name can be dropped from `build.yml`. Renaming it in the
-> workflow alone breaks every release until the secret exists. See "Renaming
-> this secret" below.
+```bash
+echo "github_pat_xxxxxxxxxxxxxxxxxxxx" | \
+  gh secret set SHOWHOW_RELEASE_TOKEN --repo bedarstudios/showhow
+```
 
-A **fine-grained personal access token** consumed by `build.yml#publish-release`
-as `GH_TOKEN`. It exists because `GITHUB_TOKEN` cannot create a release in a way
-that fires the `release: published` event — GitHub suppresses that to prevent
-recursive workflow runs.
+**Legacy compatibility:** the current workflow evaluates
+`secrets.SHOWHOW_RELEASE_TOKEN || secrets.OPENSCREEN_RELEASE_TOKEN`. Keep
+`OPENSCREEN_RELEASE_TOKEN` only as a temporary fallback during cutover. After a release succeeds with
+`SHOWHOW_RELEASE_TOKEN`, remove the legacy secret and the fallback expression in the same focused
+workflow change.
 
-**How to create it:**
+## `BEDAR_LOOP_PAT`
 
-1. Go to <https://github.com/settings/tokens?type=beta> (fine-grained PATs).
-2. **Resource owner**: `bedarstudios`.
-3. **Repository access**: `bedarstudios/showhow` only.
-4. **Permissions**:
-   - `Contents`: Read and write (creating releases, uploading installers)
-   - `Metadata`: Read-only (auto-selected)
-5. **Expiration**: 1 year. Set a calendar reminder to rotate.
-6. Add it as a repository secret — `gh` does not take the value positionally:
-   ```bash
-   echo "github_pat_xxxxxxxx" | gh secret set OPENSCREEN_RELEASE_TOKEN --repo bedarstudios/showhow
-   ```
+`nonpriority-review.yml` and `overnight-sweep.yml` use this token to dispatch the cold reviewer and
+update pull request labels and comments. Give it the minimum contents, pull-request, and issue
+write permissions those workflows need. Without it, only those two workflows fail; CI, builds, and
+releases are unaffected.
 
-**Rotation:** generate the new token, update the secret, then revoke the old one.
-Both work in parallel until the old one is revoked, so no coordination window is
-needed.
+## macOS signing and notarization
 
-**Renaming this secret** (to `SHOWHOW_RELEASE_TOKEN`):
+macOS builds are signed and notarized when all of these secrets are present and the workflow's
+`github.ref_name` does not contain `-`:
 
-1. `gh secret set SHOWHOW_RELEASE_TOKEN --repo bedarstudios/showhow` with the same value.
-2. Update the `GH_TOKEN:` line in `.github/workflows/build.yml#publish-release`.
-3. Cut a test release to confirm, then `gh secret delete OPENSCREEN_RELEASE_TOKEN`.
-
-## Automation loops
-
-### `BEDAR_LOOP_PAT`
-
-Used by `nonpriority-review.yml` and `overnight-sweep.yml` to dispatch the cold
-reviewer and read PR state. Needs `Contents`, `Issues`, and `Pull requests`
-read/write on `bedarstudios/showhow`. Without it those two workflows fail; CI,
-builds, and releases are unaffected.
-
-## Apple signing and notarization
-
-`build.yml` signs only when the signing secrets are present, and skips
-notarization for any tag containing `-` (i.e. pre-releases). These are consulted
-by the macOS build jobs:
-
-- `MAC_CERTIFICATE_P12` (base64 of the Developer ID Application `.p12`)
+- `MAC_CERTIFICATE_P12`
 - `MAC_CERTIFICATE_PASSWORD`
 - `MAC_CSC_NAME`
 - `APPLE_ID`
 - `APPLE_TEAM_ID`
 - `APPLE_APP_SPECIFIC_PASSWORD`
 
-If any is missing, the build produces an **unsigned** DMG. That is the expected
-behavior for forks and CI debug runs — the release still publishes, but macOS
-shows a Gatekeeper warning on first install.
+If any value is absent, `build.yml` produces an unsigned DMG. A tag-triggered prerelease such as
+`v1.5.0-rc.1` also skips DMG signing and notarization because that tag is `github.ref_name`. A manual
+dispatch from `main` with `release_tag=v1.5.0-rc.1` does not skip: its ref name remains `main`, so the
+workflow signs and notarizes when every secret is configured.
 
-The certificate must be Bedar Studios' own Developer ID. `.env.example` documents
-the matching local variables for signing a build on your own machine.
+## Rotation
 
-## Branch protection
-
-Upstream's `main-protection` ruleset documentation was removed from this file: it
-described the `getopenscreen` org, ruleset id `18060803`, and bypass actors that
-do not apply to `bedarstudios/showhow`. Check the live configuration instead:
-
-```bash
-gh api /repos/bedarstudios/showhow/rulesets --jq '.[] | {id, name}'
-```
+Create the replacement credential, update the GitHub secret, verify the affected workflow, and then
+revoke the old credential. Avoid rotating a release or signing credential during an active release
+run.

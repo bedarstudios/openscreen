@@ -3,9 +3,9 @@ import {
 	DEFAULT_EXPORT_SETTINGS,
 } from "@/components/video-editor/editorDefaults";
 import type { ExportFormat, ExportQuality } from "@/lib/exporter";
+import { readWithLegacyFallback, writeCurrent } from "@/lib/migratingStorage";
+import { LEGACY_STORAGE_KEYS, STORAGE_KEYS } from "@/shared/productIdentity";
 import type { AspectRatio } from "@/utils/aspectRatioUtils";
-
-const PREFS_KEY = "openscreen_user_preferences";
 
 const VALID_ASPECT_RATIOS: readonly string[] = [
 	"16:9",
@@ -59,7 +59,13 @@ function safeJsonParse(text: string | null): Record<string, unknown> | null {
 export function loadUserPreferences(): UserPreferences {
 	let raw: Record<string, unknown> | null = null;
 	try {
-		raw = safeJsonParse(localStorage.getItem(PREFS_KEY));
+		raw = safeJsonParse(
+			readWithLegacyFallback(
+				localStorage,
+				STORAGE_KEYS.preferences,
+				LEGACY_STORAGE_KEYS.preferences,
+			),
+		);
 	} catch {
 		return { ...DEFAULT_PREFS };
 	}
@@ -138,7 +144,7 @@ export function saveUserPreferences(partial: Partial<UserPreferences>): void {
 	const current = loadUserPreferences();
 	const merged = { ...current, ...partial };
 	try {
-		localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+		writeCurrent(localStorage, STORAGE_KEYS.preferences, JSON.stringify(merged));
 	} catch {
 		// localStorage may be unavailable (e.g. private browsing, quota exceeded)
 	}

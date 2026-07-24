@@ -84,8 +84,14 @@ describe("materializeLocalSourceFile (small file path)", () => {
 class FakeWritable {
 	private parts: Uint8Array[] = [];
 	constructor(private readonly onClose: (bytes: Uint8Array) => void) {}
-	async write(data: ArrayBuffer | Uint8Array) {
-		this.parts.push(data instanceof Uint8Array ? new Uint8Array(data) : new Uint8Array(data));
+	async write(data: ArrayBuffer | Uint8Array | Blob) {
+		const bytes =
+			data instanceof Blob
+				? new Uint8Array(await data.arrayBuffer())
+				: data instanceof Uint8Array
+					? new Uint8Array(data)
+					: new Uint8Array(data);
+		this.parts.push(bytes);
 	}
 	async close() {
 		const total = this.parts.reduce((n, p) => n + p.byteLength, 0);
@@ -149,7 +155,28 @@ function stubOpfs(root: FakeDir) {
 }
 
 function cacheDir(root: FakeDir): FakeDir | undefined {
+	return root.subdirs.get("showhow-source-cache");
+}
+
+function legacyCacheDir(root: FakeDir): FakeDir | undefined {
 	return root.subdirs.get("openscreen-source-cache");
+}
+
+function cacheNameFor(videoUrl: string, size: number, mtimeMs: number): string {
+	let hash = 5381;
+	for (let i = 0; i < videoUrl.length; i++) {
+		hash = ((hash << 5) + hash + videoUrl.charCodeAt(i)) | 0;
+	}
+	return `${(hash >>> 0).toString(36)}-${size}-${Math.round(mtimeMs)}.bin`;
+}
+
+function seedCache(root: FakeDir, directoryName: string, name: string, bytes: Uint8Array): FakeDir {
+	const dir = new FakeDir();
+	const handle = new FakeFileHandle(name);
+	handle.bytes = new Uint8Array(bytes);
+	dir.files.set(name, handle);
+	root.subdirs.set(directoryName, dir);
+	return dir;
 }
 
 /** electronAPI whose readFileChunk serves slices of `source`. */
@@ -169,6 +196,101 @@ function largeSourceApi(url: string, source: Uint8Array, mtimeMs = 1) {
 
 describe("materializeLocalSourceFile (large file OPFS path)", () => {
 	const OPTS = { thresholdBytes: 4, chunkBytes: 3 };
+
+	it("copies a legacy-only cached file forward and preserves the legacy entry", async () => {
+		const root = new FakeDir();
+		const videoUrl = "/rec/legacy.mp4";
+		const source = new Uint8Array([3, 1, 4, 1, 5, 9]);
+		const mtimeMs = 17;
+		const name = cacheNameFor(videoUrl, source.byteLength, mtimeMs);
+		const legacy = seedCache(root, "openscreen-source-cache", name, source);
+		const api = largeSourceApi(videoUrl, source, mtimeMs);
+		stubElectronAPI(api);
+		stubOpfs(root);
+
+		const file = await materializeLocalSourceFile(videoUrl, "legacy.mp4", OPTS);
+
+		expect(new Uint8Array(await file.arrayBuffer())).toEqual(source);
+		expect(api.readFileChunk).not.toHaveBeenCalled();
+		expect(cacheDir(root)?.files.get(name)?.bytes).toEqual(source);
+		expect(legacy.files.get(name)?.bytes).toEqual(source);
+		releaseLocalSourceFile(file.name);
+	});
+
+	it("prefers the current cache when both current and legacy entries exist", async () => {
+		const root = new FakeDir();
+		const videoUrl = "/rec/both.mp4";
+		const currentBytes = new Uint8Array([1, 1, 1, 1, 1]);
+		const legacyBytes = new Uint8Array([9, 9, 9, 9, 9]);
+		const mtimeMs = 23;
+		const name = cacheNameFor(videoUrl, currentBytes.byteLength, mtimeMs);
+		seedCache(root, "showhow-source-cache", name, currentBytes);
+		const legacy = seedCache(root, "openscreen-source-cache", name, legacyBytes);
+		const legacyLookup = vi.spyOn(legacy, "getFileHandle");
+		const api = largeSourceApi(videoUrl, currentBytes, mtimeMs);
+		stubElectronAPI(api);
+		stubOpfs(root);
+
+		const file = await materializeLocalSourceFile(videoUrl, "both.mp4", OPTS);
+
+		expect(new Uint8Array(await file.arrayBuffer())).toEqual(currentBytes);
+		expect(api.readFileChunk).not.toHaveBeenCalled();
+		expect(legacyLookup).not.toHaveBeenCalled();
+		expect(legacyCacheDir(root)?.files.get(name)?.bytes).toEqual(legacyBytes);
+		releaseLocalSourceFile(file.name);
+	});
+
+	it("surfaces a legacy cache access error without modifying the legacy entry", async () => {
+		const root = new FakeDir();
+		const videoUrl = "/rec/denied.mp4";
+		const source = new Uint8Array([4, 2, 4, 2, 4]);
+		const name = cacheNameFor(videoUrl, source.byteLength, 1);
+		const legacy = seedCache(root, "openscreen-source-cache", name, source);
+		vi.spyOn(legacy, "getFileHandle").mockRejectedValue(
+			new DOMException("Legacy cache access denied", "SecurityError"),
+		);
+		const api = largeSourceApi(videoUrl, source);
+		stubElectronAPI(api);
+		stubOpfs(root);
+
+		await expect(materializeLocalSourceFile(videoUrl, "denied.mp4", OPTS)).rejects.toThrow(
+			/Legacy cache access denied/,
+		);
+
+		expect(api.readFileChunk).not.toHaveBeenCalled();
+		expect(legacy.files.get(name)?.bytes).toEqual(source);
+		expect(cacheDir(root)?.files.has(name) ?? false).toBe(false);
+	});
+
+	it("places a newly streamed cache entry only in the current cache", async () => {
+		const root = new FakeDir();
+		const source = new Uint8Array([2, 7, 1, 8, 2, 8]);
+		const api = largeSourceApi("/rec/new.mp4", source);
+		stubElectronAPI(api);
+		stubOpfs(root);
+
+		const file = await materializeLocalSourceFile("/rec/new.mp4", "new.mp4", OPTS);
+
+		expect(cacheDir(root)?.files.get(file.name)?.bytes).toEqual(source);
+		expect(legacyCacheDir(root)).toBeUndefined();
+		releaseLocalSourceFile(file.name);
+	});
+
+	it("streams into the current cache when neither cache contains the entry", async () => {
+		const root = new FakeDir();
+		root.subdirs.set("openscreen-source-cache", new FakeDir());
+		const source = new Uint8Array([6, 5, 3, 5, 8]);
+		const api = largeSourceApi("/rec/missing.mp4", source);
+		stubElectronAPI(api);
+		stubOpfs(root);
+
+		const file = await materializeLocalSourceFile("/rec/missing.mp4", "missing.mp4", OPTS);
+
+		expect(new Uint8Array(await file.arrayBuffer())).toEqual(source);
+		expect(api.readFileChunk).toHaveBeenCalled();
+		expect(cacheDir(root)?.files.has(file.name)).toBe(true);
+		releaseLocalSourceFile(file.name);
+	});
 
 	it("streams a large file into OPFS in chunks and returns the exact bytes", async () => {
 		const source = new Uint8Array([10, 20, 30, 40, 50, 60, 70]);

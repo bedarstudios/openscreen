@@ -24,7 +24,7 @@ const SCREEN_FRAME_INTERVAL_MS = readPositiveIntEnv("CURSOR_TEST_SCREEN_FRAME_IN
 const READY_TIMEOUT_MS = readPositiveIntEnv("CURSOR_TEST_READY_TIMEOUT_MS", 5000);
 const OUTPUT_DIR =
 	process.env.CURSOR_TEST_OUTPUT_DIR ??
-	path.join(os.tmpdir(), `openscreen-cursor-native-${Date.now()}`);
+	path.join(os.tmpdir(), `showhow-cursor-native-${Date.now()}`);
 
 if (process.platform !== "win32") {
 	console.error("This diagnostic is Windows-only.");
@@ -669,7 +669,7 @@ function buildVisualReportHtml(report, recordingData) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OpenScreen native cursor diagnostic</title>
+<title>Showhow native cursor diagnostic</title>
 <style>
 body { margin: 0; background: #111; color: #eee; font-family: Arial, sans-serif; }
 main { max-width: 1180px; margin: 0 auto; padding: 24px; }
@@ -686,7 +686,7 @@ canvas { width: 100%; height: auto; background: #181818; border: 1px solid #333;
 </head>
 <body>
 <main>
-<h1>OpenScreen native cursor diagnostic</h1>
+<h1>Showhow native cursor diagnostic</h1>
 <div class="metrics">
 <div class="metric"><b>${report.sampleCount}</b>samples</div>
 <div class="metric"><b>${report.assetCount}</b>assets</div>
@@ -918,7 +918,7 @@ function buildRealCaptureHtml(report, recordingData, screenFrames) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>OpenScreen native cursor real capture diagnostic</title>
+<title>Showhow native cursor real capture diagnostic</title>
 <style>
 body { margin: 0; background: #080808; color: #eee; font-family: Arial, sans-serif; }
 main { max-width: 1180px; margin: 0 auto; padding: 20px; }

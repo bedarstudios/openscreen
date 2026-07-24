@@ -9,6 +9,7 @@ import type {
 	NativeCursorAsset,
 	NativeCursorType,
 } from "../../../../src/native/contracts";
+import { HELPER_IDENTITIES, orderedHelperCandidates } from "../../helperIdentity";
 import type { CursorRecordingSession } from "./session";
 
 interface MacCursorAssetPayload {
@@ -46,11 +47,10 @@ type MacCursorEvent =
 			leftButtonReleased?: boolean;
 	  };
 
-const HELPER_NAME = "openscreen-macos-cursor-helper";
 const READY_TIMEOUT_MS = 5_000;
 
 function helperCandidates() {
-	const envPath = process.env.OPENSCREEN_MAC_CURSOR_HELPER_EXE?.trim();
+	const identity = HELPER_IDENTITIES.macCursor;
 	const appRoot = process.env.APP_ROOT ? path.resolve(process.env.APP_ROOT) : process.cwd();
 	const archTag = process.arch === "arm64" ? "darwin-arm64" : "darwin-x64";
 	const resourceRoot =
@@ -58,12 +58,11 @@ function helperCandidates() {
 			? process.resourcesPath
 			: path.join(appRoot, "resources");
 
-	return [
-		envPath,
-		path.join(appRoot, "electron", "native", "screencapturekit", "build", HELPER_NAME),
-		path.join(appRoot, "electron", "native", "bin", archTag, HELPER_NAME),
-		path.join(resourceRoot, "electron", "native", "bin", archTag, HELPER_NAME),
-	].filter((candidate): candidate is string => Boolean(candidate));
+	return orderedHelperCandidates(identity, process.env, (name) => [
+		path.join(appRoot, "electron", "native", "screencapturekit", "build", name),
+		path.join(appRoot, "electron", "native", "bin", archTag, name),
+		path.join(resourceRoot, "electron", "native", "bin", archTag, name),
+	]);
 }
 
 export function findMacCursorHelperPath() {

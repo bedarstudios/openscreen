@@ -9,14 +9,20 @@ export default defineConfig({
 		react(),
 		electron({
 			main: {
-				entry: "electron/main.ts",
+				entry: "electron/bootstrap.ts",
 				onstart({ startup }) {
 					const env = { ...process.env };
 					delete env.ELECTRON_RUN_AS_NODE;
 					return startup(["."], { env });
 				},
 				vite: {
-					build: {},
+					build: {
+						rollupOptions: {
+							output: {
+								entryFileNames: "main.js",
+							},
+						},
+					},
 				},
 			},
 			preload: {

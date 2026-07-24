@@ -1,5 +1,5 @@
 {
-	"name": "openscreen",
+	"name": "showhow-desktop",
 	"private": true,
 	"version": "1.6.0",
 	"type": "module",
@@ -9,19 +9,29 @@
 		"npm": "10.9.4"
 	},
 	"author": {
-		"name": "Siddharth Vaddem",
-		"url": "https://github.com/siddharthvaddem"
+		"name": "Bedar Studios",
+		"url": "https://github.com/bedarstudios"
 	},
 	"maintainers": [
 		{
-			"name": "Etienne Lescot",
-			"url": "https://github.com/EtienneLescot"
+			"name": "Bedar Studios",
+			"url": "https://github.com/bedarstudios"
 		}
 	],
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/bedarstudios/showhow.git"
+	},
+	"homepage": "https://github.com/bedarstudios/showhow#readme",
+	"bugs": {
+		"url": "https://github.com/bedarstudios/showhow/issues"
+	},
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build && electron-builder",
 		"lint": "biome check .",
+		"branding:check": "node scripts/branding-check.mjs",
+		"icons:generate": "node scripts/generate-app-icons.mjs",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
 		"i18n:check": "node scripts/i18n-check.mjs",
@@ -41,7 +51,7 @@
 		"test:wgc-mixed-audio:win": "node scripts/test-windows-wgc-helper.mjs --system-audio --microphone",
 		"test:wgc-webcam:win": "node scripts/test-windows-wgc-helper.mjs --webcam",
 		"test:wgc-full:win": "node scripts/test-windows-wgc-helper.mjs --webcam --system-audio --microphone",
-		"capture:openscreen-preview": "node scripts/capture-openscreen-preview.mjs",
+		"capture:showhow-preview": "node scripts/capture-showhow-preview.mjs",
 		"inspect:cursor-click-bounce": "node scripts/inspect-native-cursor-click-bounce.mjs",
 		"diagnostic:run": "node scripts/diagnostic-tool/diagnostic.mjs",
 		"diagnostic:smoke:win": "node scripts/diagnostic-tool/diagnostic.mjs --duration 3",
@@ -122,7 +132,9 @@
 		"husky": "^9.1.7",
 		"jsdom": "^29.0.2",
 		"lint-staged": "^16.4.0",
+		"png-to-ico": "^3.0.2",
 		"postcss": "^8.5.10",
+		"sharp": "^0.32.6",
 		"tailwindcss": "^3.4.19",
 		"terser": "^5.46.1",
 		"typescript": "^5.9.3",

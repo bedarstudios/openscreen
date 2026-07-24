@@ -1,0 +1,320 @@
+{
+	"allowed": [
+		{
+			"file": ".bedar/project-plan.yml",
+			"reason": "Dated project plan referencing the inherited baseline"
+		},
+		{
+			"file": ".github/scripts/generate-app-icons.test.mjs",
+			"reason": "Asserts the obsolete icon assets are gone; must name them"
+		},
+		{
+			"file": ".github/scripts/package-identity.test.mjs",
+			"reason": "Policy assertions distinguish active Showhow identity from intentional legacy fallbacks"
+		},
+		{
+			"file": ".github/scripts/release-milestone-migrate.mjs",
+			"reason": "Persistent release migration marker compatibility"
+		},
+		{
+			"file": ".github/workflows/build.yml",
+			"reason": "Temporary read-only inherited release-token secret fallback until repository cutover"
+		},
+		{
+			"file": ".harness/docs/git-workflow.md",
+			"reason": "Records which upstream release machinery was deleted, so it is not restored"
+		},
+		{
+			"file": ".harness/memory/MEMORY.md",
+			"reason": "Append-only historical harness memory"
+		},
+		{
+			"file": ".superpowers/sdd/plan3-task-2-report.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": ".superpowers/sdd/plan3-task-3-report.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": ".superpowers/sdd/plan3-task-4-report.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": "AGENTS.md",
+			"reason": "Documents which legacy identifiers are kept and why"
+		},
+		{
+			"file": "CONTRIBUTING.md",
+			"reason": "Routes recorder/editor bugs upstream and states the legacy-extension rule"
+		},
+		{
+			"file": "LICENSE",
+			"reason": "Required MIT copyright notice"
+		},
+		{
+			"file": "NOTICE.md",
+			"reason": "Required attribution to the upstream project"
+		},
+		{
+			"file": "README.md",
+			"reason": "Attribution and upstream release links"
+		},
+		{
+			"file": "ROADMAP.md",
+			"reason": "Describes the inherited recorder and upstream bug routing"
+		},
+		{
+			"file": "SHOWHOW.md",
+			"reason": "Record of the fork and of every deliberately-kept legacy identifier"
+		},
+		{
+			"file": "UPSTREAM.md",
+			"reason": "Documents the upstream relationship and import policy"
+		},
+		{
+			"file": "docs/github-actions-workflows.md",
+			"reason": "Legacy compatibility instruction for the temporary inherited release-token fallback"
+		},
+		{
+			"file": "docs/secrets.md",
+			"reason": "Legacy compatibility instruction for the temporary inherited release-token fallback"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-11-phase-1-fork-folder-bundle.md",
+			"reason": "Dated completed implementation plan describing the inherited source baseline"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-16-showhow-workspace-retirement.md",
+			"reason": "Dated completed workspace-retirement plan recording the former repository identity"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-17-showhow-github-cutover.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-17-showhow-repository-identity.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-17-showhow-runtime-compatibility.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-17-showhow-standalone-migration.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": "docs/superpowers/plans/2026-07-17-showhow-visual-packaging.md",
+			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
+		},
+		{
+			"file": "docs/superpowers/specs/2026-07-11-showhow-desktop-design.md",
+			"reason": "Dated record of the original fork decision"
+		},
+		{
+			"file": "docs/superpowers/specs/2026-07-16-showhow-standalone-repository-design.md",
+			"reason": "Approved migration design and compatibility policy"
+		},
+		{
+			"file": "docs/superpowers/specs/2026-07-16-showhow-workspace-retirement-design.md",
+			"reason": "Dated approved retirement design recording the former repository identity"
+		},
+		{
+			"file": "docs/testing/macos-native-cursor.md",
+			"reason": "Legacy compatibility instructions for inherited helper binaries and environment variables"
+		},
+		{
+			"file": "docs/testing/showhow-legacy-compatibility.md",
+			"reason": "Acceptance matrix for intentional read-only legacy project, storage, profile, lock, and native-helper compatibility"
+		},
+		{
+			"file": "docs/testing/windows-native-cursor.md",
+			"reason": "Legacy compatibility instructions for executable diagnostic commands, paths, and variables"
+		},
+		{
+			"file": "electron/diagnostics/main-log-buffer.ts",
+			"reason": "Legacy diagnostic environment variable inherited from the source project"
+		},
+		{
+			"file": "electron/ipc/handlers.ts",
+			"reason": "Legacy project reads and native-helper environment variables"
+		},
+		{
+			"file": "electron/ipc/recordingStream.test.ts",
+			"reason": "Legacy temp-directory prefix in fixtures"
+		},
+		{
+			"file": "electron/main.ts",
+			"reason": "Legacy environment variable and application-data compatibility"
+		},
+		{
+			"file": "electron/native-bridge/helperIdentity.test.ts",
+			"reason": "Covers legacy native-helper env var and alias resolution"
+		},
+		{
+			"file": "electron/native-bridge/helperIdentity.ts",
+			"reason": "Resolves native helpers via legacy env vars and binary aliases"
+		},
+		{
+			"file": "electron/native/README.md",
+			"reason": "Legacy compatibility instructions for inherited native helper binaries and variables"
+		},
+		{
+			"file": "electron/projectFilePolicy.test.ts",
+			"reason": "Covers legacy project-extension acceptance"
+		},
+		{
+			"file": "electron/recording/webm-duration.test.ts",
+			"reason": "Legacy fixture naming"
+		},
+		{
+			"file": "electron/singleInstanceLock.test.ts",
+			"reason": "Covers the legacy single-instance lock directory"
+		},
+		{
+			"file": "electron/singleInstanceLock.ts",
+			"reason": "Legacy single-instance lock directory name"
+		},
+		{
+			"file": "electron/userDataMigration.test.ts",
+			"reason": "Covers legacy application-data directory migration"
+		},
+		{
+			"file": "electron/userDataMigration.ts",
+			"reason": "Migrates the legacy application-data directory; must name every legacy casing"
+		},
+		{
+			"file": "implementation-notes.md",
+			"reason": "Historical Phase 1 implementation notes describing inherited source behavior"
+		},
+		{
+			"file": "scripts/build-macos-screencapturekit-helper.mjs",
+			"reason": "Showhow-first macOS helper architecture variable with read-only legacy fallback"
+		},
+		{
+			"file": "scripts/capture-showhow-preview.mjs",
+			"reason": "Showhow-first preview variables and paths with read-only legacy input discovery"
+		},
+		{
+			"file": "scripts/diagnostic-tool/README.md",
+			"reason": "Legacy compatibility instructions for the diagnostic executable interface"
+		},
+		{
+			"file": "scripts/diagnostic-tool/diagnostic.mjs",
+			"reason": "Reads legacy application-data locations when diagnosing older installs"
+		},
+		{
+			"file": "scripts/generate-app-icons.mjs",
+			"reason": "Removes obsolete inherited icon assets by name"
+		},
+		{
+			"file": "scripts/test-windows-native-cursor.mjs",
+			"reason": "Legacy native-helper env vars and binary names on Windows"
+		},
+		{
+			"file": "scripts/test-windows-wgc-helper.mjs",
+			"reason": "Legacy native-helper env vars and binary names on Windows"
+		},
+		{
+			"file": "src/components/video-editor/EditorEmptyState.test.tsx",
+			"reason": "Covers legacy project drag-and-drop acceptance"
+		},
+		{
+			"file": "src/components/video-editor/VideoEditor.tsx",
+			"reason": "Attribution comment describing inherited cursor behavior"
+		},
+		{
+			"file": "src/components/video-editor/projectPersistence.test.ts",
+			"reason": "Legacy packaged-resource paths in fixtures"
+		},
+		{
+			"file": "src/i18n/__tests__/visibleBrandTranslations.test.ts",
+			"reason": "Asserts no visible brand leak; must name the legacy brand to do so"
+		},
+		{
+			"file": "src/i18n/locales/ar/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/en/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/es/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/fr/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/it/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/ja-JP/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/ko-KR/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/pt-BR/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/ru/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/tr/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/vi/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/zh-CN/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/i18n/locales/zh-TW/editor.json",
+			"reason": "Legacy project extension shown in the compatibility open-dialog copy"
+		},
+		{
+			"file": "src/lib/exporter/localSourceFile.test.ts",
+			"reason": "Covers legacy OPFS source-cache migration"
+		},
+		{
+			"file": "src/lib/migratingStorage.test.ts",
+			"reason": "Covers legacy renderer storage-key migration"
+		},
+		{
+			"file": "src/lib/projectFilePolicy.test.ts",
+			"reason": "Covers legacy project-extension acceptance in the renderer"
+		},
+		{
+			"file": "src/lib/userPreferences.test.ts",
+			"reason": "Covers legacy preference-key migration"
+		},
+		{
+			"file": "src/lib/wallpaper.test.ts",
+			"reason": "Legacy path string in a test fixture"
+		},
+		{
+			"file": "src/shared/productIdentity.test.ts",
+			"reason": "Asserts the legacy identifiers the compatibility layer must keep"
+		},
+		{
+			"file": "src/shared/productIdentity.ts",
+			"reason": "Canonical identity constants; legacy storage keys and helper names are defined here by design"
+		},
+		{
+			"file": "tests/e2e/windows-native-checklist.spec.ts",
+			"reason": "Legacy temp paths and project extension in an e2e fixture"
+		}
+	]
+}

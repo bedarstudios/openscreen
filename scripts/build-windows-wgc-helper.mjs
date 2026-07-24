@@ -110,7 +110,7 @@ async function runInVsEnv(command) {
 
 	const sdkUmLibDir = findWindowsSdkUmLibDir();
 
-	const cmdPath = path.join(os.tmpdir(), `openscreen-build-wgc-${process.pid}-${Date.now()}.cmd`);
+	const cmdPath = path.join(os.tmpdir(), `showhow-build-wgc-${process.pid}-${Date.now()}.cmd`);
 	fs.writeFileSync(
 		cmdPath,
 		[
@@ -145,21 +145,21 @@ await runInVsEnv(
 );
 await runInVsEnv(`"${CMAKE}" --build "${BUILD_DIR}" --config Release`);
 
-const outputPath = path.join(BUILD_DIR, "wgc-capture.exe");
+const outputPath = path.join(BUILD_DIR, "showhow-wgc-capture.exe");
 if (!fs.existsSync(outputPath)) {
 	throw new Error(`WGC helper build completed but ${outputPath} was not found.`);
 }
 
-const cursorSamplerOutputPath = path.join(BUILD_DIR, "cursor-sampler.exe");
+const cursorSamplerOutputPath = path.join(BUILD_DIR, "showhow-cursor-sampler.exe");
 if (!fs.existsSync(cursorSamplerOutputPath)) {
 	throw new Error(`WGC helper build completed but ${cursorSamplerOutputPath} was not found.`);
 }
 
 fs.mkdirSync(BIN_DIR, { recursive: true });
-const distributablePath = path.join(BIN_DIR, "wgc-capture.exe");
+const distributablePath = path.join(BIN_DIR, "showhow-wgc-capture.exe");
 fs.copyFileSync(outputPath, distributablePath);
 
-const cursorSamplerDistributablePath = path.join(BIN_DIR, "cursor-sampler.exe");
+const cursorSamplerDistributablePath = path.join(BIN_DIR, "showhow-cursor-sampler.exe");
 fs.copyFileSync(cursorSamplerOutputPath, cursorSamplerDistributablePath);
 
 console.log(`Built ${outputPath}`);

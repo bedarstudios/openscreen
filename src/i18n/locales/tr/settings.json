@@ -8,7 +8,8 @@
 			"title": "Odak Modu",
 			"manual": "Manuel",
 			"auto": "Otomatik",
-			"autoDescription": "Kamera kaydedilen imleç konumunu takip eder"
+			"autoDescription": "Kamera kaydedilen imleç konumunu takip eder",
+			"lockedDisclaimer": "Zaman çizelgesindeki genel Otomatik Odak düğmesiyle kontrol edilir. Her yakınlaştırma için odak modunu ayarlamak üzere kapatın."
 		},
 		"threeD": {
 			"title": "3D Döndürme",
@@ -133,8 +134,6 @@
 		"textPlaceholder": "Metninizi girin...",
 		"fontStyle": "Yazı Tipi Stili",
 		"selectStyle": "Stil seçin",
-		"textAnimation": "Metin Animasyonu",
-		"selectAnimation": "Animasyon seçin",
 		"size": "Boyut",
 		"customFonts": "Özel Yazı Tipleri",
 		"textColor": "Metin Rengi",
@@ -207,7 +206,8 @@
 		"smoothing": "Yumuşatma",
 		"motionBlur": "Hareket Bulanıklığı",
 		"clickBounce": "Tıklama Sıçraması",
-		"clipToBounds": "Tuvale Kırp"
+		"clipToBounds": "Tuvale Kırp",
+		"clipToBoundsDescription": "İmleci video karesi içinde tutar. Yakınlaştırma veya kaydırma sırasında imlecin kenarları aşmasına izin vermek için kapatın."
 	},
 	"language": {
 		"title": "Dil"
@@ -215,5 +215,16 @@
 	"timeline": {
 		"title": "Zaman Tüneli",
 		"waveform": "Kırpma Parçasında Ses Dalgasını Göster"
+	},
+	"textAnimation": {
+		"title": "Metin Animasyonu",
+		"selectAnimation": "Animasyon seç",
+		"none": "Yok",
+		"fade": "Solma",
+		"rise": "Yükselme",
+		"pop": "Belirme",
+		"slideLeft": "Sola Kayma",
+		"typewriter": "Daktilo",
+		"pulse": "Nabız"
 	}
 }

@@ -73,5 +73,21 @@
 			"annotation": "Annotazione",
 			"blur": "Sfocatura"
 		}
-	}
+	},
+	"emptyState": {
+		"title": "Nessun progetto aperto",
+		"description": "Importa un video per iniziare a modificare o carica un progetto Showhow esistente.",
+		"importVideoButton": "Importa file video…",
+		"loadProjectButton": "Carica progetto…",
+		"supportedFormats": "Formati supportati: MP4, MOV, WebM, MKV, AVI, M4V, WMV",
+		"dragDropHint": "oppure trascina qui un file di progetto .showhow o un file .openscreen precedente",
+		"dropOverlay": "Rilascia il file di progetto per aprirlo",
+		"dropErrors": {
+			"unsupportedFormatTitle": "Formato non supportato",
+			"unsupportedFormatMessage": "Qui puoi trascinare solo file di progetto .showhow e file .openscreen precedenti. Per importare un video, usa il pulsante \"Importa file video…\".",
+			"couldNotOpenTitle": "Impossibile aprire il file",
+			"couldNotOpenMessage": "Impossibile aprire il file di progetto. Il video a cui fa riferimento potrebbe essere stato spostato o eliminato."
+		}
+	},
+	"loadingEditor": "Caricamento dell’editor…"
 }

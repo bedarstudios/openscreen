@@ -3,28 +3,28 @@
 import PackageDescription
 
 let package = Package(
-	name: "OpenScreenScreenCaptureKitHelper",
+	name: "ShowhowScreenCaptureKitHelper",
 	platforms: [
 		.macOS(.v13)
 	],
 	products: [
 		.executable(
-			name: "openscreen-screencapturekit-helper",
-			targets: ["OpenScreenScreenCaptureKitHelper"]
+			name: "showhow-screencapturekit-helper",
+			targets: ["ShowhowScreenCaptureKitHelper"]
 		),
 		.executable(
-			name: "openscreen-macos-cursor-helper",
-			targets: ["OpenScreenMacOSCursorHelper"]
+			name: "showhow-macos-cursor-helper",
+			targets: ["ShowhowMacOSCursorHelper"]
 		)
 	],
 	targets: [
 		.executableTarget(
-			name: "OpenScreenScreenCaptureKitHelper",
-			path: "Sources/OpenScreenScreenCaptureKitHelper"
+			name: "ShowhowScreenCaptureKitHelper",
+			path: "Sources/ShowhowScreenCaptureKitHelper"
 		),
 		.executableTarget(
-			name: "OpenScreenMacOSCursorHelper",
-			path: "Sources/OpenScreenMacOSCursorHelper"
+			name: "ShowhowMacOSCursorHelper",
+			path: "Sources/ShowhowMacOSCursorHelper"
 		)
 	]
 )

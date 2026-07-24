@@ -59,7 +59,9 @@
 		"discardAndLoadProject": "تجاهل وتحميل مشروع",
 		"loadProject": "تحميل مشروع...",
 		"saveProject": "حفظ المشروع...",
-		"saveProjectAs": "حفظ المشروع باسم..."
+		"saveProjectAs": "حفظ المشروع باسم...",
+		"newProject": "مشروع جديد",
+		"importVideo": "استيراد ملف فيديو…"
 	},
 	"fileDialogs": {
 		"saveGif": "حفظ GIF المصدر",
@@ -70,7 +72,7 @@
 		"gifImage": "صورة GIF",
 		"mp4Video": "فيديو MP4",
 		"videoFiles": "ملفات فيديو",
-		"openscreenProject": "مشروع Showhow",
-		"allFiles": "جميع الملفات"
+		"allFiles": "جميع الملفات",
+		"showhowProject": "مشروع Showhow"
 	}
 }
