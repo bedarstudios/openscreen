@@ -29,18 +29,6 @@
 			"reason": "Append-only historical harness memory"
 		},
 		{
-			"file": ".superpowers/sdd/plan3-task-2-report.md",
-			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
-		},
-		{
-			"file": ".superpowers/sdd/plan3-task-3-report.md",
-			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
-		},
-		{
-			"file": ".superpowers/sdd/plan3-task-4-report.md",
-			"reason": "Dated planning or execution record; describes the inherited baseline as it was"
-		},
-		{
 			"file": "AGENTS.md",
 			"reason": "Documents which legacy identifiers are kept and why"
 		},

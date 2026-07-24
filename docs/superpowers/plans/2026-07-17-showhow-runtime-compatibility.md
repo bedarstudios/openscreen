@@ -1,5 +1,10 @@
 # Showhow Runtime Compatibility Implementation Plan
 
+> **Status: completed — 2026-07-24.** Executed on branch `codex/showhow-standalone` and merged in PR #29. Shipped as
+> `src/shared/productIdentity.ts`, `electron/userDataMigration.ts`,
+> `electron/projectFilePolicy.ts`, `src/lib/migratingStorage.ts`, and
+> `electron/native-bridge/helperIdentity.ts`, each with tests.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.

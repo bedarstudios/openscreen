@@ -1,5 +1,11 @@
 # Showhow Independent GitHub Cutover Implementation Plan
 
+> **Status: superseded — 2026-07-24.** Not executed as written. This plan created a new `bedarstudios/showhow-desktop`
+> repository and mirrored refs into it. What actually happened: the existing repository was
+> renamed in place to `bedarstudios/showhow`. Every `showhow-desktop` URL below is therefore
+> historical. GitHub still reports the repository as a fork of `getopenscreen/openscreen`; the
+> de-forking step remains open.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
